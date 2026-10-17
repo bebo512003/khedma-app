@@ -23,21 +23,24 @@ export function sessionAverage(s: Session, memberId: string): number | null {
 }
 
 /**
- * Points for a month (YYYY-MM): attendance + each session's average rating,
- * plus milestone points recorded on the session when a hymn status reached حافظه or بيقوله لوحده.
+ * Where a member's points for a month (YYYY-MM) came from: attendance, each session's average rating,
+ * and milestone points recorded on the session when a hymn reached حافظه or بيقوله لوحده.
  */
-export function monthPoints(data: AppData, memberId: string, month: string): number {
-  let total = 0;
+export function monthBreakdown(data: AppData, memberId: string, month: string) {
+  const b = { attended: 0, attendance: 0, rating: 0, memorized: 0, solo: 0, total: 0 };
   for (const s of data.sessions) {
     if (!s.date.startsWith(month)) continue;
-    if (s.attendance[memberId] === 'p') total += POINTS.attendance;
-    const avg = sessionAverage(s, memberId);
-    if (avg) total += avg;
+    if (s.attendance[memberId] === 'p') { b.attended++; b.attendance += POINTS.attendance; }
+    b.rating += sessionAverage(s, memberId) ?? 0;
     const ms = s.milestones?.[memberId];
-    if (ms) total += ms.memorized * POINTS.memorized + ms.solo * POINTS.solo;
+    if (ms) { b.memorized += ms.memorized; b.solo += ms.solo; }
   }
-  return Math.round(total);
+  b.rating = Math.round(b.rating);
+  b.total = b.attendance + b.rating + b.memorized * POINTS.memorized + b.solo * POINTS.solo;
+  return b;
 }
+
+export const monthPoints = (data: AppData, memberId: string, month: string) => monthBreakdown(data, memberId, month).total;
 
 export function ranking(data: AppData, levelId: string, month: string) {
   return data.members
@@ -64,7 +67,9 @@ export function fillTemplate(tpl: string, vars: Record<string, string | number>)
   return tpl.replace(/\{([^}]+)\}/g, (all, k) => (k in vars ? String(vars[k]) : all));
 }
 
-export const todayISO = () => new Date().toISOString().slice(0, 10);
+/** Local calendar date as YYYY-MM-DD (toISOString would give UTC, which is yesterday before 2–3am in Egypt). */
+export const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+export const todayISO = () => isoDate(new Date());
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
 /** The term whose date range contains `date`; otherwise the most recently started one. */
@@ -74,3 +79,27 @@ export function currentTerm(data: AppData, date = todayISO()) {
 }
 
 export const curriculumKey = (termId: string, levelId: string) => `${termId}:${levelId}`;
+
+/** The coming Friday (today if today is Friday), when classes meet. */
+export function nextFriday(from = new Date()) {
+  const d = new Date(from); d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7)); return d;
+}
+
+const dayFmt = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' });
+export const formatDay = (iso: string) => dayFmt.format(new Date(`${iso}T12:00:00`));
+
+/** Member PINs are stored only as a salted SHA-256 hash. Real verification moves server-side with Firebase. */
+export async function hashPin(memberId: string, pin: string) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${memberId}:${pin}`));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+export const newPin = () => String(crypto.getRandomValues(new Uint32Array(1))[0] % 10000).padStart(4, '0');
+
+/** Arabic counting: 1 → لحن واحد, 2 → لحنين, 3–10 → 3 ألحان, 11+ → 11 لحن. */
+export function count(n: number, one: string, two: string, few: string) {
+  if (n === 1) return `${one} واحد`;
+  if (n === 2) return two;
+  return n >= 3 && n <= 10 ? `${n} ${few}` : `${n} ${one}`;
+}
+export const hymnsCount = (n: number) => count(n, 'لحن', 'لحنين', 'ألحان');
+export const sessionsCount = (n: number) => n === 1 ? 'حصة واحدة' : count(n, 'حصة', 'حصتين', 'حصص');

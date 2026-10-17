@@ -26,6 +26,8 @@ export interface Member {
   rank?: string;
   parentPhone?: string;
   photo?: string;
+  /** SHA-256 of `${id}:${pin}`; never the PIN itself. */
+  pinHash?: string;
   example?: boolean;
 }
 

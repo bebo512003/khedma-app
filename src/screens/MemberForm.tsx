@@ -2,7 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../data/store';
 import { RANKS, type Gender, type Member } from '../data/types';
-import { uid } from '../data/logic';
+import { hashPin, newPin, uid, waLink } from '../data/logic';
 
 const GRADES = [
   'أولى ابتدائي', 'تانية ابتدائي', 'تالتة ابتدائي', 'رابعة ابتدائي', 'خامسة ابتدائي', 'سادسة ابتدائي',
@@ -37,6 +37,7 @@ export default function MemberForm() {
   });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
+  const [shownPin, setShownPin] = useState('');
   const set = (p: Partial<Member>) => setM(x => ({ ...x, ...p }));
 
   const onPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -51,6 +52,14 @@ export default function MemberForm() {
       ? { ...d, members: d.members.map(x => x.id === clean.id ? clean : x) }
       : { ...d, members: [...d.members, clean], nextCode: d.nextCode + 1 });
     nav('/members', { replace: true });
+  };
+  /** New PIN: shown once to the servant, stored only as a hash. */
+  const makePin = async () => {
+    const pin = newPin();
+    const pinHash = await hashPin(m.id, pin);
+    set({ pinHash });
+    if (existing) update(d => ({ ...d, members: d.members.map(x => x.id === m.id ? { ...x, pinHash } : x) }));
+    setShownPin(pin);
   };
   const remove = () => { update(d => ({ ...d, members: d.members.filter(x => x.id !== m.id) })); nav('/members', { replace: true }); };
 
@@ -96,6 +105,18 @@ export default function MemberForm() {
 
         <label className="field" htmlFor="phone"><span>موبايل ولي الأمر (واتساب)</span>
           <input id="phone" className="input" inputMode="tel" dir="ltr" style={{ textAlign: 'right' }} value={m.parentPhone ?? ''} onChange={e => set({ parentPhone: e.target.value })} placeholder="01xxxxxxxxx" /></label>
+
+        <div className="card">
+          <div className="row between"><b>دخول المخدوم للتطبيق</b><span className="muted">{m.pinHash ? 'معمول له رقم سري' : 'لسه مالوش رقم سري'}</span></div>
+          {shownPin ? (
+            <>
+              <div className="row between"><span>الكود <b dir="ltr">{m.code}</b></span><span>الرقم السري <b dir="ltr" style={{ fontSize: 20, letterSpacing: 4 }}>{shownPin}</b></span></div>
+              <div className="note">الرقم ده بيظهر مرة واحدة بس. ابعته دلوقتي أو اكتبه عندك.{existing ? '' : ' هيتحفظ لما تدوس احفظ.'}</div>
+              {m.parentPhone && <a className="btnp" target="_blank" rel="noopener noreferrer"
+                href={waLink(m.parentPhone, `بيانات دخول ${m.name || 'المخدوم'} لتطبيق مدرسة الشهيد اسطفانوس للشمامسة:\nالكود: ${m.code}\nالرقم السري: ${shownPin}`)}>ابعتهم لولي الأمر على واتساب</a>}
+            </>
+          ) : <button className="btn" onClick={makePin}>{m.pinHash ? 'اعمل رقم سري جديد' : 'اعمل رقم سري'}</button>}
+        </div>
 
         {error && <div className="alert-t" role="alert">{error}</div>}
 

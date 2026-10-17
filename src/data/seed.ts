@@ -34,7 +34,7 @@ export function seedData(): AppData {
   const past = (id: string, date: string): Session => ({
     id, date, levelId: 'l2', termId: 't1', hymnIds: ['h1', 'h2'],
     attendance: Object.fromEntries(members.map(m => [m.id, m.name === 'أبانوب' || m.name === 'كاترين' ? 'a' : 'p'])),
-    ratings: Object.fromEntries(members.filter(m => m.name !== 'أبانوب' && m.name !== 'كاترين').map(m => [m.id, [3, 3, 3]])),
+    ratings: Object.fromEntries(members.filter(m => m.name !== 'أبانوب' && m.name !== 'كاترين').map((m, i) => [m.id, [3 + (i % 3 === 0 ? 1 : 0), 3 + (i % 2), 3]])),
   });
 
   return {
@@ -44,8 +44,8 @@ export function seedData(): AppData {
     hymns: HYMNS,
     terms: [{ id: 't1', name: 'أكتوبر – ديسمبر 2026', start: '2026-10-01', end: '2026-12-31' }],
     curricula: { 't1:l2': ['h1', 'h2'], 't1:l1': ['h3'], 't1:l3': ['h1', 'h2', 'h3'] },
-    progress: {},
-    sessions: [past('ex-s1', '2026-10-02'), past('ex-s2', '2026-10-09')],
+    progress: { ex1: { h1: 2, h2: 3 }, ex2: { h1: 1, h2: 2 }, ex10: { h1: 3, h2: 3 } },
+    sessions: [past('ex-s1', '2026-10-02'), { ...past('ex-s2', '2026-10-09'), milestones: { ex1: { memorized: 1, solo: 1 }, ex2: { memorized: 1, solo: 0 }, ex10: { memorized: 2, solo: 2 } } }],
     templates: {
       absence: 'إزيك يا {الاسم}، وحشتنا في مدرسة الشمامسة. بقالك {الغياب} مرات مش بتيجي، إن شاء الله تكون بخير. مستنيينك الجمعة الجاية.',
     },
