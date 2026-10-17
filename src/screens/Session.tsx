@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../data/store';
 import { CRITERIA, STATUS_LABELS, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
-import { todayISO, uid } from '../data/logic';
+import { currentTerm, todayISO, uid } from '../data/logic';
 
 type Mode = 'att' | 'rate' | 'hym';
 const fmt = (ms: number) => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
@@ -12,7 +12,7 @@ export default function SessionScreen() {
   const [data, update] = useData();
   const nav = useNavigate();
   const level = data.levels.find(l => l.id === levelId);
-  const term = data.terms[data.terms.length - 1];
+  const term = currentTerm(data);
   const hymnIds = data.curricula[`${term?.id}:${levelId}`] ?? [];
   const hymns = hymnIds.map(id => data.hymns.find(h => h.id === id)!).filter(Boolean);
   const members = useMemo(() => data.members.filter(m => m.levelId === levelId).sort((a, b) => a.name.localeCompare(b.name, 'ar')), [data.members, levelId]);

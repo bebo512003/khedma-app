@@ -66,3 +66,11 @@ export function fillTemplate(tpl: string, vars: Record<string, string | number>)
 
 export const todayISO = () => new Date().toISOString().slice(0, 10);
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+
+/** The term whose date range contains `date`; otherwise the most recently started one. */
+export function currentTerm(data: AppData, date = todayISO()) {
+  const sorted = [...data.terms].sort((a, b) => b.start.localeCompare(a.start));
+  return sorted.find(t => t.start <= date && date <= t.end) ?? sorted.find(t => t.start <= date) ?? sorted[sorted.length - 1];
+}
+
+export const curriculumKey = (termId: string, levelId: string) => `${termId}:${levelId}`;

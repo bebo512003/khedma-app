@@ -67,7 +67,7 @@ export default function Home() {
           </div>
         )}
 
-        <Link to="/members" className="btn">المخدومين</Link>
+        <div className="row"><Link to="/members" className="btn grow">المخدومين</Link><Link to="/library" className="btn grow">مكتبة الألحان</Link></div>
 
         {hasExamples && (
           <div className="card">

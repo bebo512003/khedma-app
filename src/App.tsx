@@ -6,6 +6,10 @@ import Summary from './screens/Summary';
 import FollowUp from './screens/FollowUp';
 import Members from './screens/Members';
 import MemberForm from './screens/MemberForm';
+import Library from './screens/Library';
+import HymnForm from './screens/HymnForm';
+import Curriculum from './screens/Curriculum';
+import Levels from './screens/Levels';
 
 export default function App() {
   const { data } = useStore();
@@ -21,6 +25,11 @@ export default function App() {
           <Route path="/members" element={<Members />} />
           <Route path="/members/new" element={<MemberForm />} />
           <Route path="/members/:memberId" element={<MemberForm />} />
+          <Route path="/library" element={<Library />} />
+          <Route path="/hymns/new" element={<HymnForm />} />
+          <Route path="/hymns/:hymnId" element={<HymnForm />} />
+          <Route path="/curriculum" element={<Curriculum />} />
+          <Route path="/levels" element={<Levels />} />
         </Routes>
       </div>
     </HashRouter>
