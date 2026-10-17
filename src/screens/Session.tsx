@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useAllowedLevel, useData } from '../data/store';
 import { CRITERIA, STATUS_LABELS, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
 import { currentTerm, todayISO, uid } from '../data/logic';
 
@@ -11,7 +11,8 @@ export default function SessionScreen() {
   const { levelId = '' } = useParams();
   const [data, update] = useData();
   const nav = useNavigate();
-  const level = data.levels.find(l => l.id === levelId);
+  const allowed = useAllowedLevel();
+  const level = allowed(levelId) ? data.levels.find(l => l.id === levelId) : undefined;
   const term = currentTerm(data);
   const hymnIds = data.curricula[`${term?.id}:${levelId}`] ?? [];
   const hymns = hymnIds.map(id => data.hymns.find(h => h.id === id)!).filter(Boolean);

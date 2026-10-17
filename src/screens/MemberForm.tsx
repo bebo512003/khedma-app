@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useData, useStore } from '../data/store';
 import { RANKS, type Gender, type Member } from '../data/types';
 import { hashPin, newPin, uid, waLink } from '../data/logic';
 
@@ -38,6 +38,8 @@ export default function MemberForm() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
   const [shownPin, setShownPin] = useState('');
+  const [pinBusy, setPinBusy] = useState(false);
+  const { cloud } = useStore();
   const set = (p: Partial<Member>) => setM(x => ({ ...x, ...p }));
 
   const onPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -56,10 +58,25 @@ export default function MemberForm() {
   /** New PIN: shown once to the servant, stored only as a hash. */
   const makePin = async () => {
     const pin = newPin();
-    const pinHash = await hashPin(m.id, pin);
-    set({ pinHash });
-    if (existing) update(d => ({ ...d, members: d.members.map(x => x.id === m.id ? { ...x, pinHash } : x) }));
-    setShownPin(pin);
+    if (!cloud) {
+      const pinHash = await hashPin(m.id, pin);
+      set({ pinHash });
+      if (existing) update(d => ({ ...d, members: d.members.map(x => x.id === m.id ? { ...x, pinHash } : x) }));
+      setShownPin(pin);
+      return;
+    }
+    // Cloud: creates the member's Firebase login. The member must already be saved so the login has someone to point to.
+    setPinBusy(true); setError('');
+    try {
+      const { createMemberLogin } = await import('../firebase/accounts');
+      const account = await createMemberLogin(existing ?? m, pin);
+      set({ account });
+      update(d => ({ ...d, members: d.members.map(x => x.id === m.id ? { ...x, account } : x) }));
+      setShownPin(pin);
+    } catch {
+      setError(navigator.onLine ? 'ماقدرناش نعمل الرقم السري، جرّب تاني.' : 'عمل الرقم السري محتاج نت.');
+    }
+    setPinBusy(false);
   };
   const remove = () => { update(d => ({ ...d, members: d.members.filter(x => x.id !== m.id) })); nav('/members', { replace: true }); };
 
@@ -107,7 +124,7 @@ export default function MemberForm() {
           <input id="phone" className="input" inputMode="tel" dir="ltr" style={{ textAlign: 'right' }} value={m.parentPhone ?? ''} onChange={e => set({ parentPhone: e.target.value })} placeholder="01xxxxxxxxx" /></label>
 
         <div className="card">
-          <div className="row between"><b>دخول المخدوم للتطبيق</b><span className="muted">{m.pinHash ? 'معمول له رقم سري' : 'لسه مالوش رقم سري'}</span></div>
+          <div className="row between"><b>دخول المخدوم للتطبيق</b><span className="muted">{m.pinHash || m.account ? 'معمول له رقم سري' : 'لسه مالوش رقم سري'}</span></div>
           {shownPin ? (
             <>
               <div className="row between"><span>الكود <b dir="ltr">{m.code}</b></span><span>الرقم السري <b dir="ltr" style={{ fontSize: 20, letterSpacing: 4 }}>{shownPin}</b></span></div>
@@ -115,7 +132,9 @@ export default function MemberForm() {
               {m.parentPhone && <a className="btnp" target="_blank" rel="noopener noreferrer"
                 href={waLink(m.parentPhone, `بيانات دخول ${m.name || 'المخدوم'} لتطبيق مدرسة الشهيد اسطفانوس للشمامسة:\nالكود: ${m.code}\nالرقم السري: ${shownPin}`)}>ابعتهم لولي الأمر على واتساب</a>}
             </>
-          ) : <button className="btn" onClick={makePin}>{m.pinHash ? 'اعمل رقم سري جديد' : 'اعمل رقم سري'}</button>}
+          ) : cloud && !existing
+            ? <div className="note">احفظ المخدوم الأول، وبعدين افتحه تاني واعمله رقم سري.</div>
+            : <button className="btn" disabled={pinBusy} onClick={makePin}>{pinBusy ? 'بيتعمل…' : m.pinHash || m.account ? 'اعمل رقم سري جديد' : 'اعمل رقم سري'}</button>}
         </div>
 
         {error && <div className="alert-t" role="alert">{error}</div>}

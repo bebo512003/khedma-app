@@ -26,8 +26,10 @@ export interface Member {
   rank?: string;
   parentPhone?: string;
   photo?: string;
-  /** SHA-256 of `${id}:${pin}`; never the PIN itself. */
+  /** Offline mode: SHA-256 of `${id}:${pin}`; never the PIN itself. */
   pinHash?: string;
+  /** Cloud mode: the member's Firebase login (uid) and how many times its PIN was reset (n). */
+  account?: { uid: string; n: number };
   example?: boolean;
 }
 
@@ -84,3 +86,19 @@ export interface AppData {
 export const STATUS_LABELS = ['لسه مبدأش', 'بيتعلمه', 'حافظه', 'بيقوله لوحده'] as const;
 export const CRITERIA = ['حفظ', 'أداء', 'التزام'] as const;
 export const RANKS = ['أبصالتس', 'أغنسطس', 'إيبودياكون', 'دياكون', 'أرشيدياكون'] as const;
+
+/** A servant's access. levelIds ['*'] means every level. */
+export interface Servant {
+  uid: string;
+  name: string;
+  email: string;
+  role: 'lead' | 'servant';
+  levelIds: string[];
+}
+
+export interface Invite {
+  email: string;
+  role: 'lead' | 'servant';
+  levelIds: string[];
+  invitedBy: string;
+}

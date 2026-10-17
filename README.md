@@ -52,3 +52,9 @@ export default tseslint.config({
   },
 })
 ```
+
+## Firebase
+
+- Paste the web app config into `src/firebase/config.ts` (`PROJECT`). Left empty, the app runs fully offline on one device.
+- Security rules live in `firestore.rules`.
+- Local test against emulators: `npx firebase-tools emulators:start --only auth,firestore --project demo-khedma`, then `VITE_FB_EMULATOR=1 npm run dev`.

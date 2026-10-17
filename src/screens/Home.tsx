@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useData, useStore } from '../data/store';
+import { useAllowedLevel, useData, useStore } from '../data/store';
 import { absenceStreak, needsFollowUp } from '../data/logic';
 import { applyTheme, loadTheme } from '../theme';
 import { useState } from 'react';
@@ -7,9 +7,10 @@ import logo from '../logo.png';
 
 export default function Home() {
   const [data] = useData();
-  const { update } = useStore();
+  const { update, cloud, servant, syncError, signOut } = useStore();
+  const allowed = useAllowedLevel();
   const [theme, setTheme] = useState(loadTheme());
-  const levels = [...data.levels].sort((a, b) => a.order - b.order);
+  const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const followUp = data.members.filter(m => needsFollowUp(absenceStreak(data, m)));
   const last = [...data.sessions].sort((a, b) => b.date.localeCompare(a.date))[0];
   const hasExamples = data.members.some(m => m.example);
@@ -19,6 +20,7 @@ export default function Home() {
     ...d,
     members: d.members.filter(m => !m.example),
     sessions: d.sessions.filter(s => !s.id.startsWith('ex-')),
+    progress: Object.fromEntries(Object.entries(d.progress).filter(([id]) => d.members.some(m => m.id === id && !m.example))),
   }));
 
   return (
@@ -68,7 +70,9 @@ export default function Home() {
         )}
 
         <div className="row"><Link to="/members" className="btn grow">المخدومين</Link><Link to="/library" className="btn grow">مكتبة الألحان</Link></div>
-        <Link to="/me" className="btn">جرّب تطبيق المخدوم</Link>
+        {cloud
+          ? <div className="row">{servant?.role === 'lead' && <Link to="/team" className="btn grow">الفريق</Link>}<button className="btn grow" onClick={signOut}>خروج</button></div>
+          : <Link to="/me" className="btn">جرّب تطبيق المخدوم</Link>}
 
         {hasExamples && (
           <div className="card">
@@ -76,7 +80,10 @@ export default function Home() {
             <button className="btn" onClick={clearExamples}>امسح الأمثلة</button>
           </div>
         )}
-        <div className="note">كل حاجة بتتحفظ على الموبايل ده وبتشتغل من غير نت. المزامنة مع باقي الخدام هتتضاف لما نربط Firebase.</div>
+        {syncError && <div className="card alert"><div className="alert-t">في مشكلة في المزامنة</div><div className="note">{syncError}</div></div>}
+        <div className="note">{cloud
+          ? 'بيشتغل من غير نت، وأول ما النت يرجع كل حاجة بتتزامن مع باقي الخدام.'
+          : 'كل حاجة بتتحفظ على الموبايل ده وبتشتغل من غير نت.'}</div>
       </main>
     </>
   );

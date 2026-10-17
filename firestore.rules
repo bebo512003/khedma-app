@@ -1,0 +1,69 @@
+rules_version = '2';
+
+// مدرسة الشهيد اسطفانوس للشمامسة
+// Servants sign in with Google and must be listed under churches/{c}/servants.
+// Members sign in with code + PIN (email/password under the hood) and can read only their own published view.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /churches/{c} {
+      function doc(coll, id) { return /databases/$(database)/documents/churches/$(c)/$(coll)/$(id); }
+      function signedIn() { return request.auth != null; }
+      function google() { return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com'; }
+      function email() { return request.auth.token.email.lower(); }
+      function servant() { return google() && exists(doc('servants', request.auth.uid)); }
+      function me() { return get(doc('servants', request.auth.uid)).data; }
+      function lead() { return servant() && me().role == 'lead'; }
+      function canLevel(l) { return me().levelIds.hasAny(['*', l]); }
+
+      allow get: if signedIn();
+      // The first servant starts the church and becomes its owner.
+      allow create: if google() && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['name', 'ownerUid', 'createdAt']);
+      allow update: if lead();
+
+      match /servants/{uid} {
+        allow read: if servant() || (signedIn() && request.auth.uid == uid);
+        allow create: if lead() || (google() && request.auth.uid == uid && (
+          (get(/databases/$(database)/documents/churches/$(c)).data.ownerUid == uid && request.resource.data.role == 'lead')
+          || (exists(doc('invites', email()))
+              && request.resource.data.role == get(doc('invites', email())).data.role
+              && request.resource.data.levelIds == get(doc('invites', email())).data.levelIds)));
+        allow update, delete: if lead();
+      }
+
+      match /invites/{inviteEmail} {
+        allow get: if servant() || (google() && email() == inviteEmail);
+        allow list: if servant();
+        allow create, update: if lead();
+        allow delete: if lead() || (google() && email() == inviteEmail);
+      }
+
+      // code → how many times the PIN was reset; needed before sign-in, holds nothing private.
+      match /logins/{code} {
+        allow get: if true;
+        allow write: if servant();
+      }
+
+      match /accounts/{uid} {
+        allow get: if (signedIn() && request.auth.uid == uid) || servant();
+        allow list, write: if servant();
+      }
+
+      match /memberViews/{memberId} {
+        allow get: if servant() || (signedIn() && get(doc('accounts', request.auth.uid)).data.memberId == memberId);
+        allow list, write: if servant();
+      }
+
+      // A servant can record sessions only for the levels the lead gave them.
+      match /sessions/{id} {
+        allow read: if servant();
+        allow create, update: if servant() && canLevel(request.resource.data.levelId);
+        allow delete: if servant() && canLevel(resource.data.levelId);
+      }
+
+      match /{coll}/{id} {
+        allow read, write: if servant() && coll in ['levels', 'hymns', 'terms', 'members', 'meta', 'progress'];
+      }
+    }
+  }
+}

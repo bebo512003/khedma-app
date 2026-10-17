@@ -1,31 +1,33 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useData } from '../data/store';
-import { hashPin } from '../data/logic';
-import { useMember } from './session';
+import { Link, useNavigate } from 'react-router-dom';
+import { useStore } from '../data/store';
+import { cloudEnabled } from '../firebase/config';
+import { memberLogin } from './session';
 import logo from '../logo.png';
 
-/** Example members have no PIN yet, so 1234 lets anyone try the member app with them. */
-const EXAMPLE_PIN = '1234';
-
 export default function Login() {
-  const [data] = useData();
-  const { member, signIn } = useMember();
+  const { data } = useStore();
   const nav = useNavigate();
   const [code, setCode] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-  if (member) return <Navigate to="/me/home" replace />;
+  const [busy, setBusy] = useState(false);
 
   const press = async (k: string) => {
+    if (busy) return;
     setError('');
     const next = k === '⌫' ? pin.slice(0, -1) : (pin + k).slice(0, 4);
     setPin(next);
     if (next.length < 4) return;
-    const m = data.members.find(x => x.code === code.trim().padStart(4, '0'));
-    const ok = m && (m.pinHash ? (await hashPin(m.id, next)) === m.pinHash : m.example && next === EXAMPLE_PIN);
-    if (!m || !ok) { setError('الكود أو الرقم السري مش مظبوط.'); setPin(''); return; }
-    signIn(m.id); nav('/me/home', { replace: true });
+    setBusy(true);
+    try {
+      const id = await memberLogin(code.trim().padStart(4, '0'), next, data);
+      if (id) { nav('/me/home', { replace: true }); return; }
+      setError('الكود أو الرقم السري مش مظبوط.');
+    } catch {
+      setError(navigator.onLine ? 'حصلت مشكلة، جرّب تاني.' : 'أول مرة تدخل لازم يكون معاك نت.');
+    }
+    setPin(''); setBusy(false);
   };
 
   return (
@@ -40,10 +42,10 @@ export default function Login() {
       {error && <div className="alert-t" role="alert">{error}</div>}
       <div className="keypad">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0'].map(k =>
-          <button key={k} onClick={() => press(k)} disabled={!code && k !== '⌫'} aria-label={k === '⌫' ? 'امسح' : k}>{k}</button>)}
+          <button key={k} onClick={() => press(k)} disabled={busy || (!code && k !== '⌫')} aria-label={k === '⌫' ? 'امسح' : k}>{k}</button>)}
       </div>
       <div className="muted" style={{ textAlign: 'center' }}>مش فاكره؟ اسأل الخادم بتاعك يعملك واحد جديد.
-        {data.members.some(m => m.example) && <><br />للتجربة: الكود 0001 والرقم 1234</>}</div>
+        {!cloudEnabled && data?.members.some(m => m.example) && <><br />للتجربة: الكود 0001 والرقم 1234</>}</div>
       <Link to="/" className="muted">رجوع لتطبيق الخادم</Link>
     </main>
   );
