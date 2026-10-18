@@ -2,14 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData, useStore } from '../data/store';
 import { RANKS, type Gender, type Member } from '../data/types';
-import { contact, hashPin, newPin, todayISO, uid, waLink } from '../data/logic';
-
-const GRADES = [
-  'أولى ابتدائي', 'تانية ابتدائي', 'تالتة ابتدائي', 'رابعة ابتدائي', 'خامسة ابتدائي', 'سادسة ابتدائي',
-  'أولى إعدادي', 'تانية إعدادي', 'تالتة إعدادي', 'أولى ثانوي', 'تانية ثانوي', 'تالتة ثانوي', 'جامعة', 'خريج',
-];
-/** Default level from school grade: grades 1-2 → ابتدائي 1, 3-6 → ابتدائي 2, prep and up → شباب. */
-const levelForGrade = (g: string) => { const i = GRADES.indexOf(g); return i < 2 ? 'l1' : i < 6 ? 'l2' : 'l3'; };
+import { GRADES, contact, hashPin, levelForGrade, newPin, todayISO, uid, waLink } from '../data/logic';
 
 /** Shrinks a photo to a 256px square JPEG (~15KB) so it can live inside the member record. */
 function shrink(file: File): Promise<string> {

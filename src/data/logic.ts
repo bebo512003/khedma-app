@@ -129,3 +129,10 @@ export function contact(m: Member): { phone?: string; who: 'self' | 'parent' | n
   if (waNumber(m.parentPhone)) return { phone: m.parentPhone, who: 'parent' };
   return { who: null };
 }
+
+export const GRADES = [
+  'أولى ابتدائي', 'تانية ابتدائي', 'تالتة ابتدائي', 'رابعة ابتدائي', 'خامسة ابتدائي', 'سادسة ابتدائي',
+  'أولى إعدادي', 'تانية إعدادي', 'تالتة إعدادي', 'أولى ثانوي', 'تانية ثانوي', 'تالتة ثانوي', 'جامعة', 'خريج',
+];
+/** Default level from school grade: grades 1-2 → ابتدائي 1, 3-6 → ابتدائي 2, prep and up → شباب. */
+export const levelForGrade = (g: string) => { const i = GRADES.indexOf(g); return i < 2 ? 'l1' : i < 6 ? 'l2' : 'l3'; };

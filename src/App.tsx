@@ -7,6 +7,7 @@ import Summary from './screens/Summary';
 import FollowUp from './screens/FollowUp';
 import Members from './screens/Members';
 import MemberForm from './screens/MemberForm';
+import ImportMembers from './screens/ImportMembers';
 import Library from './screens/Library';
 import HymnForm from './screens/HymnForm';
 import Curriculum from './screens/Curriculum';
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/followup" element={s(<FollowUp />)} />
           <Route path="/members" element={s(<Members />)} />
           <Route path="/members/new" element={s(<MemberForm />)} />
+          <Route path="/members/import" element={s(<ImportMembers />)} />
           <Route path="/members/:memberId" element={s(<MemberForm />)} />
           <Route path="/library" element={s(<Library />)} />
           <Route path="/hymns/new" element={s(<HymnForm />)} />

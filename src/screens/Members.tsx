@@ -19,8 +19,9 @@ export default function Members() {
       <header className="top gutter">
         <div className="row between">
           <div className="row"><Link to="/" className="icon" aria-label="رجوع">→</Link><div><h1>المخدومين</h1><div className="muted">{data.members.length} مخدوم</div></div></div>
-          <div className="row" style={{ gap: 6 }}><Link to={`/cards${level !== 'all' ? `?level=${level}` : ''}`} className="btn" style={{ minHeight: 44 }}>كروت QR</Link><Link to="/members/new" className="btnp" style={{ minHeight: 44 }}>+ مخدوم</Link></div>
+          <Link to="/members/new" className="btnp" style={{ minHeight: 44 }}>+ مخدوم</Link>
         </div>
+        <div className="row" style={{ gap: 6 }}><Link to={`/cards${level !== 'all' ? `?level=${level}` : ''}`} className="btn grow" style={{ minHeight: 40 }}>كروت QR</Link><Link to="/members/import" className="btn grow" style={{ minHeight: 40 }}>إضافة من Excel</Link></div>
         <input id="search" className="input" placeholder="دوّر بالاسم أو الكود" value={q} onChange={e => setQ(e.target.value)} />
         <div className="chips">
           <button className="chip" aria-pressed={level === 'all'} onClick={() => setLevel('all')}>الكل</button>
