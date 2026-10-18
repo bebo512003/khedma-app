@@ -5,6 +5,7 @@ import { applyTheme, loadTheme } from '../theme';
 import { useState } from 'react';
 import logo from '../logo.png';
 import Birthdays from './Birthdays';
+import CopticToday from './CopticToday';
 
 export default function Home() {
   const [data] = useData();
@@ -39,6 +40,7 @@ export default function Home() {
         </div>
       </header>
       <main className="main gutter wide dash">
+        <CopticToday />
         <div className="card">
           <h2>ابدأ حصة</h2>
           <div className="list">

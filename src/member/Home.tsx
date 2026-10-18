@@ -3,6 +3,7 @@ import { formatDay, isoDate, nextFriday, POINTS } from '../data/logic';
 import { STATUS_LABELS } from '../data/types';
 import { useView } from './Layout';
 import { memberLogout } from './session';
+import CopticToday from '../screens/CopticToday';
 
 export default function MemberHome() {
   const v = useView();
@@ -29,6 +30,8 @@ export default function MemberHome() {
           {v.place > 1 && v.gap > 0 && <div style={{ color: 'var(--gold)' }}>{v.gap} نقط وتبقى الأول</div>}
           {v.place === 1 && v.points > 0 && <div style={{ color: 'var(--gold)' }}>أنت الأول الشهر ده، حافظ عليها</div>}
         </Link>
+
+        <CopticToday plain />
 
         {goal && (
           <div className="card">
