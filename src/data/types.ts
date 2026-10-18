@@ -56,6 +56,26 @@ export interface Hymn {
   notes?: string;
 }
 
+/** A hymn's place in a book: the pages it spans. */
+export interface BookEntry {
+  hymnId: string;
+  from?: number;
+  to?: number;
+}
+
+/** The school's booklet for a level and term; its index is where the curriculum comes from. */
+export interface Book {
+  id: string;
+  title: string;
+  levelId?: string;
+  termId?: string;
+  pdfUrl?: string;
+  /** Page images hosted with the app, e.g. 'books/nativity-shabab/' holding 01.webp, 02.webp… */
+  pagesBase?: string;
+  pageCount?: number;
+  entries: BookEntry[];
+}
+
 export interface Term {
   id: string;
   name: string;
@@ -88,6 +108,7 @@ export interface AppData {
   levels: Level[];
   members: Member[];
   hymns: Hymn[];
+  books: Book[];
   terms: Term[];
   /** key: `${termId}:${levelId}` → ordered hymn ids */
   curricula: Record<string, string[]>;

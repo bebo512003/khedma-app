@@ -47,6 +47,7 @@ export function seedData(): AppData {
     levels: LEVELS,
     members,
     hymns: HYMNS,
+    books: [],
     terms: [{ id: 't1', name: 'أكتوبر – ديسمبر 2026', start: '2026-10-01', end: '2026-12-31' }],
     curricula: { 't1:l2': ['h1', 'h2'], 't1:l1': ['h3'], 't1:l3': ['h1', 'h2', 'h3'] },
     progress: { ex1: { h1: 2, h2: 3 }, ex2: { h1: 1, h2: 2 }, ex10: { h1: 3, h2: 3 } },

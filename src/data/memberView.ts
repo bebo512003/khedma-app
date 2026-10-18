@@ -1,5 +1,6 @@
 import type { AppData, Hymn, HymnStatus, Rating } from './types';
 import { currentTerm, curriculumKey, monthBreakdown, ranking, sessionAverage, todayISO } from './logic';
+import { bookOf, entryPages, pagesLabel } from './books';
 
 /**
  * Everything the member app shows, computed by a servant's device and published per member.
@@ -18,7 +19,7 @@ export interface MemberView {
   gap: number;
   breakdown: ReturnType<typeof monthBreakdown>;
   top: { id: string; name: string; photo?: string; points: number; place: number }[];
-  hymns: (Hymn & { status: HymnStatus; levels: string[] })[];
+  hymns: (Hymn & { status: HymnStatus; levels: string[]; book?: { title: string; label: string; pages: string[] } })[];
   ratings: { id: string; date: string; r: Rating; avg: number; memorized: number; solo: number; note?: string }[];
   attendanceRate: number | null;
 }
@@ -39,6 +40,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
     .filter((h): h is Hymn => !!h)
     .map(h => ({
       ...h,
+      book: (b => b && { title: b.book.title, label: pagesLabel(b.entry), pages: entryPages(b.book, b.entry) })(bookOf(data, h.id, term?.id)),
       status: (data.progress[m.id]?.[h.id] ?? 0) as HymnStatus,
       levels: data.levels.filter(l => (data.curricula[curriculumKey(term?.id, l.id)] ?? []).includes(h.id)).map(l => l.name),
     }));

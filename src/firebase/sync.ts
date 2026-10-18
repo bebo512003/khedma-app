@@ -4,11 +4,11 @@ import { buildMemberView } from '../data/memberView';
 import { col, ref } from './paths';
 
 /** Collections that hold one document per item, keyed by the item's id. */
-const LISTS = ['levels', 'hymns', 'terms', 'members', 'sessions'] as const;
+const LISTS = ['levels', 'hymns', 'books', 'terms', 'members', 'sessions'] as const;
 type ListKey = typeof LISTS[number];
 
 const empty = (): AppData => ({
-  version: 1, levels: [], members: [], hymns: [], terms: [], curricula: {}, progress: {}, sessions: [],
+  version: 1, levels: [], members: [], hymns: [], books: [], terms: [], curricula: {}, progress: {}, sessions: [],
   templates: { absence: '' }, nextCode: 1,
 });
 

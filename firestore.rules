@@ -62,7 +62,7 @@ service cloud.firestore {
       }
 
       match /{coll}/{id} {
-        allow read, write: if servant() && coll in ['levels', 'hymns', 'terms', 'members', 'meta', 'progress'];
+        allow read, write: if servant() && coll in ['levels', 'hymns', 'books', 'terms', 'members', 'meta', 'progress'];
       }
     }
   }

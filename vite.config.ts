@@ -13,6 +13,8 @@ export default defineConfig({
         runtimeCaching: [
           { urlPattern: /\/dict\/.*\.json/, handler: 'CacheFirst', options: { cacheName: 'dictionary' } },
           { urlPattern: /\/packs\/.*\.json/, handler: 'StaleWhileRevalidate', options: { cacheName: 'packs' } },
+          // Booklet pages are cached as they're opened, so a hymn's hazzat work offline after the first look.
+          { urlPattern: /\/books\/.*\.webp/, handler: 'CacheFirst', options: { cacheName: 'books', expiration: { maxEntries: 400 } } },
         ] },
       manifest: {
         name: 'St. Stephan SCH',

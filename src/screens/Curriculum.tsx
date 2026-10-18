@@ -1,33 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../data/store';
 import { currentTerm, curriculumKey, uid } from '../data/logic';
-import { norm } from '../data/importSheet';
-import { PACKS, applyPack, loadPack, type Pack } from '../data/packs';
+import { booksFor, pageUrl } from '../data/books';
+import PackCard from './PackCard';
 import type { Term } from '../data/types';
-
-/** Offers a ready set of hymns (with text and audio) for this level and term. */
-function PackCard({ id, termId, levelId }: { id: string; termId: string; levelId: string }) {
-  const [data, update] = useData();
-  const [pack, setPack] = useState<Pack | null>(null);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => { loadPack(id).then(setPack).catch(() => setFailed(true)); }, [id]);
-  if (failed || !pack) return null;
-  const inCurriculum = new Set((data.curricula[curriculumKey(termId, levelId)] ?? []).map(h => norm(data.hymns.find(x => x.id === h)?.nameAr ?? '')));
-  const missing = pack.hymns.filter(h => !inCurriculum.has(norm(h.nameAr)));
-  if (missing.length === 0) return null;
-  return (
-    <div className="card">
-      <h2>{pack.title} جاهزة</h2>
-      <div className="muted">{pack.hymns.length} لحن من ملف المدرسة، بالنص القبطي والمعرّب والمعنى ولينك التسجيل.</div>
-      <details><summary className="muted">الألحان</summary><ol className="muted" style={{ margin: '6px 0 0', paddingInlineStart: 20 }}>{pack.hymns.map(h => <li key={h.nameAr}>{h.nameAr}</li>)}</ol></details>
-      {termId
-        ? <button className="btnp" onClick={() => update(d => applyPack(d, pack, termId, levelId))}>ضيف {missing.length === pack.hymns.length ? `الـ ${missing.length} لحن` : `الـ ${missing.length} الناقصين`} للمكتبة والمنهج</button>
-        : <div className="note">اعمل ترم الأول من "+ ترم جديد" فوق.</div>}
-      <div className="note">{pack.source}</div>
-    </div>
-  );
-}
 
 export default function Curriculum() {
   const [data, update] = useData();
@@ -41,6 +18,7 @@ export default function Curriculum() {
   const [q, setQ] = useState('');
 
   const key = curriculumKey(termId, levelId);
+  const books = booksFor(data, termId, levelId).filter(b => b.termId && b.levelId);
   const ids = data.curricula[key] ?? [];
   const hymn = (id: string) => data.hymns.find(h => h.id === id);
   const setIds = (next: string[]) => update(d => ({ ...d, curricula: { ...d.curricula, [key]: next } }));
@@ -63,7 +41,7 @@ export default function Curriculum() {
       <header className="top gutter">
         <div className="row between">
           <div className="row"><Link to="/library" className="icon" aria-label="رجوع">→</Link><h1>المنهج</h1></div>
-          <Link to="/levels" className="btn" style={{ minHeight: 40 }}>المستويات</Link>
+          <div className="row" style={{ gap: 6 }}><Link to="/books" className="btn" style={{ minHeight: 40 }}>الكتب</Link><Link to="/levels" className="btn" style={{ minHeight: 40 }}>المستويات</Link></div>
         </div>
         <div className="chips">
           {terms.map(t => <button key={t.id} className="chip" aria-pressed={termId === t.id} onClick={() => setTermId(t.id)}>{t.name}</button>)}
@@ -90,6 +68,13 @@ export default function Curriculum() {
           </div>
         )}
 
+        {books.map(b => (
+          <Link key={b.id} to={`/books/${b.id}`} className="card book-li">
+            {b.pagesBase && b.pageCount ? <img src={pageUrl(b, 2)} alt="" loading="lazy" /> : <div className="book-cover">📖</div>}
+            <div className="grow"><span className="muted">كتاب الترم</span><b>{b.title}</b><div className="muted">{b.entries.length} لحن • الترتيب والصفحات من فهرسه</div></div>
+          </Link>
+        ))}
+
         <div className="card">
           <div className="row between"><h2>ألحان الترم</h2><span className="muted">{ids.length} ألحان</span></div>
           <div className="list">
@@ -108,7 +93,7 @@ export default function Curriculum() {
           {!adding && <button className="btn" onClick={() => setAdding(true)}>أضف لحن من المكتبة</button>}
         </div>
 
-        {PACKS.filter(p => p.levelId === levelId).map(p => <PackCard key={p.id} id={p.id} termId={termId} levelId={levelId} />)}
+        <PackCard termId={termId} levelId={levelId} />
 
         {adding && (
           <div className="card">

@@ -3,6 +3,7 @@ import { POINTS } from '../data/logic';
 import { STATUS_LABELS } from '../data/types';
 import { useView } from './Layout';
 import HymnText from '../screens/HymnText';
+import BookPages from '../screens/BookPages';
 
 export default function MemberHymn() {
   const { hymnId } = useParams();
@@ -31,6 +32,7 @@ export default function MemberHymn() {
         </div>
 
         <HymnText hymn={h} dictLink="/me/dictionary" />
+        <BookPages book={h.book} />
 
         <div className="card">
           <h2>مكانه في الطقس</h2>

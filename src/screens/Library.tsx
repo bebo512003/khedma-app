@@ -19,7 +19,7 @@ export default function Library() {
       <header className="top gutter">
         <div className="row between">
           <div className="row"><Link to="/" className="icon" aria-label="رجوع">→</Link><h1>مكتبة الألحان</h1></div>
-          <Link to="/curriculum" className="btn" style={{ minHeight: 40 }}>المنهج</Link>
+          <div className="row" style={{ gap: 6 }}><Link to="/books" className="btn" style={{ minHeight: 40 }}>الكتب</Link><Link to="/curriculum" className="btn" style={{ minHeight: 40 }}>المنهج</Link></div>
         </div>
         <input className="input" type="search" placeholder="دوّر على لحن" value={q} onChange={e => setQ(e.target.value)} aria-label="بحث" />
         {prayers.length > 1 && (

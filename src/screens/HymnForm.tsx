@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../data/store';
-import { uid } from '../data/logic';
+import { bookOf, entryPages, pagesLabel } from '../data/books';
+import BookPages from './BookPages';
+import { currentTerm, uid } from '../data/logic';
 import type { Hymn } from '../data/types';
 import HymnText, { looksLikeLegacyFont } from './HymnText';
 
@@ -15,6 +17,7 @@ export default function HymnForm() {
   const [data, update] = useData();
   const nav = useNavigate();
   const existing = data.hymns.find(h => h.id === hymnId);
+  const inBook = existing && bookOf(data, existing.id, currentTerm(data)?.id);
   const [h, setH] = useState<Hymn>(existing ?? { id: uid(), nameAr: '' });
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -62,6 +65,7 @@ export default function HymnForm() {
         <Link to="/library" className="icon" aria-label="رجوع">→</Link><h1>{existing ? h.nameAr : 'لحن جديد'}</h1>
       </div></header>
       <main className="main gutter">
+        {inBook && <Link to={`/books/${inBook.book.id}`} className="note" style={{ textDecoration: 'none' }}>📖 في كتاب {inBook.book.title}{inBook.entry.from ? ` • ${pagesLabel(inBook.entry)}` : ''}</Link>}
         {text('nameAr', 'اسم اللحن', 'مثلاً: أسبسمس آدام')}
         {text('nameCoptic', 'الاسم القبطي (اختياري)')}
         <div className="field"><span>بيتقال في</span>
@@ -83,6 +87,7 @@ export default function HymnForm() {
         {area('meaning', 'المعنى بالعربي')}
         {new Set(counts).size > 1 && <div className="note">عدد السطور مش متساوي في الخانات ({counts.join(' / ')}). اتأكد إن كل سطر قصاده سطره.</div>}
         {counts.length > 0 && <HymnText hymn={h} dictLink="/dictionary" />}
+        {inBook && <BookPages book={{ title: inBook.book.title, label: pagesLabel(inBook.entry), pages: entryPages(inBook.book, inBook.entry) }} />}
         {error && <div className="alert-t" role="alert">{error}</div>}
         {existing && (confirmDelete
           ? <div className="card alert"><b>تمسح {h.nameAr} من المكتبة والمنهج؟</b><div className="row"><button className="btn grow" onClick={() => setConfirmDelete(false)}>لا</button><button className="btnp grow" onClick={remove}>امسح</button></div></div>

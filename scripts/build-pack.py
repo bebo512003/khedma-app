@@ -35,6 +35,11 @@ PACKS = {
     'nativity-shabab': {
         'title': 'ألحان عيد الميلاد',
         'levelId': 'l3',
+        'book': {'title': 'ألحان عيد الميلاد المجيد (الهزات) - شباب', 'pagesBase': 'books/nativity-shabab/', 'pageCount': 33},
+        # Booklet pages per hymn (page images are public/books/<pack>/NN.webp, rendered from the PDF).
+        'pages': {'nakous': (2, 7), 'seven-ways': (8, 19), 'doxology': (20, 21), 'baker-end': (22, 22), 'abouro': (23, 23),
+                  'hitenyat': (24, 25), 'katholikon': (26, 27), 'praxis': (27, 27), 'iparthenos': (27, 27), 'piginmici': (28, 28),
+                  'mohaier': (28, 28), 'agios': (29, 29), 'psalm-response': (29, 29), 'gospel-response': (30, 30), 'psalm150': (31, 32)},
         'source': 'منقولة من ملف "ألحان الميلاد - شباب" بتاع المدرسة. النصوص ولينكات التسجيلات أصلها من مكتبة ألحان كنيسة مارجرجس بنزلة السمان.',
         # file, prayer, when, audio (from the booklet's QR codes)
         'hymns': [
@@ -81,10 +86,11 @@ def main(name):
             out['audioUrl'] = audio
         if h.get('note'):
             out['notes'] = h['note'].strip()
+        out['from'], out['to'] = meta['pages'][file]
         for key, field in (('coptic', 'copticText'), ('arabicCoptic', 'arabicCoptic'), ('meaning', 'meaning')):
             out[field] = column(h['verses'], key)
         hymns.append(out)
-    pack = {'id': name, 'title': meta['title'], 'levelId': meta['levelId'], 'source': meta['source'], 'hymns': hymns}
+    pack = {'id': name, 'title': meta['title'], 'levelId': meta['levelId'], 'source': meta['source'], 'book': meta['book'], 'hymns': hymns}
     dest = ROOT / 'public' / 'packs' / f'{name}.json'
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps(pack, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
