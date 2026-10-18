@@ -1,0 +1,74 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import '@fontsource/noto-sans-coptic/coptic-400.css';
+import { display, loadDictionary, scriptOf, search, type Hit } from '../data/dictionary';
+import type { Hymn } from '../data/types';
+
+const lines = (s?: string) => (s ?? '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+/** Text pasted from Word in an old Coptic font comes out as Latin letters. */
+export const looksLikeLegacyFont = (s?: string) => !!s && !/[Ⲁ-⳿Ϣ-ϯ]/.test(s) && /[a-z]{3}/i.test(s);
+
+type Col = 'cop' | 'arCop' | 'ar';
+const COLS: [Col, string][] = [['cop', 'قبطي'], ['arCop', 'قبطي معرّب'], ['ar', 'المعنى']];
+
+/** Hymn text verse by verse; tapping a Coptic word looks it up in the dictionary. */
+export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: string }) {
+  const rows = { cop: lines(hymn.copticText), arCop: lines(hymn.arabicCoptic), ar: lines(hymn.meaning) };
+  const present = COLS.filter(([c]) => rows[c].length > 0);
+  const [shown, setShown] = useState<Col[]>(present.map(([c]) => c));
+  const [word, setWord] = useState<{ text: string; hits: Hit[] | null; failed?: boolean } | null>(null);
+  if (present.length === 0) return null;
+  const n = Math.max(...present.map(([c]) => rows[c].length));
+  const legacy = looksLikeLegacyFont(hymn.copticText);
+
+  const lookUp = async (w: string) => {
+    setWord({ text: w, hits: null });
+    try {
+      const d = await loadDictionary();
+      setWord({ text: w, hits: search(d.entries, w, 4).hits });
+    } catch { setWord({ text: w, hits: null, failed: true }); }
+  };
+  const toggle = (c: Col) => setShown(s => s.includes(c) ? (s.length > 1 ? s.filter(x => x !== c) : s) : [...s, c]);
+
+  return (
+    <div className="card hymn-text">
+      <div className="row between" style={{ flexWrap: 'wrap', gap: 8 }}>
+        <h2>نص اللحن</h2>
+        {present.length > 1 && <div className="chips" style={{ margin: 0 }}>{present.map(([c, label]) =>
+          <button key={c} className="chip" aria-pressed={shown.includes(c)} onClick={() => toggle(c)}>{label}</button>)}</div>}
+      </div>
+      {rows.cop.length > 0 && !legacy && <div className="muted" style={{ fontSize: 12 }}>دوس على أي كلمة قبطي تعرف معناها.</div>}
+      <ol className="verses">
+        {Array.from({ length: n }, (_, i) => (
+          <li key={i}>
+            {shown.includes('cop') && rows.cop[i] && <div className="cop coptic-font" dir="ltr">
+              {legacy ? rows.cop[i] : display(rows.cop[i]).split(/(\s+)/).map((w, j) => /\s/.test(w) || scriptOf(w) !== 'coptic'
+                ? <span key={j}>{w}</span>
+                : <button key={j} className="cw" onClick={() => lookUp(w)}>{w}</button>)}
+            </div>}
+            {shown.includes('arCop') && rows.arCop[i] && <div className="arcop">{rows.arCop[i]}</div>}
+            {shown.includes('ar') && rows.ar[i] && <div className="ar">{rows.ar[i]}</div>}
+          </li>
+        ))}
+      </ol>
+
+      {word && <div className="backdrop" onClick={() => setWord(null)} />}
+      {word && (
+        <div className="sheet coptic-font" role="dialog" aria-label={`معنى ${word.text}`}>
+          <div className="row between"><b className="coptic-font" dir="ltr" style={{ fontSize: 22 }}>{word.text}</b>
+            <button className="icon" onClick={() => setWord(null)} aria-label="اقفل">✕</button></div>
+          {word.failed && <div className="note">القاموس محتاج نت أول مرة بس.</div>}
+          {!word.failed && !word.hits && <div className="muted">بيدوّر…</div>}
+          {word.hits?.length === 0 && <div className="note">الكلمة دي مش في القاموس زي ما هي. ممكن تكون متصرفة أو ملزوق فيها ضمير.</div>}
+          {word.hits?.map((h, i) => (
+            <div key={i} className="li" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+              <div><span className="coptic-font" dir="ltr" style={{ fontSize: 18 }}>{h.entry.word}</span> <b>{h.entry.meanings.slice(0, 4).join('، ')}</b></div>
+              <div className="muted" style={{ fontSize: 12 }}>{[h.entry.kind, h.entry.form].filter(Boolean).join(' • ')}{h.note ? ` • بعد ما شلنا ${h.note}` : ''}</div>
+            </div>
+          ))}
+          <Link className="btn" to={`${dictLink}?q=${encodeURIComponent(word.text)}`}>افتح في القاموس</Link>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -46,6 +46,12 @@ export interface Hymn {
   prayer?: string;
   when?: string;
   occasion?: string;
+  /** Hymn text, one line per verse; the three are matched line by line. */
+  copticText?: string;
+  /** The Coptic in Arabic letters (قبطي معرّب). */
+  arabicCoptic?: string;
+  /** Arabic meaning. */
+  meaning?: string;
 }
 
 export interface Term {

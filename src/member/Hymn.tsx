@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { POINTS } from '../data/logic';
 import { STATUS_LABELS } from '../data/types';
 import { useView } from './Layout';
+import HymnText from '../screens/HymnText';
 
 export default function MemberHymn() {
   const { hymnId } = useParams();
@@ -28,6 +29,8 @@ export default function MemberHymn() {
             <span key={l} className={`pill ${h.status >= i + 1 ? `st${i + 1}` : 'st0'}`} style={{ display: 'inline-flex', alignItems: 'center' }}>{l}{h.status === i + 1 ? ' ✓' : ''}</span>)}</div>
           <div className="note">اسمعه كل يوم وقوله مع التسجيل، والخادم هيسمعه منك في الحصة.</div>
         </div>
+
+        <HymnText hymn={h} dictLink="/me/dictionary" />
 
         <div className="card">
           <h2>مكانه في الطقس</h2>

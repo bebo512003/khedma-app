@@ -214,3 +214,16 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
 .legend span { display: inline-flex; align-items: center; gap: 4px; }
 .legend i { width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid transparent; }
 .legend i.st0 { background: var(--s0); }
+
+/* Hymn text */
+.verses { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.verses li { padding: 10px 0; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.verses li:last-child { border-bottom: 0; }
+.verses .cop { font-size: 20px; line-height: 1.6; text-align: left; }
+.verses .arcop { color: var(--muted); }
+.verses .ar { font-weight: 600; }
+.cw { font: inherit; color: inherit; background: none; border: 0; padding: 0 1px; border-bottom: 1.5px dotted var(--muted); cursor: pointer; }
+.cw:hover, .cw:focus-visible { background: var(--s1); border-radius: 4px; }
+.sheet { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; max-height: 60vh; overflow: auto; background: var(--surface); border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,.18); padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 8px; }
+@media (min-width: 900px) { .sheet { left: auto; right: 24px; bottom: 24px; width: 420px; border-radius: 16px; border: 1px solid var(--line); } }
+.backdrop { position: fixed; inset: 0; z-index: 19; background: rgba(0,0,0,.25); }

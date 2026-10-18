@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { COPTIC_KEYS, loadDictionary, search, scriptOf, type Hit } from '../data/dictionary';
 import { count } from '../data/logic';
@@ -10,7 +10,8 @@ type Dict = Awaited<ReturnType<typeof loadDictionary>>;
 export default function Dictionary({ back = '/' }: { back?: string }) {
   const [dict, setDict] = useState<Dict | null>(null);
   const [failed, setFailed] = useState(false);
-  const [q, setQ] = useState('');
+  const [params] = useSearchParams();
+  const [q, setQ] = useState(params.get('q') ?? '');
   const [keyboard, setKeyboard] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
@@ -37,7 +38,7 @@ export default function Dictionary({ back = '/' }: { back?: string }) {
           </div>
         )}
       </header>
-      <main className="main gutter wide">
+      <main className="main gutter wide coptic-font">
         {failed && <div className="card alert"><div className="alert-t">القاموس ما اتحملش</div><div className="note">أول مرة بيحتاج نت عشان يتحمل، وبعدها بيشتغل من غير نت.</div></div>}
         {!q.trim() && dict && (
           <div className="card">

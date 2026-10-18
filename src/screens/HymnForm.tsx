@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../data/store';
 import { uid } from '../data/logic';
 import type { Hymn } from '../data/types';
+import HymnText, { looksLikeLegacyFont } from './HymnText';
 
 const PRAYERS = ['القداس', 'التسبحة', 'رفع البخور', 'الأجبية', 'الدورات', 'المناسبات'];
 
@@ -49,6 +50,12 @@ export default function HymnForm() {
       </div></label>
   );
 
+  const area = (key: 'copticText' | 'arabicCoptic' | 'meaning', label: string, coptic = false) => (
+    <label className="field" htmlFor={key}><span>{label} <span className="muted">({(h[key] ?? '').split(/\r?\n/).filter(l => l.trim()).length} سطر)</span></span>
+      <textarea id={key} className={coptic ? 'coptic-font' : undefined} dir={coptic ? 'ltr' : 'rtl'} value={h[key] ?? ''} onChange={e => set({ [key]: e.target.value })} /></label>
+  );
+  const counts = (['copticText', 'arabicCoptic', 'meaning'] as const).map(k => (h[k] ?? '').split(/\r?\n/).filter(l => l.trim()).length).filter(Boolean);
+
   return (
     <>
       <header className="top gutter"><div className="row">
@@ -66,6 +73,14 @@ export default function HymnForm() {
         {link('pdfUrl', 'لينك الـ PDF على Google Drive')}
         {link('audioUrl', 'لينك التسجيل الصوتي')}
         <div className="note">الملفات بتفضل على الـ Drive بتاعكم، والتطبيق بيحفظ اللينك بس. خلي الملف متاح لأي حد معاه اللينك.</div>
+        <h2>نص اللحن (اختياري)</h2>
+        <div className="note">الزق كل جزء في خانته، كل ربع أو جملة في سطر لوحده، وبنفس الترتيب في التلات خانات عشان السطور تتقابل. الضغط على أي كلمة قبطي في النص بيفتح معناها من القاموس.</div>
+        {area('copticText', 'النص القبطي', true)}
+        {looksLikeLegacyFont(h.copticText) && <div className="alert-t" role="alert">النص القبطي ده طالع حروف إنجليزي، يعني متكتب بخط قبطي قديم في Word. ابعتلنا ملف Word منه عشان نضيف تحويل تلقائي، أو انسخه من مصدر مكتوب بيونيكود.</div>}
+        {area('arabicCoptic', 'القبطي معرّب')}
+        {area('meaning', 'المعنى بالعربي')}
+        {new Set(counts).size > 1 && <div className="note">عدد السطور مش متساوي في الخانات ({counts.join(' / ')}). اتأكد إن كل سطر قصاده سطره.</div>}
+        {counts.length > 0 && <HymnText hymn={h} dictLink="/dictionary" />}
         {error && <div className="alert-t" role="alert">{error}</div>}
         {existing && (confirmDelete
           ? <div className="card alert"><b>تمسح {h.nameAr} من المكتبة والمنهج؟</b><div className="row"><button className="btn grow" onClick={() => setConfirmDelete(false)}>لا</button><button className="btnp grow" onClick={remove}>امسح</button></div></div>
