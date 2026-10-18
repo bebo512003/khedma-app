@@ -75,6 +75,7 @@ export default function Home() {
         )}
 
         <div className="row mobile-only"><Link to="/members" className="btn grow">المخدومين</Link><Link to="/library" className="btn grow">مكتبة الألحان</Link></div>
+        <Link to="/dictionary" className="btn mobile-only">القاموس القبطي</Link>
         {cloud
           ? <div className="row mobile-only">{servant?.role === 'lead' && <Link to="/team" className="btn grow">الفريق</Link>}<button className="btn grow" onClick={signOut}>خروج</button></div>
           : <Link to="/me" className="btn">جرّب تطبيق المخدوم</Link>}

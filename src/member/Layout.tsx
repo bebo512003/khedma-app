@@ -24,6 +24,7 @@ export default function MemberLayout() {
         <NavLink to="/me/home">الرئيسية</NavLink>
         <NavLink to="/me/ratings">تقييماتي</NavLink>
         <NavLink to="/me/rank">الترتيب</NavLink>
+        <NavLink to="/me/dictionary">القاموس</NavLink>
       </div></nav>
     </ViewCtx.Provider>
   );

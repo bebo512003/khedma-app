@@ -194,3 +194,12 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
   .hero.coptic { display: grid; grid-template-columns: auto 1fr minmax(0, 340px); align-items: center; gap: 28px; }
   .hero.coptic .cnext { border-inline-start: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); padding-inline-start: 20px; }
 }
+
+/* Coptic dictionary */
+.coptic-font { font-family: 'Noto Sans Coptic', var(--font); }
+.cword { font-size: 22px; }
+.ckeys { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.ckeys button { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 20px; font-family: inherit; }
+.ckeys button:active { background: var(--s1); }
+.ckeys .wide { grid-column: span 4; font-size: 15px; font-family: var(--font); }
+@media (min-width: 900px) { .ckeys { grid-template-columns: repeat(16, 1fr); } .ckeys .wide { grid-column: span 8; } }
