@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../data/store';
 import logo from '../logo.png';
+import DeskNav from './DeskNav';
 
 /** In cloud mode, servant screens open only for signed-in servants of this church. */
 export default function Gate({ children }: { children: ReactNode }) {
@@ -14,7 +15,7 @@ export default function Gate({ children }: { children: ReactNode }) {
     setBusy(false);
   };
 
-  if (phase === 'ready' && data) return <>{children}</>;
+  if (phase === 'ready' && data) return <><DeskNav />{children}</>;
 
   const body = (() => {
     if (phase === 'loading' || phase === 'ready') return <div className="muted">بيحمّل…</div>;

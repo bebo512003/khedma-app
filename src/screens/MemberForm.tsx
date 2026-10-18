@@ -2,7 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData, useStore } from '../data/store';
 import { RANKS, type Gender, type Member } from '../data/types';
-import { hashPin, newPin, todayISO, uid, waLink } from '../data/logic';
+import { contact, hashPin, newPin, todayISO, uid, waLink } from '../data/logic';
 
 const GRADES = [
   'أولى ابتدائي', 'تانية ابتدائي', 'تالتة ابتدائي', 'رابعة ابتدائي', 'خامسة ابتدائي', 'سادسة ابتدائي',
@@ -123,8 +123,12 @@ export default function MemberForm() {
           </div>
         )}
 
+        <label className="field" htmlFor="ownphone"><span>موبايل المخدوم (واتساب)</span>
+          <input id="ownphone" className="input" inputMode="tel" dir="ltr" style={{ textAlign: 'right' }} value={m.phone ?? ''} onChange={e => set({ phone: e.target.value || undefined })} placeholder="للكبار اللي معاهم موبايل" /></label>
+
         <label className="field" htmlFor="phone"><span>موبايل ولي الأمر (واتساب)</span>
-          <input id="phone" className="input" inputMode="tel" dir="ltr" style={{ textAlign: 'right' }} value={m.parentPhone ?? ''} onChange={e => set({ parentPhone: e.target.value })} placeholder="01xxxxxxxxx" /></label>
+          <input id="phone" className="input" inputMode="tel" dir="ltr" style={{ textAlign: 'right' }} value={m.parentPhone ?? ''} onChange={e => set({ parentPhone: e.target.value || undefined })} placeholder="01xxxxxxxxx" /></label>
+        <div className="note">رسايل الافتقاد وأعياد الميلاد بتروح لموبايل المخدوم لو موجود، ولو مش موجود بتروح لولي الأمر.</div>
 
         <div className="card">
           <div className="row between"><b>دخول المخدوم للتطبيق</b><span className="muted">{m.pinHash || m.account ? 'معمول له رقم سري' : 'لسه مالوش رقم سري'}</span></div>
@@ -132,8 +136,8 @@ export default function MemberForm() {
             <>
               <div className="row between"><span>الكود <b dir="ltr">{m.code}</b></span><span>الرقم السري <b dir="ltr" style={{ fontSize: 20, letterSpacing: 4 }}>{shownPin}</b></span></div>
               <div className="note">الرقم ده بيظهر مرة واحدة بس. ابعته دلوقتي أو اكتبه عندك.{existing ? '' : ' هيتحفظ لما تدوس احفظ.'}</div>
-              {m.parentPhone && <a className="btnp" target="_blank" rel="noopener noreferrer"
-                href={waLink(m.parentPhone, `بيانات دخول ${m.name || 'المخدوم'} لتطبيق مدرسة الشهيد اسطفانوس للشمامسة:\nالكود: ${m.code}\nالرقم السري: ${shownPin}`)}>ابعتهم لولي الأمر على واتساب</a>}
+              {contact(m).who && <a className="btnp" target="_blank" rel="noopener noreferrer"
+                href={waLink(contact(m).phone, `بيانات دخول ${m.name || 'المخدوم'} لتطبيق مدرسة الشهيد اسطفانوس للشمامسة:\nالكود: ${m.code}\nالرقم السري: ${shownPin}`)}>{contact(m).who === 'self' ? 'ابعتهمله على واتساب' : 'ابعتهم لولي الأمر على واتساب'}</a>}
             </>
           ) : null}
           {existing && <Link to={`/cards?member=${m.id}`} className="btn">اطبع كارت الـ QR</Link>}

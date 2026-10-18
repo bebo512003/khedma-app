@@ -26,7 +26,7 @@ export default function Home() {
 
   return (
     <>
-      <header className="top gutter">
+      <header className="top gutter mobile-only">
         <div className="row between">
           <div className="row">
             <img src={logo} alt="شعار مدرسة الشهيد اسطفانوس للشمامسة" width={48} height={48} />
@@ -38,7 +38,7 @@ export default function Home() {
           <button className="icon" onClick={toggle} aria-label={theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}>{theme === 'light' ? '☾' : '☀'}</button>
         </div>
       </header>
-      <main className="main gutter">
+      <main className="main gutter wide dash">
         <div className="card">
           <h2>ابدأ حصة</h2>
           <div className="list">
@@ -72,9 +72,9 @@ export default function Home() {
           </div>
         )}
 
-        <div className="row"><Link to="/members" className="btn grow">المخدومين</Link><Link to="/library" className="btn grow">مكتبة الألحان</Link></div>
+        <div className="row mobile-only"><Link to="/members" className="btn grow">المخدومين</Link><Link to="/library" className="btn grow">مكتبة الألحان</Link></div>
         {cloud
-          ? <div className="row">{servant?.role === 'lead' && <Link to="/team" className="btn grow">الفريق</Link>}<button className="btn grow" onClick={signOut}>خروج</button></div>
+          ? <div className="row mobile-only">{servant?.role === 'lead' && <Link to="/team" className="btn grow">الفريق</Link>}<button className="btn grow" onClick={signOut}>خروج</button></div>
           : <Link to="/me" className="btn">جرّب تطبيق المخدوم</Link>}
 
         {hasExamples && (
@@ -84,7 +84,7 @@ export default function Home() {
           </div>
         )}
         {syncError && <div className="card alert"><div className="alert-t">في مشكلة في المزامنة</div><div className="note">{syncError}</div></div>}
-        <div className="note">{cloud
+        <div className="note span">{cloud
           ? 'بيشتغل من غير نت، وأول ما النت يرجع كل حاجة بتتزامن مع باقي الخدام.'
           : 'كل حاجة بتتحفظ على الموبايل ده وبتشتغل من غير نت.'}</div>
       </main>

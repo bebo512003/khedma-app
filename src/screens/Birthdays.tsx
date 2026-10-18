@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useData } from '../data/store';
-import { birthdayWhen, DEFAULT_BIRTHDAY, yearsCount, fillTemplate, upcomingBirthdays, waLink, waNumber } from '../data/logic';
+import { birthdayWhen, contact, DEFAULT_BIRTHDAY, yearsCount, fillTemplate, upcomingBirthdays, waLink } from '../data/logic';
 
 /** Birthdays in the coming week, each with a WhatsApp greeting the servant can edit before sending. */
 export default function Birthdays({ levelIds }: { levelIds?: (id: string) => boolean }) {
@@ -23,9 +23,9 @@ export default function Birthdays({ levelIds }: { levelIds?: (id: string) => boo
         {list.map(({ member: m, daysAway, age }) => (
           <div key={m.id} className="li">
             <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
-            <div className="grow"><b>{m.name}</b><div className="muted">{birthdayWhen(daysAway)} • {m.gender === 'f' ? 'هتتم' : 'هيتم'} {yearsCount(age)}{waNumber(m.parentPhone) ? '' : ' • مفيش رقم ولي أمر'}</div></div>
+            <div className="grow"><b>{m.name}</b><div className="muted">{birthdayWhen(daysAway)} • {m.gender === 'f' ? 'هتتم' : 'هيتم'} {yearsCount(age)}{contact(m).who ? '' : ' • مفيش رقم'}</div></div>
             <a className={daysAway === 0 ? 'btnp' : 'btn'} style={{ minHeight: 44 }} target="_blank" rel="noopener noreferrer"
-              href={waLink(m.parentPhone, fillTemplate(tpl, { 'الاسم': m.name.split(' ')[0], 'السن': age, 'طيب': m.gender === 'f' ? 'طيبة' : 'طيب' }))}>هنّي</a>
+              href={waLink(contact(m).phone, fillTemplate(tpl, { 'الاسم': m.name.split(' ')[0], 'السن': age, 'طيب': m.gender === 'f' ? 'طيبة' : 'طيب' }))}>هنّي</a>
           </div>
         ))}
       </div>

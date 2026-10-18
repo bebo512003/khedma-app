@@ -122,3 +122,10 @@ export function upcomingBirthdays(members: Member[], days = 7, from = new Date()
 export const birthdayWhen = (daysAway: number) =>
   daysAway === 0 ? 'النهارده' : daysAway === 1 ? 'بكرة' : `بعد ${daysAway} أيام`;
 export const yearsCount = (n: number) => n === 1 ? 'سنة واحدة' : n === 2 ? 'سنتين' : n >= 3 && n <= 10 ? `${n} سنين` : `${n} سنة`;
+
+/** Who gets WhatsApp messages about a member: their own number if they have one, otherwise the parent's. */
+export function contact(m: Member): { phone?: string; who: 'self' | 'parent' | null } {
+  if (waNumber(m.phone)) return { phone: m.phone, who: 'self' };
+  if (waNumber(m.parentPhone)) return { phone: m.parentPhone, who: 'parent' };
+  return { who: null };
+}

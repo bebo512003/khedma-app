@@ -53,9 +53,9 @@ export default function Cards() {
         </div>
         {!one && <div className="chips">{levels.map(l =>
           <button key={l.id} className="chip" aria-pressed={levelId === l.id} onClick={() => setLevelId(l.id)}>{l.name}</button>)}</div>}
-        <div className="note">المخدوم يصوّر الـ QR بكاميرا الموبايل، يفتحله التطبيق والكود مكتوب، ويكتب الرقم السري بس. الكارت مقاس كارت البنك، و10 كروت في ورقة A4.</div>
+        <div className="note">في الحصة دوس "اسكان الكروت" ووجّه الكاميرا على كارت كل مخدوم، وهيتسجل حاضر لوحده. والمخدوم كمان يقدر يصوّره يفتحله التطبيق والكود مكتوب. الكارت مقاس كارت البنك، و10 كروت في ورقة A4.</div>
       </header>
-      <main className="main gutter cards">
+      <main className="main gutter wide cards">
         {members.map(m => <Card key={m.id} m={m} level={levelName(m.levelId)} />)}
         {members.length === 0 && <div className="note no-print">مفيش مخدومين في المستوى ده.</div>}
       </main>

@@ -27,8 +27,8 @@ export default function Members() {
           {levels.map(l => <button key={l.id} className="chip" aria-pressed={level === l.id} onClick={() => setLevel(l.id)}>{l.name}</button>)}
         </div>
       </header>
-      <main className="main gutter">
-        <div className="card" style={{ paddingBlock: 4 }}><div className="list">
+      <main className="main gutter wide">
+        <div className="card" style={{ paddingBlock: 4 }}><div className="list cols">
           {list.length === 0 && <div className="li muted">مفيش نتايج.</div>}
           {list.map(m => {
             const streak = absenceStreak(data, m);

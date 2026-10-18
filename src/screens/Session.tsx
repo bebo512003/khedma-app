@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { CRITERIA, STATUS_LABELS, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
 import { currentTerm, todayISO, uid } from '../data/logic';
+import Scanner from './Scanner';
 
 type Mode = 'att' | 'rate' | 'hym';
 const fmt = (ms: number) => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
@@ -23,6 +24,9 @@ export default function SessionScreen() {
   const [rate, setRate] = useState<Record<string, Rating>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [noteOpen, setNoteOpen] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [toast, setToast] = useState<{ text: string; bad?: boolean } | null>(null);
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 2200); return () => clearTimeout(t); }, [toast]);
   const [hym, setHym] = useState<Record<string, Record<string, HymnStatus>>>(() =>
     Object.fromEntries(members.map(m => [m.id, Object.fromEntries(hymnIds.map(h => [h, data.progress[m.id]?.[h] ?? 0]))])));
   const [start] = useState(Date.now());
@@ -32,6 +36,15 @@ export default function SessionScreen() {
   if (!level) return <main className="main gutter"><div className="card">المستوى ده مش موجود. <Link to="/">ارجع للرئيسية</Link></div></main>;
 
   const present = members.filter(m => att[m.id] === 'p');
+  const onScan = (code: string) => {
+    const m = data.members.find(x => x.code === code);
+    if (!m) { setToast({ text: `مفيش مخدوم بالكود ${code}`, bad: true }); return; }
+    if (m.levelId !== levelId) { setToast({ text: `${m.name} مش في ${level?.name}`, bad: true }); return; }
+    if (att[m.id] === 'p') { setToast({ text: `${m.name} متسجل قبل كده` }); return; }
+    setAtt(a => ({ ...a, [m.id]: 'p' }));
+    setToast({ text: `✓ ${m.name} حاضر` });
+    navigator.vibrate?.(60);
+  };
   const cycleAtt = (id: string) => setAtt(a => ({ ...a, [id]: a[id] === 'a' ? 'p' : a[id] === 'p' ? 'e' : 'a' }));
   const step = (id: string, j: number, d: number) => setRate(r => {
     const cur: Rating = r[id] ?? [3, 3, 3];
@@ -84,9 +97,12 @@ export default function SessionScreen() {
         </div>
       </header>
 
-      <main className="main gutter">
+      <main className="main gutter wide">
         {mode === 'att' && (<>
-          <div className="row between"><b>حضر {present.length} من {members.length}</b><span className="muted">ضغطة = حاضر، تانية = اعتذر</span></div>
+          <div className="row between"><b>حضر {present.length} من {members.length}</b>
+            <button className={scanning ? 'btnp' : 'btn'} style={{ minHeight: 40 }} onClick={() => setScanning(x => !x)}>{scanning ? 'اقفل الكاميرا' : 'اسكان الكروت'}</button></div>
+          {scanning && <Scanner onCode={onScan} />}
+          <span className="muted">{scanning ? 'وجّه الكاميرا على كارت كل مخدوم، وهيتسجل حاضر لوحده.' : 'ضغطة = حاضر، تانية = اعتذر'}</span>
           {members.length === 0 && <div className="card">مفيش مخدومين في المستوى ده. <Link to="/members/new">ضيف مخدوم</Link></div>}
           <div className="grid3">
             {members.map(m => {
@@ -104,7 +120,7 @@ export default function SessionScreen() {
 
         {mode === 'rate' && (present.length === 0 ? <div className="card">سجّل الحضور الأول، التقييم للحاضرين بس.</div> : <>
           <div className="note">كله بيبدأ من 3. غيّر بس اللي يستاهل أعلى أو أقل.</div>
-          <div className="card" style={{ paddingBlock: 4 }}><div className="list">
+          <div className="card" style={{ paddingBlock: 4 }}><div className="list cols">
             {present.map(m => {
               const r = rate[m.id] ?? [3, 3, 3];
               return (
@@ -137,7 +153,7 @@ export default function SessionScreen() {
 
         {mode === 'hym' && (present.length === 0 ? <div className="card">سجّل الحضور الأول.</div> : hymns.length === 0 ? <div className="card">منهج الترم فاضي للمستوى ده.</div> : <>
           <div className="row between"><span className="note">اضغط على الحالة تنقلها للي بعدها</span><button className="chip" onClick={bulk}>الكل بيتعلمه</button></div>
-          <div className="card" style={{ paddingBlock: 4 }}><div className="list">
+          <div className="card" style={{ paddingBlock: 4 }}><div className="list cols">
             {present.map(m => (
               <div key={m.id} className="li">
                 <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
@@ -159,6 +175,7 @@ export default function SessionScreen() {
         </>)}
       </main>
 
+      {toast && <div className={`toast${toast.bad ? ' bad' : ''}`} role="status">{toast.text}</div>}
       <div className="bar gutter"><div>
         <Link to="/" className="btn">إلغاء</Link>
         <button className="btnp grow" onClick={finish}>خلّص الحصة</button>

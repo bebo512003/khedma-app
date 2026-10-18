@@ -20,7 +20,7 @@ export default function MemberHome() {
         </div>
         <button className="btn" style={{ minHeight: 40 }} onClick={logout}>خروج</button>
       </div></header>
-      <main className="main gutter">
+      <main className="main gutter wide dash">
         <Link to="/me/rank" className="hero" style={{ textDecoration: 'none' }}>
           <div className="row between">
             <div><div className="big">#{v.place || '–'}</div><div>ترتيبك في {v.levelName}</div></div>

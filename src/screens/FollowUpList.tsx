@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useData } from '../data/store';
-import { absenceStreak, fillTemplate, waLink, waNumber } from '../data/logic';
+import { absenceStreak, contact, fillTemplate, waLink } from '../data/logic';
 import type { Member } from '../data/types';
 
 /** Absent members with an editable message. WhatsApp opens with the text filled in; the servant presses send from their own number. */
@@ -20,12 +20,12 @@ export default function FollowUpList({ members }: { members: Member[] }) {
         {members.map(m => {
           const streak = absenceStreak(data, m);
           const text = fillTemplate(tpl, { 'الاسم': m.name, 'الغياب': streak });
-          const hasNum = !!waNumber(m.parentPhone);
+          const to = contact(m);
           return (
             <div key={m.id} className="li">
               <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
-              <div className="grow"><b>{m.name}</b><div className="muted">غاب {streak} مرات{hasNum ? '' : ' • مفيش رقم ولي أمر'}</div></div>
-              <a className="btn" style={{ minHeight: 44 }} href={waLink(m.parentPhone, text)} target="_blank" rel="noopener">واتساب</a>
+              <div className="grow"><b>{m.name}</b><div className="muted">غاب {streak} مرات • {to.who === 'self' ? 'على موبايله' : to.who === 'parent' ? 'لولي الأمر' : 'مفيش رقم'}</div></div>
+              <a className="btn" style={{ minHeight: 44 }} href={waLink(to.phone, text)} target="_blank" rel="noopener">واتساب</a>
             </div>
           );
         })}

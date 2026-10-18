@@ -27,6 +27,8 @@ export interface Member {
   birthdate?: string;
   rank?: string;
   parentPhone?: string;
+  /** The member's own mobile, for older members. Messages go here first when it's set. */
+  phone?: string;
   photo?: string;
   /** Offline mode: SHA-256 of `${id}:${pin}`; never the PIN itself. */
   pinHash?: string;

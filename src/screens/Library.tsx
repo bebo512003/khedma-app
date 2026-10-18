@@ -29,8 +29,8 @@ export default function Library() {
           </div>
         )}
       </header>
-      <main className="main gutter">
-        <div className="card"><div className="list">
+      <main className="main gutter wide">
+        <div className="card"><div className="list cols">
           {list.map(h => {
             const ls = levelsOf(h.id);
             return (
