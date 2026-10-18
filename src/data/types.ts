@@ -52,6 +52,8 @@ export interface Hymn {
   arabicCoptic?: string;
   /** Arabic meaning. */
   meaning?: string;
+  /** Servant notes shown above the text, e.g. order rules. */
+  notes?: string;
 }
 
 export interface Term {

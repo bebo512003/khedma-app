@@ -17,8 +17,10 @@ export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: str
   const present = COLS.filter(([c]) => rows[c].length > 0);
   const [shown, setShown] = useState<Col[]>(present.map(([c]) => c));
   const [word, setWord] = useState<{ text: string; hits: Hit[] | null; failed?: boolean } | null>(null);
-  if (present.length === 0) return null;
+  if (present.length === 0) return hymn.notes ? <div className="card"><h2>ملاحظات</h2><div className="pre">{hymn.notes}</div></div> : null;
   const n = Math.max(...present.map(([c]) => rows[c].length));
+  /** A line starting with § in any column is a section title (same line number in every column). */
+  const section = (i: number) => present.map(([c]) => rows[c][i]).find(l => l?.startsWith('§'))?.slice(1).trim();
   const legacy = looksLikeLegacyFont(hymn.copticText);
 
   const lookUp = async (w: string) => {
@@ -37,9 +39,10 @@ export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: str
         {present.length > 1 && <div className="chips" style={{ margin: 0 }}>{present.map(([c, label]) =>
           <button key={c} className="chip" aria-pressed={shown.includes(c)} onClick={() => toggle(c)}>{label}</button>)}</div>}
       </div>
+      {hymn.notes && <div className="note pre">{hymn.notes}</div>}
       {rows.cop.length > 0 && !legacy && <div className="muted" style={{ fontSize: 12 }}>دوس على أي كلمة قبطي تعرف معناها.</div>}
       <ol className="verses">
-        {Array.from({ length: n }, (_, i) => (
+        {Array.from({ length: n }, (_, i) => section(i) !== undefined ? <li key={i} className="sec">{section(i)}</li> : (
           <li key={i}>
             {shown.includes('cop') && rows.cop[i] && <div className="cop coptic-font" dir="ltr">
               {legacy ? rows.cop[i] : display(rows.cop[i]).split(/(\s+)/).map((w, j) => /\s/.test(w) || scriptOf(w) !== 'coptic'

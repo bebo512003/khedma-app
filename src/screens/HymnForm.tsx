@@ -73,8 +73,10 @@ export default function HymnForm() {
         {link('pdfUrl', 'لينك الـ PDF على Google Drive')}
         {link('audioUrl', 'لينك التسجيل الصوتي')}
         <div className="note">الملفات بتفضل على الـ Drive بتاعكم، والتطبيق بيحفظ اللينك بس. خلي الملف متاح لأي حد معاه اللينك.</div>
+        <label className="field" htmlFor="notes"><span>ملاحظات (اختياري)</span>
+          <textarea id="notes" style={{ minHeight: 80 }} placeholder="مثلاً: ترتيب الأرباع، أو بيتقال إمتى بالظبط" value={h.notes ?? ''} onChange={e => set({ notes: e.target.value })} /></label>
         <h2>نص اللحن (اختياري)</h2>
-        <div className="note">الزق كل جزء في خانته، كل ربع أو جملة في سطر لوحده، وبنفس الترتيب في التلات خانات عشان السطور تتقابل. الضغط على أي كلمة قبطي في النص بيفتح معناها من القاموس.</div>
+        <div className="note">الزق كل جزء في خانته، كل ربع أو جملة في سطر لوحده، وبنفس الترتيب في التلات خانات عشان السطور تتقابل. السطر اللي يبدأ بـ § بيبقى عنوان جزء. الضغط على أي كلمة قبطي في النص بيفتح معناها من القاموس.</div>
         {area('copticText', 'النص القبطي', true)}
         {looksLikeLegacyFont(h.copticText) && <div className="alert-t" role="alert">النص القبطي ده طالع حروف إنجليزي، يعني متكتب بخط قبطي قديم في Word. ابعتلنا ملف Word منه عشان نضيف تحويل تلقائي، أو انسخه من مصدر مكتوب بيونيكود.</div>}
         {area('arabicCoptic', 'القبطي معرّب')}
