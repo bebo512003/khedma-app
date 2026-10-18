@@ -16,8 +16,8 @@ export default function MemberHome() {
     <>
       <header className="top gutter"><div className="row between">
         <div className="row">
-          <div className="av" style={{ width: 48, height: 48 }}>{v.photo ? <img src={v.photo} alt="" /> : v.name[0]}</div>
-          <div><h1>أهلاً يا {v.name.split(' ')[0]}</h1><div className="muted">{[v.levelName, v.rank].filter(Boolean).join(' • ')}</div></div>
+          <Link to="/me/profile" className="av" style={{ width: 48, height: 48 }} aria-label="بياناتي">{v.photo ? <img src={v.photo} alt="" /> : v.name[0]}</Link>
+          <div><h1>أهلاً يا {v.name.split(' ')[0]}</h1><div className="muted">{[v.levelName, v.rank].filter(Boolean).join(' • ')} • <Link to="/me/profile">بياناتي</Link></div></div>
         </div>
         <button className="btn" style={{ minHeight: 40 }} onClick={logout}>خروج</button>
       </div></header>

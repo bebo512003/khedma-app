@@ -61,6 +61,22 @@ service cloud.firestore {
         allow delete: if servant() && canLevel(resource.data.levelId);
       }
 
+      // A member's edit of their own photo and details; a servant's app copies it into the member record.
+      match /memberEdits/{memberId} {
+        allow read, delete: if servant();
+        allow get: if signedIn() && get(doc('accounts', request.auth.uid)).data.memberId == memberId;
+        allow create, update: if signedIn() && get(doc('accounts', request.auth.uid)).data.memberId == memberId
+          && request.resource.data.keys().hasOnly(['name', 'photo', 'birthdate', 'phone', 'parentPhone', 'at'])
+          && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() <= 80))
+          && (!('photo' in request.resource.data) || (request.resource.data.photo is string && request.resource.data.photo.size() < 100000));
+      }
+
+      // Pages of uploaded booklets (images only). Members read them under their hymns.
+      match /bookPages/{id} {
+        allow read: if signedIn();
+        allow write: if servant();
+      }
+
       match /{coll}/{id} {
         allow read, write: if servant() && coll in ['levels', 'hymns', 'books', 'terms', 'members', 'meta', 'progress'];
       }

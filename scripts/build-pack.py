@@ -35,12 +35,14 @@ PACKS = {
     'nativity-shabab': {
         'title': 'ألحان عيد الميلاد',
         'levelId': 'l3',
-        'book': {'title': 'ألحان عيد الميلاد المجيد (الهزات) - شباب', 'pagesBase': 'books/nativity-shabab/', 'pageCount': 33},
-        # Booklet pages per hymn (page images are public/books/<pack>/NN.webp, rendered from the PDF).
-        'pages': {'nakous': (2, 7), 'seven-ways': (8, 19), 'doxology': (20, 21), 'baker-end': (22, 22), 'abouro': (23, 23),
-                  'hitenyat': (24, 25), 'katholikon': (26, 27), 'praxis': (27, 27), 'iparthenos': (27, 27), 'piginmici': (28, 28),
-                  'mohaier': (28, 28), 'agios': (29, 29), 'psalm-response': (29, 29), 'gospel-response': (30, 30), 'psalm150': (31, 32)},
-        'source': 'منقولة من ملف "ألحان الميلاد - شباب" بتاع المدرسة. النصوص ولينكات التسجيلات أصلها من مكتبة ألحان كنيسة مارجرجس بنزلة السمان.',
+        # Bump 'version' when the booklet changes, so books added from an older edition get an update button.
+        'version': 2,
+        'book': {'title': 'ألحان عيد الميلاد المجيد (الهزات) - شباب', 'pagesBase': 'books/nativity-shabab-2/', 'pageCount': 41},
+        # Booklet pages per hymn, from the booklet's own index (page images are public/<pagesBase>NN.webp, rendered from the PDF).
+        'pages': {'nakous': (2, 7), 'seven-ways': (8, 20), 'doxology': (21, 22), 'baker-end': (23, 23), 'abouro': (24, 25),
+                  'hitenyat': (26, 28), 'katholikon': (29, 30), 'praxis': (31, 32), 'iparthenos': (33, 33), 'piginmici': (34, 34),
+                  'mohaier': (34, 35), 'agios': (36, 37), 'psalm-response': (37, 37), 'gospel-response': (38, 38), 'psalm150': (39, 40)},
+        'source': 'منقولة من كتاب "ألحان عيد الميلاد المجيد" بتاع المدرسة (كنيسة مارجرجس دروة). النصوص ولينكات التسجيلات أصلها من مكتبة ألحان كنيسة مارجرجس بنزلة السمان.',
         # file, prayer, when, audio (from the booklet's QR codes)
         'hymns': [
             ('nakous', 'رفع البخور', 'أرباع الناقوس في رفع بخور باكر العيد', 'https://www.youtube.com/watch?v=8xl3iwWgUaQ'),
@@ -48,9 +50,9 @@ PACKS = {
             ('doxology', 'رفع البخور', 'رفع بخور باكر العيد', 'https://www.youtube.com/watch?v=5fmR_KRFZy4'),
             ('baker-end', 'رفع البخور', 'ختام رفع بخور باكر', 'https://www.youtube.com/watch?v=3ahkStPIcGE'),
             ('abouro', 'القداس', None, 'https://stgeorgesaman.com/libraries/hymns-library/divine-liturgy/offertory/people-hymns/king-of-peace'),
-            ('hitenyat', 'القداس', None, SAMAN + 'nativity-hitens'),
+            ('hitenyat', 'القداس', None, 'https://www.youtube.com/watch?v=Vbgma9SHH7c'),
             ('katholikon', 'القداس', 'بعد قراءة الكاثوليكون', SAMAN + 'katholikon-response'),
-            ('praxis', 'القداس', 'بعد قراءة الإبركسيس', SAMAN + 'nativity-praxis-response'),
+            ('praxis', 'القداس', 'بعد قراءة الإبركسيس', 'https://www.youtube.com/watch?v=8Iou_tkwMdU'),
             ('iparthenos', 'القداس', None, SAMAN + 'hparthenos/'),
             ('piginmici', 'القداس', None, SAMAN + 'piginmici'),
             ('mohaier', 'القداس', None, SAMAN + 'mohaier-nativity'),
@@ -90,7 +92,7 @@ def main(name):
         for key, field in (('coptic', 'copticText'), ('arabicCoptic', 'arabicCoptic'), ('meaning', 'meaning')):
             out[field] = column(h['verses'], key)
         hymns.append(out)
-    pack = {'id': name, 'title': meta['title'], 'levelId': meta['levelId'], 'source': meta['source'], 'book': meta['book'], 'hymns': hymns}
+    pack = {'id': name, 'version': meta['version'], 'title': meta['title'], 'levelId': meta['levelId'], 'source': meta['source'], 'book': meta['book'], 'hymns': hymns}
     dest = ROOT / 'public' / 'packs' / f'{name}.json'
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps(pack, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')

@@ -1,4 +1,4 @@
-import type { AppData, Hymn, HymnStatus, Rating } from './types';
+import type { AppData, Hymn, HymnStatus, MemberEdit, Rating } from './types';
 import { currentTerm, curriculumKey, monthBreakdown, ranking, sessionAverage, todayISO } from './logic';
 import { bookOf, entryPages, pagesLabel } from './books';
 
@@ -11,6 +11,8 @@ export interface MemberView {
   name: string;
   photo?: string;
   rank?: string;
+  /** The member's own details, which they can edit from the member app. */
+  profile?: MemberEdit;
   levelName: string;
   termName?: string;
   month: string;
@@ -50,7 +52,8 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
     .map(s => ({ id: s.id, date: s.date, r: s.ratings[m.id], avg: sessionAverage(s, m.id)!, memorized: s.milestones?.[m.id]?.memorized ?? 0, solo: s.milestones?.[m.id]?.solo ?? 0, note: s.notes?.[m.id] }));
   const mine = data.sessions.filter(s => s.attendance[m.id] !== undefined);
   return clean({
-    memberId: m.id, name: m.name, photo: m.photo, rank: m.rank, levelName: level?.name ?? '', termName: term?.name, month,
+    memberId: m.id, name: m.name, photo: m.photo, rank: m.rank,
+    profile: { name: m.name, photo: m.photo, birthdate: m.birthdate, phone: m.phone, parentPhone: m.parentPhone }, levelName: level?.name ?? '', termName: term?.name, month,
     points: breakdown.total, place: pos + 1, gap: Math.max(0, (rows[0]?.points ?? 0) - breakdown.total), breakdown, top, hymns, ratings,
     attendanceRate: mine.length ? Math.round(100 * mine.filter(s => s.attendance[m.id] === 'p').length / mine.length) : null,
   });

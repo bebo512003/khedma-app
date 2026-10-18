@@ -37,6 +37,25 @@ export interface Member {
   example?: boolean;
 }
 
+/** What a member may change about themselves from the member app. */
+export interface MemberEdit {
+  name?: string;
+  photo?: string;
+  birthdate?: string;
+  phone?: string;
+  parentPhone?: string;
+}
+
+/** Applies a member's own edit, keeping only the fields they're allowed to change. */
+export const applyMemberEdit = (m: Member, e: MemberEdit): Member => ({
+  ...m,
+  ...(e.name?.trim() ? { name: e.name.trim() } : {}),
+  photo: e.photo ?? m.photo,
+  birthdate: e.birthdate || undefined,
+  phone: e.phone?.trim() || undefined,
+  parentPhone: e.parentPhone?.trim() || undefined,
+});
+
 export interface Hymn {
   id: string;
   nameAr: string;
@@ -70,9 +89,14 @@ export interface Book {
   levelId?: string;
   termId?: string;
   pdfUrl?: string;
-  /** Page images hosted with the app, e.g. 'books/nativity-shabab/' holding 01.webp, 02.webp… */
+  /** Page images hosted with the app, e.g. 'books/nativity-shabab-2/' holding 01.webp, 02.webp… */
   pagesBase?: string;
+  /** Pages of a PDF a servant uploaded, stored as images in the bookPages collection. */
+  uploaded?: boolean;
   pageCount?: number;
+  /** Set when the book came from a ready pack, so a newer edition can replace it. */
+  packId?: string;
+  packVersion?: number;
   entries: BookEntry[];
 }
 

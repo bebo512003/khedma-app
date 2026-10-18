@@ -22,6 +22,7 @@ import MemberLogin from './member/Login';
 import MemberLayout from './member/Layout';
 import MemberHome from './member/Home';
 import MemberHymn from './member/Hymn';
+import MemberProfile from './member/Profile';
 import MemberRatings from './member/Ratings';
 import MemberRank from './member/Rank';
 
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="home" element={<MemberHome />} />
             <Route path="hymn/:hymnId" element={<MemberHymn />} />
             <Route path="ratings" element={<MemberRatings />} />
+            <Route path="profile" element={<MemberProfile />} />
             <Route path="rank" element={<MemberRank />} />
             <Route path="dictionary" element={<Dictionary back="/me/home" />} />
           </Route>

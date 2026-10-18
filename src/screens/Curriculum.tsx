@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../data/store';
 import { currentTerm, curriculumKey, uid } from '../data/logic';
-import { booksFor, pageUrl } from '../data/books';
+import { booksFor, hasPages, pageUrl } from '../data/books';
+import PageImg from './PageImg';
 import PackCard from './PackCard';
 import type { Term } from '../data/types';
 
@@ -70,7 +71,7 @@ export default function Curriculum() {
 
         {books.map(b => (
           <Link key={b.id} to={`/books/${b.id}`} className="card book-li">
-            {b.pagesBase && b.pageCount ? <img src={pageUrl(b, 2)} alt="" loading="lazy" /> : <div className="book-cover">📖</div>}
+            {hasPages(b) ? <PageImg src={pageUrl(b, 1)} alt="" /> : <div className="book-cover">📖</div>}
             <div className="grow"><span className="muted">كتاب الترم</span><b>{b.title}</b><div className="muted">{b.entries.length} لحن • الترتيب والصفحات من فهرسه</div></div>
           </Link>
         ))}

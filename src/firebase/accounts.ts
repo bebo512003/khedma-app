@@ -1,6 +1,6 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { deleteDoc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
-import type { Member } from '../data/types';
+import type { Member, MemberEdit } from '../data/types';
 import type { MemberView } from '../data/memberView';
 import { memberFb, provisionFb, servantFb } from './app';
 import { memberEmail, memberPassword, ref } from './paths';
@@ -44,4 +44,16 @@ export const memberSignOut = () => signOut(memberFb().auth);
 
 export function watchMemberView(memberId: string, cb: (v: MemberView | null) => void, onError: (e: Error) => void) {
   return onSnapshot(ref(memberFb().db, 'memberViews', memberId), s => cb((s.data() as MemberView) ?? null), onError);
+}
+
+/**
+ * A member's edit of their own photo and details. Members can't write the member records,
+ * so the edit waits in memberEdits until a servant's app applies it (see store.tsx).
+ */
+export function submitMemberEdit(memberId: string, edit: MemberEdit) {
+  return setDoc(ref(memberFb().db, 'memberEdits', memberId), { ...JSON.parse(JSON.stringify(edit)), at: Date.now() });
+}
+
+export function watchMemberEdit(memberId: string, cb: (e: MemberEdit | null) => void) {
+  return onSnapshot(ref(memberFb().db, 'memberEdits', memberId), s => cb((s.data() as MemberEdit) ?? null), () => cb(null));
 }

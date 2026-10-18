@@ -1,7 +1,8 @@
 {
   "nameAr": "لحن ابؤرو",
   "pages": [
-    23
+    24,
+    25
   ],
   "note": "",
   "verses": [
@@ -29,10 +30,17 @@
       "coptic": "Ⲧⲉⲛⲟⲩⲱϣⲧ ⲙ̀ⲙⲟⲕ ⲱ ⲡⲭ̅ⲥ̅ ⲛⲉⲙ ⲡⲉⲕⲓⲱⲧ ⲛ̀ⲁⲅⲁⲑⲟⲥ : ⲛⲉⲙ ⲡⲓⲡⲛⲉⲩⲙⲁ ⲉⲑⲟⲩⲁⲃ : ϫⲉ ⲁⲕⲓ̀ ⲁⲕⲥⲱϯ ⲙ̀ⲙⲟⲛ.",
       "arabicCoptic": "تين أوأوشت إمموك أو بيخريستوس نيم بيك يوت إن أغاثوس : نيم بي بنيفما إثؤواب : جي أك إي أكسوتي إممون.",
       "meaning": "نسجد لك أيها المسيح مع أبيك الصالح والروح القدس لأنك أتيت وخلصتنا."
+    },
+    {
+      "coptic": "Ⲧⲉⲛⲟⲩⲱϣⲧ ⲙ̀ⲙⲟⲕ ⲱ Ⲡⲭ̅ⲥ̅: ⲛⲉⲙ ⲡⲉⲕⲓⲱⲧ ⲛ̀ⲁⲅⲁⲑⲟⲥ: ⲛⲉⲙ ⲡⲓⲡⲛⲉⲩⲙⲁ ⲉⲑⲟⲩⲁⲃ: ϫⲉ ⲁⲩⲙⲁⲥϥ ⲁⲕⲥⲱϯ ⲙ̀ⲙⲟⲛ.",
+      "arabicCoptic": "تين أووشت إموك أوبي خرستوس: نيم بيك يوت إن أغاثوس: نيم بى إبنفما إثؤاب: جى أف ماسك أكسوتى إمون.",
+      "meaning": "نسجد لك أيها المسيح: مع أبيك الصالح: والروح القدس: لأنك ولدت وخلصتنا."
     }
   ],
   "doubts": [
     "v1: 'ⲛ̀ⲧⲉⲕ / ϩⲓⲣⲏⲛⲏ' (3rd occurrence) is split across a line break in the source; joined as one word.",
-    "v4: source prints 'ⲛⲉⲛⲯⲓⲭⲏ' (with ⲓ, not ⲩ) — kept as printed."
+    "v4: source prints 'ⲛⲉⲛⲯⲓⲭⲏ' (with ⲓ, not ⲩ) — kept as printed.",
+    "New edition p25 adds a second ending verse (Nativity form 'ϫⲉ ⲁⲩⲙⲁⲥϥ…لأنك ولدت'), printed after the hazzat of the 'ⲁⲕⲓ̀' ending; presumably an alternative to v5, not sung in addition.",
+    "v6 Arabic-Coptic printed 'أف ماسك' (expected أف ماسف); kept as printed."
   ]
 }

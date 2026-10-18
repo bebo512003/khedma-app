@@ -1,13 +1,18 @@
 import type { AppData, Book, BookEntry } from './types';
 import { curriculumKey } from './logic';
 
-export const pageUrl = (b: Book, n: number) => `${b.pagesBase}${String(n).padStart(2, '0')}.webp`;
+/** A page image: hosted with the app, or 'fs:<key>' for an uploaded PDF (see PageImg). */
+export const pageUrl = (b: Book, n: number) => b.uploaded
+  ? `fs:${b.id}-${String(n).padStart(2, '0')}`
+  : `${b.pagesBase}${String(n).padStart(2, '0')}.webp`;
 
-/** Image URLs of the pages one entry spans, when the book's pages are hosted with the app. */
+export const hasPages = (b: Book) => !!(b.uploaded || b.pagesBase) && !!b.pageCount;
+
+/** The pages one entry spans, when the book has page images. */
 export function entryPages(b: Book, e: BookEntry): string[] {
-  if (!b.pagesBase || !e.from) return [];
+  if (!hasPages(b) || !e.from) return [];
   const to = Math.max(e.from, e.to ?? e.from);
-  return Array.from({ length: to - e.from + 1 }, (_, i) => pageUrl(b, e.from! + i));
+  return Array.from({ length: Math.max(0, Math.min(to, b.pageCount!) - e.from + 1) }, (_, i) => pageUrl(b, e.from! + i));
 }
 
 export const pagesLabel = (e: BookEntry) => !e.from ? '' : e.to && e.to !== e.from ? `ص ${e.from}–${e.to}` : `ص ${e.from}`;

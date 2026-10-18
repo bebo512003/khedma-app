@@ -230,8 +230,12 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
 @media (min-width: 900px) { .sheet { left: auto; right: 24px; bottom: 24px; width: 420px; border-radius: 16px; border: 1px solid var(--line); } }
 .backdrop { position: fixed; inset: 0; z-index: 19; background: rgba(0,0,0,.25); }
 .book-li { display: flex; flex-direction: row; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
-.book-li img, .book-cover { width: 56px; height: 78px; object-fit: cover; object-position: top; border-radius: 6px; border: 1px solid var(--line); background: var(--ph); display: grid; place-items: center; font-size: 24px; flex-shrink: 0; }
+.book-li img, .book-li .page-wait, .book-cover { width: 56px; height: 78px; object-fit: cover; object-position: top; border-radius: 6px; border: 1px solid var(--line); background: var(--ph); display: grid; place-items: center; font-size: 24px; flex-shrink: 0; }
 .book-li b { display: block; }
 .pages { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .pages img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+.page-wait { aspect-ratio: 595 / 842; display: grid; place-items: center; text-align: center; padding: 12px; border-radius: 8px; border: 1px dashed var(--line); font-size: 12px; overflow: hidden; }
+.book-li .page-wait { font-size: 0; padding: 0; }
+.progress-bar { height: 8px; border-radius: 4px; background: var(--ph); overflow: hidden; }
+.progress-bar > div { height: 100%; background: var(--act); transition: width .2s; }
 .input.pg { width: 72px; min-height: 40px; padding: 6px 8px; }

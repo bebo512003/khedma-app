@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../data/store';
 import { hashPin } from '../data/logic';
 import { buildMemberView, type MemberView } from '../data/memberView';
+import { applyMemberEdit, type MemberEdit } from '../data/types';
 import { cloudEnabled } from '../firebase/config';
 
 /** Which member is signed in on this device. */
@@ -38,25 +39,44 @@ export function useMemberView() {
   const [cloudView, setCloudView] = useState<MemberView | null>(null);
   const [loading, setLoading] = useState(cloudEnabled && !!id);
   const [error, setError] = useState('');
+  const [pending, setPending] = useState<MemberEdit | null>(null);
 
   useEffect(() => {
     if (!cloudEnabled || !id) return;
     let stop = () => {};
     let stopAuth = () => {};
     (async () => {
-      const [{ memberFb }, { onAuthStateChanged }, { watchMemberView }] = await Promise.all([
+      const [{ memberFb }, { onAuthStateChanged }, { watchMemberView, watchMemberEdit }] = await Promise.all([
         import('../firebase/app'), import('firebase/auth'), import('../firebase/accounts'),
       ]);
       // Wait for the saved login to come back before reading, or the rules see nobody.
       stopAuth = onAuthStateChanged(memberFb().auth, u => {
         stop();
         if (!u) { write(null); setLoading(false); return; }
-        stop = watchMemberView(id, v => { setCloudView(v); setLoading(false); }, e => { setError(e.message); setLoading(false); });
+        const stopView = watchMemberView(id, v => { setCloudView(v); setLoading(false); }, e => { setError(e.message); setLoading(false); });
+        const stopEdit = watchMemberEdit(id, setPending);
+        stop = () => { stopView(); stopEdit(); };
       });
     })();
     return () => { stop(); stopAuth(); };
   }, [id]);
 
   const localView = useMemo(() => (!cloudEnabled && id && data ? buildMemberView(data, id) : null), [id, data]);
-  return { id: read() ? id : null, view: cloudEnabled ? cloudView : localView, loading, error };
+  const base = cloudEnabled ? cloudView : localView;
+  // An edit the servants' app hasn't applied yet shows straight away on the member's own screens.
+  const view = useMemo(() => {
+    if (!base || !pending) return base;
+    const p = { ...base.profile, ...pending };
+    return { ...base, name: p.name?.trim() || base.name, photo: p.photo ?? base.photo, profile: p };
+  }, [base, pending]);
+  return { id: read() ? id : null, view, loading, error, pending: !!pending };
+}
+
+/** Saves a member's own photo and details: straight into the data offline, or as a pending edit in the cloud. */
+export function useSaveProfile() {
+  const { update } = useStore();
+  return async (memberId: string, edit: MemberEdit) => {
+    if (cloudEnabled) return (await import('../firebase/accounts')).submitMemberEdit(memberId, edit);
+    update(d => ({ ...d, members: d.members.map(m => m.id === memberId ? applyMemberEdit(m, edit) : m) }));
+  };
 }

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { get, set } from 'idb-keyval';
 import type { User } from 'firebase/auth';
-import type { AppData, Invite, Servant } from './types';
+import { applyMemberEdit, type AppData, type Invite, type MemberEdit, type Servant } from './types';
 import { seedData } from './seed';
 import { cloudEnabled } from '../firebase/config';
 
@@ -43,6 +43,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [servant, setServant] = useState<Servant | null>(null);
   const [access, setAccess] = useState<Store['access']>(null);
   const [syncError, setSyncError] = useState('');
+  /** Members' own edits waiting to be applied (cloud mode). */
+  const [edits, setEdits] = useState<{ id: string; edit: MemberEdit }[]>([]);
   const latest = useRef<AppData | null>(null);
   const published = useRef(new Map<string, string>());
 
@@ -75,7 +77,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             setPhase('ready');
             if (!subscribed) {
               subscribed = true;
-              stopData = sync.subscribe(db, d => { latest.current = d; setData(d); }, e => setSyncError(e.message));
+              const stopLists = sync.subscribe(db, d => { latest.current = d; setData(d); }, e => setSyncError(e.message));
+              const stopEdits = onSnapshot(paths.col(db, 'memberEdits'), q => setEdits(q.docs.map(x => ({ id: x.id, edit: x.data() as MemberEdit }))), () => undefined);
+              stopData = () => { stopLists(); stopEdits(); };
             }
             return;
           }
@@ -108,6 +112,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sync.publishViews(db, next, published.current).catch(e => setSyncError(String(e.message ?? e)));
     });
   }, []);
+
+  // A member changed their photo or details from the member app: copy it into their record, then clear it.
+  useEffect(() => {
+    if (!data || !edits.length) return;
+    const known = edits.filter(e => data.members.some(m => m.id === e.id));
+    if (known.length) update(d => ({ ...d, members: d.members.map(m => { const e = known.find(x => x.id === m.id); return e ? applyMemberEdit(m, e.edit) : m; }) }));
+    Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]).then(([{ servantFb }, { deleteDoc }, paths]) =>
+      edits.forEach(e => deleteDoc(paths.ref(servantFb().db, 'memberEdits', e.id)).catch(() => undefined)));
+  }, [data, edits, update]);
 
   const reset = useCallback(() => update(() => seedData()), [update]);
 

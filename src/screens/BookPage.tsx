@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useData } from '../data/store';
-import { applyBook, pageUrl, pagesLabel } from '../data/books';
+import { applyBook, hasPages, pageUrl, pagesLabel } from '../data/books';
+import { deletePages, savePage } from '../firebase/bookPages';
+import { pdfToImages } from '../data/pdfPages';
+import PageImg from './PageImg';
 import type { Book } from '../data/types';
 
 const safeUrl = (u?: string) => (u && /^https?:\/\//i.test(u.trim()) ? u.trim() : undefined);
@@ -16,6 +19,8 @@ export default function BookPage() {
   const [draft, setDraft] = useState<Book | null>(params.get('edit') && saved ? saved : null);
   const [q, setQ] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [upload, setUpload] = useState<{ n: number; total: number } | null>(null);
+  const [uploadError, setUploadError] = useState('');
   if (!saved) return <main className="main gutter"><div className="card">الكتاب ده مش موجود. <Link to="/books">الكتب</Link></div></main>;
 
   const hymn = (id: string) => data.hymns.find(h => h.id === id);
@@ -35,7 +40,36 @@ export default function BookPage() {
       update(d => applyBook({ ...d, books: d.books.map(x => x.id === b.id ? b : x) }, b));
       setDraft(null);
     };
-    const remove = () => { update(d => ({ ...d, books: d.books.filter(b => b.id !== draft.id) })); nav('/books', { replace: true }); };
+    const remove = () => {
+      if (saved.uploaded && saved.pageCount) deletePages(saved.id, saved.pageCount);
+      update(d => ({ ...d, books: d.books.filter(b => b.id !== draft.id) }));
+      nav('/books', { replace: true });
+    };
+    // The pages are saved as they're made, so the book's page fields are written straight away too.
+    const setPages = (p: Pick<Book, 'uploaded' | 'pagesBase' | 'pageCount'>) => {
+      setDraft(x => x && { ...x, ...p });
+      update(d => ({ ...d, books: d.books.map(b => b.id === saved.id ? { ...b, ...p } : b) }));
+    };
+    const pickPdf = async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+      setUploadError('');
+      setUpload({ n: 0, total: 0 });
+      try {
+        const old = saved.uploaded ? saved.pageCount ?? 0 : 0;
+        const total = await pdfToImages(file, async (n, t, img) => { await savePage(saved.id, n, img); setUpload({ n, total: t }); });
+        if (old > total) await deletePages(saved.id, old, total + 1);
+        setPages({ uploaded: true, pagesBase: undefined, pageCount: total });
+      } catch (err) {
+        setUploadError(`الملف ده مقدرناش نقراه كـ PDF. ${err instanceof Error ? err.message : ''}`);
+      }
+      setUpload(null);
+    };
+    const removePages = () => {
+      if (saved.uploaded && saved.pageCount) deletePages(saved.id, saved.pageCount);
+      setPages({ uploaded: undefined, pagesBase: undefined, pageCount: undefined });
+    };
     return (
       <>
         <header className="top gutter"><div className="row">
@@ -48,6 +82,21 @@ export default function BookPage() {
             <button key={l.id} className="chip" aria-pressed={draft.levelId === l.id} onClick={() => set({ levelId: l.id })}>{l.name}</button>)}</div></div>
           <div className="field"><span>الترم</span><div className="chips">{terms.map(t =>
             <button key={t.id} className="chip" aria-pressed={draft.termId === t.id} onClick={() => set({ termId: t.id })}>{t.name}</button>)}</div></div>
+          <div className="card">
+            <h2>ملف الكتاب (PDF)</h2>
+            <div className="note">التطبيق بيحوّل كل صفحة لصورة، فكل لحن بيعرض صفحاته بالهزات، والمخدومين بيشوفوها كمان. ملف 40 صفحة بياخد دقيقة تقريباً.</div>
+            {hasPages(draft) && !upload && <div className="muted">الكتاب فيه {draft.pageCount} صفحة.</div>}
+            {upload
+              ? <><div className="muted">بيجهّز الصفحات {upload.n ? `${upload.n} من ${upload.total}` : '…'}</div>
+                  <div className="progress-bar"><div style={{ width: `${upload.total ? (upload.n / upload.total) * 100 : 5}%` }} /></div></>
+              : <div className="row">
+                  <label className="btnp grow" style={{ cursor: 'pointer' }}>{hasPages(draft) ? 'بدّل الـ PDF' : 'ارفع PDF'}
+                    <input type="file" accept="application/pdf,.pdf" hidden onChange={pickPdf} /></label>
+                  {hasPages(draft) && <button className="btn" onClick={removePages}>شيل الصفحات</button>}
+                </div>}
+            {uploadError && <div className="alert-t" role="alert">{uploadError}</div>}
+            <div className="note">بعد ما تبدّل الملف راجع أرقام صفحات الألحان في الفهرس تحت.</div>
+          </div>
           <label className="field" htmlFor="bpdf"><span>لينك الـ PDF على Google Drive (اختياري)</span>
             <input id="bpdf" className="input" dir="ltr" inputMode="url" placeholder="https://drive.google.com/…" value={draft.pdfUrl ?? ''} onChange={e => set({ pdfUrl: e.target.value })} /></label>
 
@@ -88,7 +137,7 @@ export default function BookPage() {
         </main>
         <div className="bar gutter"><div>
           <button className="btn" onClick={() => setDraft(null)}>إلغاء</button>
-          <button className="btnp grow" onClick={save}>احفظ</button>
+          <button className="btnp grow" onClick={save} disabled={!!upload}>احفظ</button>
         </div></div>
       </>
     );
@@ -120,11 +169,11 @@ export default function BookPage() {
           </div>
         </div>
 
-        {saved.pagesBase && saved.pageCount && (
+        {hasPages(saved) && (
           <details className="card">
             <summary><b>اقرا الكتاب</b> <span className="muted">({saved.pageCount} صفحة)</span></summary>
-            <div className="pages">{Array.from({ length: saved.pageCount }, (_, i) =>
-              <img key={i} src={pageUrl(saved, i + 1)} alt={`صفحة ${i + 1}`} loading="lazy" />)}</div>
+            <div className="pages">{Array.from({ length: saved.pageCount! }, (_, i) =>
+              <PageImg key={i} src={pageUrl(saved, i + 1)} alt={`صفحة ${i + 1}`} />)}</div>
           </details>
         )}
       </main>

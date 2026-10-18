@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../data/store';
 import { currentTerm, uid } from '../data/logic';
-import { pageUrl } from '../data/books';
+import { hasPages, pageUrl } from '../data/books';
+import PageImg from './PageImg';
 import PackCard from './PackCard';
 
 /** The school's booklets. Each one's index is a level's curriculum for a term. */
@@ -27,7 +28,7 @@ export default function Books() {
         <div className="note span">كل كتاب (ملزمة الترم) ليه مستوى وترم وفهرس ألحان بأرقام صفحاتها. فهرس الكتاب هو منهج المستوى ده في الترم ده.</div>
         {data.books.map(b => (
           <Link key={b.id} to={`/books/${b.id}`} className="card book-li">
-            {b.pagesBase ? <img src={pageUrl(b, 2)} alt="" loading="lazy" /> : <div className="book-cover">📖</div>}
+            {hasPages(b) ? <PageImg src={pageUrl(b, 1)} alt="" /> : <div className="book-cover">📖</div>}
             <div className="grow">
               <b>{b.title}</b>
               <div className="muted">{[levelName(b.levelId), termName(b.termId)].filter(Boolean).join(' • ')}</div>

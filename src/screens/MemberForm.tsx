@@ -2,23 +2,8 @@ import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData, useStore } from '../data/store';
 import { RANKS, type Gender, type Member } from '../data/types';
+import { shrinkPhoto as shrink } from '../data/photo';
 import { GRADES, contact, hashPin, levelForGrade, newPin, todayISO, uid, waLink } from '../data/logic';
-
-/** Shrinks a photo to a 256px square JPEG (~15KB) so it can live inside the member record. */
-function shrink(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const s = 256, c = document.createElement('canvas'); c.width = s; c.height = s;
-      const side = Math.min(img.width, img.height);
-      c.getContext('2d')!.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, s, s);
-      resolve(c.toDataURL('image/jpeg', 0.72));
-      URL.revokeObjectURL(img.src);
-    };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
 
 export default function MemberForm() {
   const { memberId } = useParams();
