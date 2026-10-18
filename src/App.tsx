@@ -15,6 +15,7 @@ import Levels from './screens/Levels';
 import Team from './screens/Team';
 import Cards from './screens/Cards';
 import Dictionary from './screens/Dictionary';
+import Reports from './screens/Reports';
 import MemberLogin from './member/Login';
 import MemberLayout from './member/Layout';
 import MemberHome from './member/Home';
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/team" element={s(<Team />)} />
           <Route path="/cards" element={s(<Cards />)} />
           <Route path="/dictionary" element={s(<Dictionary />)} />
+          <Route path="/reports" element={s(<Reports />)} />
           <Route path="/me" element={<MemberLogin />} />
           <Route path="/me" element={<MemberLayout />}>
             <Route path="home" element={<MemberHome />} />

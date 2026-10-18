@@ -203,3 +203,14 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
 .ckeys button:active { background: var(--s1); }
 .ckeys .wide { grid-column: span 4; font-size: 15px; font-family: var(--font); }
 @media (min-width: 900px) { .ckeys { grid-template-columns: repeat(16, 1fr); } .ckeys .wide { grid-column: span 8; } }
+
+/* Reports */
+.stats.stats4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 900px) { .stats.stats4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.dist { display: flex; height: 26px; border-radius: 8px; overflow: hidden; gap: 2px; }
+.dist span { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; min-width: 22px; border: 0; }
+.dist .st0 { background: var(--s0); color: var(--fg); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid transparent; }
+.legend i.st0 { background: var(--s0); }

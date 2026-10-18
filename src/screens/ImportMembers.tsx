@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useData } from '../data/store';
 import type { Gender, Member } from '../data/types';
 import { count, levelForGrade, uid } from '../data/logic';
+import { download } from '../data/xlsx';
 import {
   FIELD_LABELS, guessColumns, norm, parseDate, parseGender, parseGrade, parsePhone, parseRank, readSheet, templateCsv, type Field,
 } from '../data/importSheet';
@@ -86,12 +87,7 @@ export default function ImportMembers() {
     setDone(chosen.length); setSheet(null); setError('');
   };
 
-  const downloadTemplate = () => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([templateCsv()], { type: 'text/csv;charset=utf-8' }));
-    a.download = 'نموذج المخدومين.csv'; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  };
+  const downloadTemplate = () => download(new Blob([templateCsv()], { type: 'text/csv;charset=utf-8' }), 'نموذج المخدومين.csv');
 
   return (
     <>
