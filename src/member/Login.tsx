@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../data/store';
 import { cloudEnabled } from '../firebase/config';
 import { memberLogin } from './session';
@@ -8,7 +8,9 @@ import logo from '../logo.png';
 export default function Login() {
   const { data } = useStore();
   const nav = useNavigate();
-  const [code, setCode] = useState('');
+  const [params] = useSearchParams();
+  // Scanning a member card opens this page with the code filled in.
+  const [code, setCode] = useState((params.get('code') ?? '').replace(/\D/g, '').slice(0, 6));
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);

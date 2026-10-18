@@ -23,6 +23,8 @@ export interface Member {
   gender: Gender;
   levelId: string;
   grade: string;
+  /** YYYY-MM-DD */
+  birthdate?: string;
   rank?: string;
   parentPhone?: string;
   photo?: string;
@@ -62,10 +64,13 @@ export interface Session {
   /** Hymns that reached حافظه / بيقوله لوحده during this session, per member (drives milestone points). */
   milestones?: Record<string, { memorized: number; solo: number }>;
   durationMs?: number;
+  /** Servant's short note to a member, shown in their ratings. */
+  notes?: Record<string, string>;
 }
 
 export interface Templates {
   absence: string;
+  birthday?: string;
 }
 
 export interface AppData {

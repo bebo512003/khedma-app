@@ -103,3 +103,22 @@ export function count(n: number, one: string, two: string, few: string) {
 }
 export const hymnsCount = (n: number) => count(n, 'لحن', 'لحنين', 'ألحان');
 export const sessionsCount = (n: number) => n === 1 ? 'حصة واحدة' : count(n, 'حصة', 'حصتين', 'حصص');
+
+export const DEFAULT_BIRTHDAY = 'كل سنة وأنت {طيب} يا {الاسم}! مدرسة الشهيد اسطفانوس للشمامسة بتتمنالك سنة جديدة مليانة فرح وألحان.';
+
+/** Members whose birthday falls within the next `days` days (today included), soonest first. */
+export function upcomingBirthdays(members: Member[], days = 7, from = new Date()) {
+  const today = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  return members.flatMap(m => {
+    if (!m.birthdate) return [];
+    const [y, mo, d] = m.birthdate.split('-').map(Number);
+    let next = new Date(today.getFullYear(), mo - 1, d);
+    if (next < today) next = new Date(today.getFullYear() + 1, mo - 1, d);
+    const daysAway = Math.round((next.getTime() - today.getTime()) / 86400000);
+    return daysAway < days ? [{ member: m, daysAway, age: next.getFullYear() - y }] : [];
+  }).sort((a, b) => a.daysAway - b.daysAway);
+}
+
+export const birthdayWhen = (daysAway: number) =>
+  daysAway === 0 ? 'النهارده' : daysAway === 1 ? 'بكرة' : `بعد ${daysAway} أيام`;
+export const yearsCount = (n: number) => n === 1 ? 'سنة واحدة' : n === 2 ? 'سنتين' : n >= 3 && n <= 10 ? `${n} سنين` : `${n} سنة`;

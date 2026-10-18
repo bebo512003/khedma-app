@@ -22,6 +22,7 @@ export default function MemberRatings() {
             <div key={s.id} className="li" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
               <div className="row between"><b>{formatDay(s.date)}</b><span className={`pill ${s.avg >= 4 ? 'st3' : 'st1'}`} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 28 }}>{s.avg.toFixed(1)}</span></div>
               <div className="muted">{CRITERIA.map((c, j) => `${c} ${s.r[j]}`).join(' • ')}</div>
+              {s.note && <div className="note" style={{ color: 'var(--fg)' }}>ملاحظة الخادم: {s.note}</div>}
               {(s.memorized > 0 || s.solo > 0) && <div className="note">{[s.memorized && `وصلت "حافظه" في ${hymnsCount(s.memorized)}`, s.solo && `وصلت "بيقوله لوحده" في ${hymnsCount(s.solo)}`].filter(Boolean).join(' و')}</div>}
             </div>
           ))}

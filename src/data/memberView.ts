@@ -19,7 +19,7 @@ export interface MemberView {
   breakdown: ReturnType<typeof monthBreakdown>;
   top: { id: string; name: string; photo?: string; points: number; place: number }[];
   hymns: (Hymn & { status: HymnStatus; levels: string[] })[];
-  ratings: { id: string; date: string; r: Rating; avg: number; memorized: number; solo: number }[];
+  ratings: { id: string; date: string; r: Rating; avg: number; memorized: number; solo: number; note?: string }[];
   attendanceRate: number | null;
 }
 
@@ -45,7 +45,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
   const ratings = data.sessions
     .filter(s => s.ratings[m.id] && (!term || (s.date >= term.start && s.date <= term.end)))
     .sort((a, b) => b.date.localeCompare(a.date))
-    .map(s => ({ id: s.id, date: s.date, r: s.ratings[m.id], avg: sessionAverage(s, m.id)!, memorized: s.milestones?.[m.id]?.memorized ?? 0, solo: s.milestones?.[m.id]?.solo ?? 0 }));
+    .map(s => ({ id: s.id, date: s.date, r: s.ratings[m.id], avg: sessionAverage(s, m.id)!, memorized: s.milestones?.[m.id]?.memorized ?? 0, solo: s.milestones?.[m.id]?.solo ?? 0, note: s.notes?.[m.id] }));
   const mine = data.sessions.filter(s => s.attendance[m.id] !== undefined);
   return clean({
     memberId: m.id, name: m.name, photo: m.photo, rank: m.rank, levelName: level?.name ?? '', termName: term?.name, month,

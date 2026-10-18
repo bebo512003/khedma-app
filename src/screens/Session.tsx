@@ -21,6 +21,8 @@ export default function SessionScreen() {
   const [mode, setMode] = useState<Mode>('att');
   const [att, setAtt] = useState<Record<string, Attendance>>(() => Object.fromEntries(members.map(m => [m.id, 'a'])));
   const [rate, setRate] = useState<Record<string, Rating>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [noteOpen, setNoteOpen] = useState<string | null>(null);
   const [hym, setHym] = useState<Record<string, Record<string, HymnStatus>>>(() =>
     Object.fromEntries(members.map(m => [m.id, Object.fromEntries(hymnIds.map(h => [h, data.progress[m.id]?.[h] ?? 0]))])));
   const [start] = useState(Date.now());
@@ -59,6 +61,7 @@ export default function SessionScreen() {
       attendance: att,
       ratings: Object.fromEntries(present.map(m => [m.id, rate[m.id] ?? [3, 3, 3]])),
       milestones, durationMs: Date.now() - start,
+      notes: Object.fromEntries(present.map(m => [m.id, (notes[m.id] ?? '').trim()]).filter(([, n]) => n)),
     };
     update(d => {
       const progress = { ...d.progress };
@@ -108,6 +111,12 @@ export default function SessionScreen() {
                 <div key={m.id} className="li" style={{ flexWrap: 'wrap' }}>
                   <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
                   <b className="grow">{m.name}</b>
+                  <button className={`chip${notes[m.id]?.trim() ? ' chip-on' : ''}`} onClick={() => setNoteOpen(noteOpen === m.id ? null : m.id)} aria-expanded={noteOpen === m.id}>
+                    {notes[m.id]?.trim() ? 'ملاحظة ✓' : '+ ملاحظة'}</button>
+                  {noteOpen === m.id && (
+                    <textarea autoFocus style={{ width: '100%', minHeight: 64 }} aria-label={`ملاحظة لـ ${m.name}`} placeholder="كلمة تشجيع أو حاجة يركز عليها، هتظهرله في تقييماته"
+                      value={notes[m.id] ?? ''} maxLength={200} onChange={e => setNotes(n => ({ ...n, [m.id]: e.target.value }))} />
+                  )}
                   <div className="row between" style={{ width: '100%' }}>
                     {CRITERIA.map((c, j) => (
                       <div key={c} className="crit">

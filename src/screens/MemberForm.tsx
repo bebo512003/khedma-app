@@ -2,7 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData, useStore } from '../data/store';
 import { RANKS, type Gender, type Member } from '../data/types';
-import { hashPin, newPin, uid, waLink } from '../data/logic';
+import { hashPin, newPin, todayISO, uid, waLink } from '../data/logic';
 
 const GRADES = [
   'أولى ابتدائي', 'تانية ابتدائي', 'تالتة ابتدائي', 'رابعة ابتدائي', 'خامسة ابتدائي', 'سادسة ابتدائي',
@@ -106,6 +106,9 @@ export default function MemberForm() {
             {GRADES.map(g => <option key={g}>{g}</option>)}
           </select></label>
 
+        <label className="field" htmlFor="birth"><span>تاريخ الميلاد</span>
+          <input id="birth" type="date" className="input" value={m.birthdate ?? ''} max={todayISO()} onChange={e => set({ birthdate: e.target.value || undefined })} /></label>
+
         <div className="field"><span>المستوى</span>
           <div className="chips">{data.levels.map(l =>
             <button key={l.id} className="chip" aria-pressed={m.levelId === l.id} onClick={() => set({ levelId: l.id })}>{l.name}</button>)}</div>
@@ -132,7 +135,9 @@ export default function MemberForm() {
               {m.parentPhone && <a className="btnp" target="_blank" rel="noopener noreferrer"
                 href={waLink(m.parentPhone, `بيانات دخول ${m.name || 'المخدوم'} لتطبيق مدرسة الشهيد اسطفانوس للشمامسة:\nالكود: ${m.code}\nالرقم السري: ${shownPin}`)}>ابعتهم لولي الأمر على واتساب</a>}
             </>
-          ) : cloud && !existing
+          ) : null}
+          {existing && <Link to={`/cards?member=${m.id}`} className="btn">اطبع كارت الـ QR</Link>}
+          {shownPin ? null : cloud && !existing
             ? <div className="note">احفظ المخدوم الأول، وبعدين افتحه تاني واعمله رقم سري.</div>
             : <button className="btn" disabled={pinBusy} onClick={makePin}>{pinBusy ? 'بيتعمل…' : m.pinHash || m.account ? 'اعمل رقم سري جديد' : 'اعمل رقم سري'}</button>}
         </div>

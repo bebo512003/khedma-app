@@ -1,4 +1,5 @@
 import type { AppData, Member, Session } from './types';
+import { isoDate } from './logic';
 
 const LEVELS = [
   { id: 'l1', name: 'ابتدائي 1', grades: 'أولى وتانية ابتدائي', order: 1 },
@@ -29,6 +30,10 @@ export function seedData(): AppData {
     rank: gender === 'm' && i % 3 === 0 ? 'أبصالتس' : undefined,
     example: true,
   }));
+  // Two example birthdays in the coming days so the birthday card has something to show.
+  const soon = (days: number, age: number) => { const d = new Date(); d.setDate(d.getDate() + days); d.setFullYear(d.getFullYear() - age); return isoDate(d); };
+  members[2].birthdate = soon(0, 10);
+  members[3].birthdate = soon(3, 11);
 
   // Two earlier Fridays where أبانوب and كاترين were absent, so the follow-up list has something real to compute.
   const past = (id: string, date: string): Session => ({

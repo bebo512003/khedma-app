@@ -4,6 +4,7 @@ import { absenceStreak, needsFollowUp } from '../data/logic';
 import { applyTheme, loadTheme } from '../theme';
 import { useState } from 'react';
 import logo from '../logo.png';
+import Birthdays from './Birthdays';
 
 export default function Home() {
   const [data] = useData();
@@ -60,6 +61,8 @@ export default function Home() {
             <Link to="/followup" className="btnp">افتقد دلوقتي</Link>
           </div>
         )}
+
+        <Birthdays levelIds={allowed} />
 
         {last && (
           <div className="card row between">

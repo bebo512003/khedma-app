@@ -120,3 +120,29 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
 .tabs a { flex: 1; min-height: 56px; display: flex; align-items: center; justify-content: center; color: var(--muted); text-decoration: none; font-weight: 600; border-top: 3px solid transparent; }
 .tabs a.active { color: var(--fg); border-top-color: var(--act); }
 .btn[aria-disabled] { opacity: .5; border-style: dashed; font-weight: 400; }
+
+/* Member ID cards: bank-card size (85.6 × 54 mm), fixed print colors in both themes */
+.cards { align-items: center; }
+.idcard { width: 85.6mm; height: 54mm; border-radius: 3mm; overflow: hidden; background: #FAF6EF; color: #2B0B0D; border: 0.3mm solid #E8DDD0; display: flex; flex-direction: column; flex: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+.idcard-band { background: #5C1716; color: #FAF6EF; display: flex; align-items: center; gap: 2.5mm; padding: 2mm 3mm; }
+.idcard-band img { width: 9mm; height: 9mm; }
+.idcard-band b { display: block; font-size: 8.5pt; color: #E8BD7E; }
+.idcard-band span { font-size: 6.5pt; }
+.idcard-body { flex: 1; display: flex; align-items: center; gap: 3mm; padding: 2.5mm 3mm; }
+.idcard-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.6mm; font-size: 7pt; color: #6E5A55; }
+.idcard-photo { width: 11mm; height: 11mm; border-radius: 50%; background: #EFE4D6; overflow: hidden; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11pt; color: #6E5A55; }
+.idcard-photo img { width: 100%; height: 100%; object-fit: cover; }
+.idcard-name { font-size: 10.5pt; color: #2B0B0D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.idcard-code b { font-size: 10pt; color: #5C1716; letter-spacing: 0.5mm; }
+.idcard-qr { width: 27mm; height: 27mm; flex: none; }
+.idcard-qr svg { width: 100%; height: 100%; display: block; }
+
+@media print {
+  @page { size: A4; margin: 6mm; }
+  body { background: #fff; }
+  .no-print, .bar, .tabs { display: none !important; }
+  .app { max-width: none; }
+  .main.cards { padding: 0; display: grid; grid-template-columns: repeat(2, 85.6mm); gap: 3mm 6mm; justify-content: center; }
+  .idcard { break-inside: avoid; }
+}
+.chip-on { border-color: var(--act); font-weight: 600; }
