@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: { globPatterns: ['**/*.{js,css,html,png,ttf,svg}'], maximumFileSizeToCacheInBytes: 2 * 1024 * 1024 },
       manifest: {
-        name: 'مدرسة الشهيد اسطفانوس للشمامسة',
-        short_name: 'مدرسة الألحان',
+        name: 'St. Stephan SCH',
+        short_name: 'St. Stephan SCH',
         lang: 'ar',
         dir: 'rtl',
         start_url: './',
