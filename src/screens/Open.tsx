@@ -4,6 +4,7 @@ import logo from '../logo.png';
 import type { Hymn } from '../data/types';
 import { safeUrl } from '../data/logic';
 import HymnText from './HymnText';
+import Icon from '../ui/Icon';
 
 /**
  * Open to anyone, no sign-in: the dictionary, the translator and the hymn library (read only).
@@ -29,16 +30,43 @@ function useHymns() {
   return { hymns, failed };
 }
 
+const DOORS = [
+  { to: '/open/dictionary', icon: 'dict', title: 'القاموس القبطي', text: 'حوالي ٣٤ ألف كلمة من قاموسين، دوّر بالقبطي أو بالعربي أو بالحروف الإنجليزي' },
+  { to: '/open/translate', icon: 'list', title: 'ترجمة جملة', text: 'من القبطي للعربي ومن العربي للقبطي، مع شرح كل كلمة' },
+  { to: '/open/library', icon: 'books', title: 'مكتبة الألحان', text: 'نص كل لحن بالقبطي والنطق والمعنى، وتسجيله لو موجود' },
+];
+
 export function OpenHome() {
   return (
-    <main className="login gutter">
-      <img src={logo} alt="" width={84} height={84} />
-      <div style={{ textAlign: 'center' }}><h1>أدوات اللغة القبطية والألحان</h1><div className="muted">مفتوحة لأي حد، من غير تسجيل دخول</div></div>
-      <Link to="/open/dictionary" className="btnp" style={{ width: '100%' }}>القاموس القبطي</Link>
-      <Link to="/open/translate" className="btn" style={{ width: '100%' }}>ترجمة جملة (قبطي ⇄ عربي)</Link>
-      <Link to="/open/library" className="btn" style={{ width: '100%' }}>مكتبة الألحان</Link>
-      <Link to="/" className="muted">دخول الخدام والمخدومين</Link>
+    <main className="login open-home gutter">
+      <img src={logo} alt="" width={76} height={76} />
+      <div style={{ textAlign: 'center' }}>
+        <h1>ركن اللغة القبطية والألحان</h1>
+        <div className="muted">مفتوح لأي حد بيحب يتعلم، من غير حساب ولا تسجيل</div>
+      </div>
+      <nav className="doors" aria-label="الأدوات">
+        {DOORS.map(d => (
+          <Link key={d.to} to={d.to} className="door">
+            <span className="door-i"><Icon name={d.icon} size={24} /></span>
+            <span className="grow"><b>{d.title}</b><span>{d.text}</span></span>
+            <span className="door-go" aria-hidden>←</span>
+          </Link>
+        ))}
+      </nav>
+      <div className="muted" style={{ textAlign: 'center' }}>من مدرسة الشهيد اسطفانوس للشمامسة والألحان</div>
+      <Link to="/" className="muted">أنت خادم أو مخدوم؟ ادخل من هنا</Link>
     </main>
+  );
+}
+
+/** On the sign-in screens: the way into the open tools. */
+export function OpenDoor() {
+  return (
+    <Link to="/open" className="door door-soft">
+      <span className="door-i"><Icon name="dict" size={22} /></span>
+      <span className="grow"><b>القاموس والمترجم ومكتبة الألحان</b><span>متاحين لأي حد، من غير تسجيل</span></span>
+      <span className="door-go" aria-hidden>←</span>
+    </Link>
   );
 }
 
@@ -63,8 +91,8 @@ export function OpenLibrary() {
         )}
       </header>
       <main className="main gutter wide">
-        {failed && <div className="card alert"><div className="alert-t">المكتبة ما اتحملتش</div><div className="note">اتأكد إن النت شغال وجرّب تاني.</div></div>}
-        {!hymns && !failed && <div className="note">بيحمّل الألحان…</div>}
+        {failed && <div className="card alert"><div className="alert-t">المكتبة مش راضية تفتح</div><div className="note">غالبًا النت فاصل. اتأكد منه وجرّب تاني.</div></div>}
+        {!hymns && !failed && <div className="note">لحظة، بنجهّز المكتبة…</div>}
         {hymns && (
           <div className="card"><div className="list cols">
             {list.map(h => (
@@ -79,7 +107,7 @@ export function OpenLibrary() {
                 </div>
               </Link>
             ))}
-            {list.length === 0 && <div className="note">مفيش ألحان بالاسم ده.</div>}
+            {list.length === 0 && <div className="note">مالقيناش لحن بالاسم ده. جرّب جزء من الاسم.</div>}
           </div></div>
         )}
       </main>

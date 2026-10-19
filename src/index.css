@@ -341,3 +341,21 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .piece small { font-size: 11px; opacity: .85; }
 .near { border-inline-start: 3px solid var(--line); padding-inline-start: 10px; display: grid; gap: 2px; }
 .tag-ok { background: var(--act); color: var(--on-act); }
+
+/* Open tools: big tappable doors on the dark welcome screen. */
+.doors { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.door { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 72px; padding: 12px 14px; border-radius: 16px; text-decoration: none;
+  background: rgba(250,246,239,.07); border: 1px solid rgba(232,189,126,.35); color: var(--on-hero); transition: background .15s, border-color .15s; }
+.door:hover, .door:active { background: rgba(232,189,126,.14); border-color: var(--gold); }
+.door b { display: block; font-size: 16px; }
+.door .grow > span { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-top: 2px; }
+.door-i { width: 44px; height: 44px; border-radius: 12px; flex: none; display: flex; align-items: center; justify-content: center; background: var(--gold); color: #2B0B0D; }
+.door-go { color: var(--gold); font-size: 18px; flex: none; }
+.login a.door { color: var(--on-hero); }
+.door-soft { min-height: 60px; background: transparent; border-style: dashed; }
+.door-soft .door-i { width: 38px; height: 38px; background: rgba(232,189,126,.18); color: var(--gold); }
+.door-soft b { font-size: 14.5px; }
+.open-home h1 { font-size: 23px; }
+.srcs { color: var(--muted); font-size: 12.5px; line-height: 1.7; }
+.srcs summary { cursor: pointer; font-weight: 600; }
+.try { display: flex; gap: 6px; flex-wrap: wrap; }

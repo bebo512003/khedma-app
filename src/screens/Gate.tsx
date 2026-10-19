@@ -4,6 +4,7 @@ import { useStore } from '../data/store';
 import logo from '../logo.png';
 import DeskNav from './DeskNav';
 import MobileNav from './MobileNav';
+import { OpenDoor } from './Open';
 
 /** In cloud mode, servant screens open only for signed-in servants of this church. */
 export default function Gate({ children }: { children: ReactNode }) {
@@ -53,7 +54,7 @@ export default function Gate({ children }: { children: ReactNode }) {
       <div style={{ textAlign: 'center' }}><h1>مدرسة الشهيد اسطفانوس للشمامسة</h1><div className="muted">إتعلم … رتل … افرح</div></div>
       {body}
       {error && <div className="alert-t" role="alert">{error}</div>}
-      {phase === 'signedOut' && <Link to="/open">القاموس والمترجم ومكتبة الألحان (من غير تسجيل)</Link>}
+      {phase === 'signedOut' && <OpenDoor />}
       <Link to="/install" className="muted">إزاي أنزّل التطبيق؟</Link>
     </main>
   );

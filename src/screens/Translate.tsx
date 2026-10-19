@@ -58,12 +58,12 @@ export default function Translate({ base = '' }: { base?: string }) {
         )}
       </header>
       <main className="main gutter wide">
-        {failed && <div className="card alert"><div className="alert-t">المترجم ما اتحملش</div><div className="note">أول مرة بيحتاج نت عشان يتحمل، وبعدها بيشتغل من غير نت.</div></div>}
-        {!t && !failed && <div className="note">بيحمّل المترجم…</div>}
+        {failed && <div className="card alert"><div className="alert-t">المترجم مش راضي يفتح</div><div className="note">أول مرة محتاج نت، وبعد كده بيشتغل معاك من غير نت.</div></div>}
+        {!t && !failed && <div className="note">لحظة، بنجهّز المترجم…</div>}
         {t && !q.trim() && (
           <div className="card">
-            <b>إزاي يشتغل</b>
-            <div className="muted">اكتب بالقبطي يترجم للعربي، واكتب بالعربي يترجم للقبطي. لو السطر موجود في مكتبة الألحان هيطلع نصه المعتمد، ولو مش موجود المترجم بيفك كل كلمة لأجزائها (أداة، ضمير، زمن، جذر) ويركّب الجملة.</div>
+            <b>اكتب وهو يترجم</b>
+            <div className="muted">قبطي يطلعلك عربي، وعربي يطلعلك قبطي. لو الجملة من الألحان هتلاقي نصها المعروف، ولو لأ هيترجمها كلمة كلمة ويوريك كل كلمة اتعملت إزاي، فراجعها بعينك.</div>
             <div className="row" style={{ gap: 6 }}>
               <button className="btn" onClick={() => setQ(EXAMPLE)}>مثال قبطي</button>
               <button className="btn" onClick={() => setQ(EXAMPLE_AR)}>مثال عربي</button>
@@ -89,7 +89,7 @@ export default function Translate({ base = '' }: { base?: string }) {
                 <div className="words">{p.words.filter(w => w.text).map((w, j) => <CopticWord key={j} w={w} base={base} />)}</div>
               </div>
             ))}
-            <div className="note span">المصادر: نصوص وتحليل كلمات مكتبة ألحان كنيسة مارجرجس نزلة السمان، وقاموس أسامة ثابت وبرنامجه للترجمة المساعدة آليًا من العربي للقبطي (2019).</div>
+            <details className="srcs span"><summary>المصادر</summary>نصوص وتحليل كلمات مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، وقاموس أسامة ثابت وبرنامجه للترجمة المساعدة آليًا من العربي للقبطي (2019).</details>
           </>
         )}
         {result && result.phrases.length > 0 && (
@@ -108,7 +108,7 @@ export default function Translate({ base = '' }: { base?: string }) {
                 <div className="words">{p.words.map((w, j) => <Word key={j} w={w} base={base} />)}</div>
               </div>
             ))}
-            <div className="note span">المصادر: تحليل كلمات ونصوص مكتبة ألحان كنيسة مارجرجس نزلة السمان، قاموس أسامة ثابت، وقواعد اللغة القبطية للراهب أندرياس المقاري.</div>
+            <details className="srcs span"><summary>المصادر</summary>تحليل كلمات ونصوص مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، قاموس أسامة ثابت، وقواعد اللغة القبطية للراهب أندرياس المقاري.</details>
           </>
         )}
       </main>

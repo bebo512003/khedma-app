@@ -24,7 +24,7 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
     <>
       <header className="top gutter">
         <div className="row"><Link to={back} className="icon" aria-label="رجوع">→</Link><div><h1>القاموس القبطي</h1>
-          <div className="muted">{dict ? `${dict.entries.length.toLocaleString('en')} كلمة • قبطي بحيري` : 'بيحمّل…'}</div></div></div>
+          <div className="muted">{dict ? `${dict.entries.length.toLocaleString('en')} كلمة من قاموسين` : 'لحظة، بنجهّز القاموس…'}</div></div></div>
         <div className="seg" role="tablist">
           <button role="tab" aria-pressed>كلمة</button>
           <button role="tab" aria-pressed={false} onClick={() => nav(`${base}/translate`)}>جملة</button>
@@ -44,12 +44,12 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
         )}
       </header>
       <main className="main gutter wide coptic-font">
-        {failed && <div className="card alert"><div className="alert-t">القاموس ما اتحملش</div><div className="note">أول مرة بيحتاج نت عشان يتحمل، وبعدها بيشتغل من غير نت.</div></div>}
+        {failed && <div className="card alert"><div className="alert-t">القاموس مش راضي يفتح</div><div className="note">أول مرة محتاج نت، وبعد كده بيشتغل معاك من غير نت.</div></div>}
         {!q.trim() && dict && (
           <div className="card">
-            <b>إزاي تدوّر</b>
-            <div className="muted">اكتب الكلمة بالقبطي (دوس على ⲁⲃⲅ للكيبورد القبطي)، أو بالعربي عشان تعرف الكلمة بالقبطي، أو بالحروف الإنجليزي زي pistis أو agathos.</div>
-            <div className="muted">لو الكلمة القبطي فيها أداة تعريف أو حرف جر ملزوق زي ⲡⲓⲛⲟⲩϯ، القاموس بيجرب يشيله ويدوّر على الباقي.</div>
+            <b>دوّر بأي طريقة تريحك</b>
+            <div className="muted">بالقبطي (زرار ⲁⲃⲅ بيفتح كيبورد قبطي)، أو بالعربي عشان تعرف الكلمة بالقبطي، أو بالحروف الإنجليزي. ولو الكلمة ملزوق فيها أداة زي ⲡⲓⲛⲟⲩϯ، القاموس بيفكها لوحده.</div>
+            <div className="try">{['ⲡⲓⲛⲟⲩϯ', 'محبة', 'ⲱⲟⲩ', 'agathos'].map(x => <button key={x} className="chip coptic-font" onClick={() => setQ(x)}>{x}</button>)}</div>
           </div>
         )}
         {result && (
@@ -61,7 +61,12 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
             </div>
           </>
         )}
-        {dict && <div className="note span">المصادر: قاموس قبطي عربي من إعداد أسامة ثابت (archive.org، ملك عام)، وقاموس اللغة القبطية لكنيسة الشهيد العظيم مارجرجس بنزلة السمان (stgeorgesaman.com) بمراجعه: قاموس أبونا أندرياس المقاري، مشروع كيليا، قاموس كروم، ومراجع عربية وإنجليزية مجمعة. المعاني اللي عليها نجمة (*) ترجمة آلية حسب الموقع.</div>}
+        {dict && (
+          <details className="srcs span">
+            <summary>المصادر: قاموس أسامة ثابت، وقاموس كنيسة مارجرجس بنزلة السمان</summary>
+            قاموس قبطي عربي من إعداد أسامة ثابت (archive.org، ملك عام). وقاموس اللغة القبطية لكنيسة الشهيد العظيم مارجرجس بنزلة السمان (stgeorgesaman.com) بمراجعه: قاموس أبونا أندرياس المقاري، مشروع كيليا، قاموس كروم، ومراجع عربية وإنجليزية مجمعة. المعاني اللي عليها نجمة (*) ترجمة آلية زي ما الموقع كاتب.
+          </details>
+        )}
       </main>
     </>
   );

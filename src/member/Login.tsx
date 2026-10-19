@@ -4,6 +4,7 @@ import { useStore } from '../data/store';
 import { cloudEnabled } from '../firebase/config';
 import { memberLogin } from './session';
 import logo from '../logo.png';
+import { OpenDoor } from '../screens/Open';
 
 export default function Login() {
   const { data } = useStore();
@@ -53,7 +54,7 @@ export default function Login() {
       </div>
       <div className="muted" style={{ textAlign: 'center' }}>مش فاكره؟ اسأل الخادم بتاعك يعملك واحد جديد.
         {!cloudEnabled && data?.members.some(m => m.example) && <><br />للتجربة: الكود 0001 والرقم 1234</>}</div>
-      <Link to="/open">القاموس والمترجم ومكتبة الألحان (من غير تسجيل)</Link>
+      <OpenDoor />
       <Link to="/install" className="muted">إزاي أنزّل التطبيق؟</Link>
       <Link to="/" className="muted">رجوع لتطبيق الخادم</Link>
     </main>
