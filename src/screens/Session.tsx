@@ -19,6 +19,10 @@ export default function SessionScreen() {
   const hymns = hymnIds.map(id => data.hymns.find(h => h.id === id)!).filter(Boolean);
   const members = useMemo(() => data.members.filter(m => m.levelId === levelId).sort((a, b) => a.name.localeCompare(b.name, 'ar')), [data.members, levelId]);
 
+  // One hymn per session: the servant picks it, and its status and the ratings belong to it. Other hymns are set from each member's profile.
+  const lastHymn = [...data.sessions].filter(s => s.levelId === levelId).sort((a, b) => b.date.localeCompare(a.date))[0]?.hymnIds?.[0];
+  const [hymnId, setHymnId] = useState<string | undefined>(() => hymnIds.includes(lastHymn ?? '') ? lastHymn : hymnIds[0]);
+  const hymn = hymns.find(h => h.id === hymnId);
   const [mode, setMode] = useState<Mode>('att');
   const [att, setAtt] = useState<Record<string, Attendance>>(() => Object.fromEntries(members.map(m => [m.id, 'a'])));
   const [rate, setRate] = useState<Record<string, Rating>>({});
@@ -37,7 +41,8 @@ export default function SessionScreen() {
 
   // Members added while the session is open (by another servant) start absent with their saved hymn progress.
   const hs = (id: string, h: string): HymnStatus => hym[id]?.[h] ?? data.progress[id]?.[h] ?? 0;
-  const memberHym = (id: string) => Object.fromEntries(hymnIds.map(h => [h, hs(id, h)]));
+  const sessionHymns = hymnId ? [hymnId] : [];
+  const memberHym = (id: string) => Object.fromEntries(sessionHymns.map(h => [h, hs(id, h)]));
   const present = members.filter(m => att[m.id] === 'p');
   const onScan = (code: string) => {
     const m = data.members.find(x => x.code === code);
@@ -57,7 +62,7 @@ export default function SessionScreen() {
   const cycleHym = (id: string, h: string) => setHym(s => ({ ...s, [id]: { ...memberHym(id), ...s[id], [h]: ((hs(id, h) + 1) % 4) as HymnStatus } }));
   const bulk = () => setHym(s => {
     const n = { ...s };
-    present.forEach(m => { n[m.id] = Object.fromEntries(hymnIds.map(h => [h, Math.max(1, s[m.id]?.[h] ?? hs(m.id, h)) as HymnStatus])); });
+    present.forEach(m => { n[m.id] = { ...s[m.id], ...Object.fromEntries(sessionHymns.map(h => [h, Math.max(1, s[m.id]?.[h] ?? hs(m.id, h)) as HymnStatus])) }; });
     return n;
   });
 
@@ -65,7 +70,7 @@ export default function SessionScreen() {
     const milestones: Session['milestones'] = {};
     present.forEach(m => {
       let memorized = 0, solo = 0;
-      hymnIds.forEach(h => {
+      sessionHymns.forEach(h => {
         const before = data.progress[m.id]?.[h] ?? 0, after = hs(m.id, h);
         if (before < 2 && after >= 2) memorized++;
         if (before < 3 && after === 3) solo++;
@@ -73,7 +78,7 @@ export default function SessionScreen() {
       if (memorized || solo) milestones[m.id] = { memorized, solo };
     });
     const session: Session = {
-      id: uid(), date: todayISO(), levelId, termId: term.id, hymnIds,
+      id: uid(), date: todayISO(), levelId, termId: term.id, hymnIds: sessionHymns,
       attendance: Object.fromEntries(members.map(m => [m.id, att[m.id] ?? 'a'])),
       ratings: Object.fromEntries(present.map(m => [m.id, rate[m.id] ?? [3, 3, 3]])),
       milestones, durationMs: Date.now() - start,
@@ -87,11 +92,17 @@ export default function SessionScreen() {
     nav(`/summary/${session.id}`, { replace: true });
   };
 
+  const picker = hymns.length > 0 && (
+    <div className="field"><span>لحن الحصة</span>
+      <div className="chips">{hymns.map(h => <button key={h.id} className="chip" aria-pressed={hymnId === h.id} onClick={() => setHymnId(h.id)}>{h.nameAr}</button>)}</div>
+    </div>
+  );
+
   return (
     <>
       <header className="top gutter">
         <div className="row between">
-          <div><h1>{level.name}</h1><div className="muted">{hymns.map(h => h.nameAr).join(' • ') || 'مفيش ألحان في منهج الترم لسه'}</div></div>
+          <div><h1>{level.name}</h1><div className="muted">{hymn ? `لحن الحصة: ${hymn.nameAr}` : hymns.length ? 'اختار لحن الحصة' : 'مفيش ألحان في منهج الترم لسه'}</div></div>
           <span className="timer" aria-label="وقت الحصة">{fmt(now - start)}</span>
         </div>
         <div className="seg" role="group" aria-label="وضع الحصة">
@@ -122,7 +133,8 @@ export default function SessionScreen() {
         </>)}
 
         {mode === 'rate' && (present.length === 0 ? <div className="card">سجّل الحضور الأول، التقييم للحاضرين بس.</div> : <>
-          <div className="note">كله بيبدأ من 3. غيّر بس اللي يستاهل أعلى أو أقل.</div>
+          {picker}
+          <div className="note">التقييم على {hymn ? `«${hymn.nameAr}»` : 'الحصة'}. كله بيبدأ من 3، غيّر بس اللي يستاهل أعلى أو أقل.</div>
           <div className="card" style={{ paddingBlock: 4 }}><div className="list cols">
             {present.map(m => {
               const r = rate[m.id] ?? [3, 3, 3];
@@ -155,23 +167,14 @@ export default function SessionScreen() {
         </>)}
 
         {mode === 'hym' && (present.length === 0 ? <div className="card">سجّل الحضور الأول.</div> : hymns.length === 0 ? <div className="card">منهج الترم فاضي للمستوى ده.</div> : <>
-          <div className="row between"><span className="note">اضغط على الحالة تنقلها للي بعدها</span><button className="chip" onClick={bulk}>الكل بيتعلمه</button></div>
+          {picker}
+          <div className="row between"><span className="note">اضغط على الحالة تنقلها للي بعدها. باقي الألحان بتتظبط من بروفايل كل مخدوم.</span><button className="chip" style={{ whiteSpace: 'nowrap' }} onClick={bulk} disabled={!hymn}>الكل بيتعلمه</button></div>
           <div className="card" style={{ paddingBlock: 4 }}><div className="list cols">
             {present.map(m => (
               <div key={m.id} className="li">
                 <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
                 <b className="grow">{m.name}</b>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
-                  {hymns.map(h => {
-                    const s = hs(m.id, h.id);
-                    return (
-                      <div key={h.id} className="row" style={{ gap: 6 }}>
-                        <span className="muted">{h.nameAr.split(' ')[0]}</span>
-                        <button className={`pill st${s}`} onClick={() => cycleHym(m.id, h.id)} aria-label={`${h.nameAr}: ${STATUS_LABELS[s]}`}>{STATUS_LABELS[s]}</button>
-                      </div>
-                    );
-                  })}
-                </div>
+                {hymn && (s => <button className={`pill st${s}`} onClick={() => cycleHym(m.id, hymn.id)} aria-label={`${hymn.nameAr}: ${STATUS_LABELS[s]}`}>{STATUS_LABELS[s]}</button>)(hs(m.id, hymn.id))}
               </div>
             ))}
           </div></div>

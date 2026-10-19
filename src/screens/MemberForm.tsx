@@ -32,7 +32,7 @@ export default function MemberForm() {
     update(d => existing
       ? { ...d, members: d.members.map(x => x.id === clean.id ? clean : x) }
       : { ...d, members: [...d.members, clean], nextCode: d.nextCode + 1 });
-    nav('/members', { replace: true });
+    nav(existing ? `/members/${clean.id}` : '/members', { replace: true });
   };
   /** New PIN: shown once to the servant, stored only as a hash. */
   const makePin = async () => {
@@ -70,7 +70,7 @@ export default function MemberForm() {
   return (
     <>
       <header className="top gutter"><div className="row between">
-        <div className="row"><Link to="/members" className="icon" aria-label="رجوع">→</Link><h1>{existing ? m.name : 'مخدوم جديد'}</h1></div>
+        <div className="row"><Link to={existing ? `/members/${m.id}` : '/members'} className="icon" aria-label="رجوع">→</Link><h1>{existing ? `تعديل ${m.name}` : 'مخدوم جديد'}</h1></div>
         <span className="tag tag-ex">كود {m.code}</span>
       </div></header>
       <main className="main gutter">
@@ -140,7 +140,7 @@ export default function MemberForm() {
           : <button className="btn" onClick={() => setConfirmDelete(true)}>امسح المخدوم</button>)}
       </main>
       <div className="bar gutter"><div>
-        <Link to="/members" className="btn">إلغاء</Link>
+        <Link to={existing ? `/members/${m.id}` : '/members'} replace className="btn">إلغاء</Link>
         <button className="btnp grow" onClick={save}>احفظ</button>
       </div></div>
     </>
