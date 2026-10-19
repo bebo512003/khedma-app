@@ -9,7 +9,7 @@ import { searchVariants } from './arabicVariants';
  */
 const URL_ = 'dict/coptic-arabic.json?v=1';
 const URL_SG = 'dict/stgeorge-dict.json?v=1';
-const URL_KELLIA = 'dict/kellia.json?v=1';
+const URL_KELLIA = 'dict/kellia.json?v=2';
 
 export interface Entry {
   word: string;

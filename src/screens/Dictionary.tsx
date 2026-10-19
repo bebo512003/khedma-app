@@ -80,8 +80,7 @@ function Row({ hit: { entry: e, note } }: { hit: Hit }) {
         <span className="coptic-font cword" dir="ltr">{e.word}</span>
         <span className="muted" dir="ltr">{e.latin}</span>
       </div>
-      {e.meanings.length > 0 ? <b>{e.meanings.join('، ')}</b> : e.english && <b dir="ltr" style={{ textAlign: 'left' }}>{e.english}</b>}
-      {e.meanings.length > 0 && e.english && <div className="muted" dir="ltr" style={{ fontSize: 13 }}>{e.english}</div>}
+      {e.meanings.length > 0 && <b>{e.meanings.join('، ')}</b>}
       {e.forms && e.forms.length > 1 && (
         <div className="muted" style={{ fontSize: 12 }}>في اللهجات: {e.forms.slice(0, 8).map(([f, d], i) => <span key={i}><span className="coptic-font" dir="ltr">{f}</span>{d.length ? ` (${d.join('، ')})` : ''}{i < Math.min(8, e.forms!.length) - 1 ? '، ' : ''}</span>)}</div>
       )}

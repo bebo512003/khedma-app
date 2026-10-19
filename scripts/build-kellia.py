@@ -6,7 +6,7 @@ Every word with its forms in each dialect (Sahidic, Bohairic, Fayyumic, Akhmimic
 and its English meaning. Where one of its Bohairic forms is in our Arabic dictionaries, it takes their Arabic too,
 so a Sahidic or Fayyumic word leads to the Arabic of its Bohairic form. This file is shared under CC BY-SA 4.0 too.
 
-Usage: python3 scripts/build-kellia.py path/to/Comprehensive_Coptic_Lexicon.xml
+Usage: python3 scripts/build-kellia.py path/to/Comprehensive_Coptic_Lexicon.xml [missing.json: English meanings with no Arabic yet]
 """
 import json, re, sys
 import xml.etree.ElementTree as ET
@@ -43,8 +43,22 @@ for w in sg['words']:
     if k and w[5] and (not dialects or 'بحيري' in dialects):
         arabic.setdefault(k, [m.replace(' *', '') for m in w[5][:3]])
 
+# English → Arabic for words with no Bohairic Arabic: Nazlet El Seman's dictionary gives the same English (it is drawn
+# from this lexicon) with its Arabic; what's left is in scripts/kellia-arabic.json (translated for this app).
+# Both are marked * (not from a printed Coptic-Arabic dictionary).
+by_english = {}
+for w in sg['words']:
+    for p in (w[6] or '').split(' | '):
+        p = p.strip().lower()
+        if p and p not in by_english and w[5]:
+            by_english[p] = [m.replace(' *', '') for m in w[5][:3]]
+try:
+    translated = json.load(open('scripts/kellia-arabic.json', encoding='utf-8'))
+except FileNotFoundError:
+    translated = {}
+
 root = ET.parse(sys.argv[1]).getroot()
-out, linked = [], 0
+out, linked, missing = [], 0, set()
 for e in root.iter('{http://www.tei-c.org/ns/1.0}entry'):
     forms = {}
     for f in e.findall('t:form', NS):
@@ -74,10 +88,19 @@ for e in root.iter('{http://www.tei-c.org/ns/1.0}entry'):
                     ar.append(m)
     if ar:
         linked += 1
+    elif english:
+        en = '; '.join(english[:4])
+        found = by_english.get(en.lower()) or by_english.get(english[0].lower()) or translated.get(en)
+        if found:
+            ar = [m + ' *' for m in found]
+        else:
+            missing.add(en)
     # Bohairic form first when there is one, then the rest.
     fs = sorted(forms.items(), key=lambda x: 'بحيري' not in x[1])
     out.append([[[o, dl] for o, dl in fs[:24]], pos, '; '.join(english[:4])[:300], ar[:4], e.get('{http://www.w3.org/XML/1998/namespace}id')])
 
 json.dump({'source': 'Coptic Dictionary Online / Comprehensive Coptic Lexicon (BBAW, KELLIA)، رخصة CC BY-SA 4.0', 'entries': out},
           open('public/dict/kellia.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
-print(f'{len(out)} entries, {linked} with Arabic from their Bohairic form', file=sys.stderr)
+print(f'{len(out)} entries, {linked} with Arabic from their Bohairic form, {len(missing)} English meanings still to translate', file=sys.stderr)
+if len(sys.argv) > 2:
+    json.dump(sorted(missing), open(sys.argv[2], 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
