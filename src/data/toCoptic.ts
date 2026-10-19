@@ -104,6 +104,7 @@ export interface Reverse {
   tmIndex: Map<string, number[]>;
   /** Arabic line key, Coptic as written, Arabic as printed. */
   tmList: [string, string, string][];
+  refs: Map<number, string>;
 }
 
 /** The written form minus its first n Coptic letters (jinkim after them goes with them). */
@@ -123,7 +124,7 @@ const cache = new WeakMap<Translator, Reverse>();
 export function reverseOf(t: Translator, extra?: ArabicLexicon): Reverse {
   const dict = t.dict;
   const hit = cache.get(t);
-  if (hit && (hit.full || !extra)) return hit;
+  if (hit && (hit.full || !extra)) { addLines(t, hit); return hit; }
   const lex = new Map<string, Lex>(), nouns = new Map<string, { stem: string; n: number; gender: Gender }>(), verbs = new Map<string, Verb>();
   const genders = new Map<string, Record<Gender, number>>();
   const pastVerbs = new Map<string, { stem: string; n: number }>(), presentVerbs = new Map<string, { stem: string; n: number }>();
@@ -155,6 +156,9 @@ export function reverseOf(t: Translator, extra?: ArabicLexicon): Reverse {
     const g = v.V?.[0];
     if (g && m.length >= 2) { const ar = arKey(g[0].replace(/\s*\(.*\)$/, '')); if (oneWord(ar)) better(pastVerbs, ar, { stem: m, n: g[1] }); }
   }
+  // The Bible's nouns (with the gender of their article) and verbs, after the hymns.
+  for (const [a, c, g] of t.bible?.nouns ?? []) { const k = arKey(a); if (oneWord(k)) better(nouns, k, { stem: c, n: 0.55, gender: g }); }
+  for (const [a, c] of t.bible?.verbs ?? []) { const k = arKey(a); if (oneWord(k)) better(pastVerbs, k, { stem: c, n: 0.55 }); }
   // Osama Thabet's Arabic → Coptic lists, after the hymns; a Coptic word the hymns use wins over one they don't.
   const words = new Map<string, string>(), ero = new Set<string>();
   if (extra) {
@@ -208,15 +212,20 @@ export function reverseOf(t: Translator, extra?: ArabicLexicon): Reverse {
     const o = dmap.get(k);
     if (!o || copticKey(e.word).length < copticKey(o).length) dmap.set(k, e.word);
   }
-  const tmList = t.tmList.map(([, ar, cop]) => [arKey(ar), cop, ar] as [string, string, string]);
-  const tm = new Map<string, number>(), tmIndex = new Map<string, number[]>();
-  tmList.forEach(([k], i) => {
-    if (!tm.has(k)) tm.set(k, i);
-    for (const w of new Set(k.split(' '))) { const l = tmIndex.get(w); if (l) l.push(i); else tmIndex.set(w, [i]); }
-  });
-  const r: Reverse = { lex, nouns, verbs, present, dict: dmap, words, ero, full: !!extra, tm, tmIndex, tmList };
+  const r: Reverse = { lex, nouns, verbs, present, dict: dmap, words, ero, full: !!extra, tm: new Map(), tmIndex: new Map(), tmList: [], refs: t.refs };
+  addLines(t, r);
   cache.set(t, r);
   return r;
+}
+
+/** The translator's lines (hymns, then Bible verses once loaded) keyed by their Arabic. */
+function addLines(t: Translator, r: Reverse) {
+  for (let i = r.tmList.length; i < t.tmList.length; i++) {
+    const [, ar, cop] = t.tmList[i], k = arKey(ar);
+    r.tmList.push([k, cop, ar]);
+    if (!r.tm.has(k)) r.tm.set(k, i);
+    for (const w of new Set(k.split(' '))) { const l = r.tmIndex.get(w); if (l) l.push(i); else r.tmIndex.set(w, [i]); }
+  }
 }
 function apart(written: string, n: number) { const rest = dropLetters(written, n); return written.slice(0, written.length - rest.length) + ' ' + rest; }
 
@@ -331,7 +340,7 @@ function possessed(r: Reverse, w: string): CWord | null {
 /** The closest Arabic line in the hymns, with its Coptic. */
 export function nearestArabic(r: Reverse, k: string, min = 0.6): Match | undefined {
   const exact = r.tm.get(k);
-  if (exact !== undefined) return { coptic: r.tmList[exact][1], arabic: r.tmList[exact][2], score: 1 };
+  if (exact !== undefined) return { coptic: r.tmList[exact][1], arabic: r.tmList[exact][2], score: 1, ref: r.refs.get(exact) };
   const words = k.split(' ').filter(Boolean);
   if (words.length < 2) return undefined;
   const hits = new Map<number, number>();
@@ -342,7 +351,7 @@ export function nearestArabic(r: Reverse, k: string, min = 0.6): Match | undefin
     const [ak, cop, ar] = r.tmList[i];
     const other = ak.split(' ');
     const score = (2 * overlap(words, other)) / (words.length + other.length);
-    if (score >= min && score < 1 && (!best || score > best.score)) best = { coptic: cop, arabic: ar, score };
+    if (score >= min && score < 1 && (!best || score > best.score)) best = { coptic: cop, arabic: ar, score, ref: r.refs.get(i) };
   }
   return best;
 }

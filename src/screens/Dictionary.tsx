@@ -24,7 +24,7 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
     <>
       <header className="top gutter">
         <div className="row"><Link to={back} className="icon" aria-label="رجوع">→</Link><div><h1>القاموس القبطي</h1>
-          <div className="muted">{dict ? `${dict.entries.length.toLocaleString('en')} كلمة من قاموسين` : 'لحظة، بنجهّز القاموس…'}</div></div></div>
+          <div className="muted">{dict ? `${dict.entries.length.toLocaleString('en')} كلمة من 3 قواميس • كل اللهجات` : 'لحظة، بنجهّز القاموس…'}</div></div></div>
         <div className="seg" role="tablist">
           <button role="tab" aria-pressed>كلمة</button>
           <button role="tab" aria-pressed={false} onClick={() => nav(`${base}/translate`)}>جملة</button>
@@ -63,8 +63,8 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
         )}
         {dict && (
           <details className="srcs span">
-            <summary>المصادر: قاموس أسامة ثابت، وقاموس كنيسة مارجرجس بنزلة السمان</summary>
-            قاموس قبطي عربي من إعداد أسامة ثابت (archive.org، ملك عام). وقاموس اللغة القبطية لكنيسة الشهيد العظيم مارجرجس بنزلة السمان (stgeorgesaman.com) بمراجعه: قاموس أبونا أندرياس المقاري، مشروع كيليا، قاموس كروم، ومراجع عربية وإنجليزية مجمعة. المعاني اللي عليها نجمة (*) ترجمة آلية زي ما الموقع كاتب.
+            <summary>المصادر: أسامة ثابت، وكنيسة مارجرجس بنزلة السمان، وCoptic Dictionary Online</summary>
+            قاموس قبطي عربي من إعداد أسامة ثابت (archive.org، ملك عام). وقاموس اللغة القبطية لكنيسة الشهيد العظيم مارجرجس بنزلة السمان (stgeorgesaman.com) بمراجعه: قاموس أبونا أندرياس المقاري، مشروع كيليا، قاموس كروم، ومراجع عربية وإنجليزية مجمعة. المعاني اللي عليها نجمة (*) ترجمة آلية زي ما الموقع كاتب. وأشكال الكلمات في كل اللهجات ومعانيها الإنجليزي من Coptic Dictionary Online (coptic-dictionary.org، القاموس القبطي الشامل لأكاديمية برلين ومشروع KELLIA) برخصة CC BY-SA 4.0، والمعنى العربي ليها مأخوذ من الكلمة البحيري في القاموسين اللي فوق.
           </details>
         )}
       </main>
@@ -80,8 +80,11 @@ function Row({ hit: { entry: e, note } }: { hit: Hit }) {
         <span className="coptic-font cword" dir="ltr">{e.word}</span>
         <span className="muted" dir="ltr">{e.latin}</span>
       </div>
-      <b>{e.meanings.join('، ')}</b>
-      {e.english && <div className="muted" dir="ltr" style={{ fontSize: 13 }}>{e.english}</div>}
+      {e.meanings.length > 0 ? <b>{e.meanings.join('، ')}</b> : e.english && <b dir="ltr" style={{ textAlign: 'left' }}>{e.english}</b>}
+      {e.meanings.length > 0 && e.english && <div className="muted" dir="ltr" style={{ fontSize: 13 }}>{e.english}</div>}
+      {e.forms && e.forms.length > 1 && (
+        <div className="muted" style={{ fontSize: 12 }}>في اللهجات: {e.forms.slice(0, 8).map(([f, d], i) => <span key={i}><span className="coptic-font" dir="ltr">{f}</span>{d.length ? ` (${d.join('، ')})` : ''}{i < Math.min(8, e.forms!.length) - 1 ? '، ' : ''}</span>)}</div>
+      )}
       {tags.length > 0 && <div className="muted" style={{ fontSize: 12 }}>{tags.join(' • ')}</div>}
       {e.source && <div className="muted" style={{ fontSize: 12 }}>المصدر: {e.source}</div>}
       {note && <span className="tag tag-ex">{note.startsWith('«') ? note : `بعد ما شلنا ${note}`}</span>}

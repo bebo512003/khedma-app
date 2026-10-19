@@ -8,6 +8,9 @@ import { bohairic, copticKey, loadDictionary, type Entry } from './dictionary';
  *    and a stem from the library or the dictionary. The Arabic is put together from those pieces.
  */
 const URL_ = 'dict/hymn-corpus.json?v=2';
+/** The Bible, Bohairic and Arabic verse by verse (scripts/build-bible.py): what Coptic words mean there, and the verses themselves. */
+const URL_BIBLE = 'dict/bible-lex.json?v=1';
+const URL_VERSES = 'dict/bible-verses.json?v=1';
 
 type Gloss = [string, number][];
 interface Corpus {
@@ -22,6 +25,16 @@ interface Corpus {
   /** Grammar pieces (scripts/translator-grammar.json): [form, Arabic, class] and object pronouns [form, Arabic]. */
   grammar: { prefixes: [string, string, string][]; suffixes: [string, string][]; words?: [string, string][] };
 }
+/** Learned from the matched Bible verses: a lemma's Arabic as a singular noun (N), plural (M), "he did" (V) or anything (S). */
+export interface BibleLex {
+  source: string;
+  lemmas: Record<string, { N?: string; M?: string; V?: string; S?: string; n: number }>;
+  /** Other spellings of a lemma in the text (ϫⲫⲉ → ϫⲫⲟ). */
+  alias: Record<string, string>;
+  /** Arabic → Coptic: [Arabic noun, Coptic, gender, count] and [Arabic "he did", Coptic, count]. */
+  nouns: [string, string, 'm' | 'f' | 'p', number][];
+  verbs: [string, string, number][];
+}
 export interface Piece { form: string; gloss: string; role: 'prefix' | 'stem' | 'suffix' | 'word'; base?: 'past' | 'present' }
 export interface WordResult {
   text: string;
@@ -35,12 +48,12 @@ export interface WordResult {
   /** Possessive, demonstrative or other article: the word is already definite. */
   definite?: boolean;
 }
-export interface Match { coptic: string; arabic: string; score: number }
+export interface Match { coptic: string; arabic: string; score: number; /** Book, chapter and verse when the line is a Bible verse. */ ref?: string }
 export interface PhraseResult { text: string; words: WordResult[]; arabic: string; match?: Match }
 export interface Translation { phrases: PhraseResult[]; arabic: string; whole?: Match }
 
 /** What a stem means: in the hymns as a whole word (S), after a past-tense piece (V), after a singular / plural article (N / M); in the dictionary. */
-interface Stem { S?: string; V?: string; N?: string; M?: string; verb?: string; noun?: string; other?: string }
+interface Stem { S?: string; V?: string; N?: string; M?: string; verb?: string; noun?: string; other?: string; /** The meanings came from the Bible, not the hymns. */ bible?: boolean }
 
 export interface Translator {
   source: string;
@@ -52,24 +65,30 @@ export interface Translator {
   trans: Corpus['trans'];
   transTotal: Map<string, number>;
   tm: Map<string, number>;
+  /** The same lines without spaces: the Bible splits words differently (ϫⲉⲟⲩⲏⲓ for ϫⲉ ⲟⲩⲏⲓ). */
+  tmFlat: Map<string, number>;
   /** Line key, Arabic, Coptic as written. */
   tmList: [string, string, string][];
   tmIndex: Map<string, number[]>;
   /** The dictionary, for translating into Coptic (toCoptic.ts). */
   dict: Entry[];
+  bible?: BibleLex;
+  /** Bible reference of each line in tmList past the hymns (loaded later, see addVerses). */
+  refs: Map<number, string>;
 }
 
 const top = (g?: Gloss, min = 1) => g && g[0] && g[0][1] >= min ? g[0][0] : undefined;
 
 let loading: Promise<Translator> | null = null;
 export function loadTranslator() {
-  loading ??= Promise.all([fetch(URL_).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Corpus>; }), loadDictionary()])
-    .then(([c, dict]) => buildTranslator(c, bohairic(dict.entries)));
+  const json = <T,>(u: string) => fetch(u).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<T>; });
+  loading ??= Promise.all([json<Corpus>(URL_), loadDictionary(), json<BibleLex>(URL_BIBLE).catch(() => undefined)])
+    .then(([c, dict, bible]) => buildTranslator(c, bohairic(dict.entries), bible));
   loading.catch(() => { loading = null; });
   return loading;
 }
 
-export function buildTranslator(c: Corpus, dict: Entry[]): Translator {
+export function buildTranslator(c: Corpus, dict: Entry[], bible?: BibleLex): Translator {
   const prefixes = new Map<string, { gloss: string; cls: string }>(), suffixes = new Map<string, string>();
   const stems = new Map<string, Stem>();
   for (const [p, gloss, cls] of c.grammar.prefixes) prefixes.set(copticKey(p), { gloss, cls });
@@ -79,6 +98,16 @@ export function buildTranslator(c: Corpus, dict: Entry[]): Translator {
     const p = top(v.P, 5), pre = prefixes.get(m);
     if (p && pre && (pre.cls === 'link' || pre.cls === 'deriv') && !/^\(/.test(pre.gloss)) pre.gloss = p.replace(/\s*\(.*\)$/, '') || pre.gloss;
     if (m.length >= 2 && (v.S || v.V || v.N || v.M)) stems.set(m, { S: top(v.S), V: top(v.V), N: top(v.N), M: top(v.M) });
+  }
+  // The Bible next: what a word means in the matched verses, for stems the hymns never use.
+  if (bible) {
+    const put = (k: string, e: BibleLex['lemmas'][string]) => {
+      const st = stems.get(k);
+      if (st && (st.S || st.V || st.N || st.M)) return;
+      stems.set(k, { ...st, S: e.S ?? e.N ?? e.V, V: e.V, N: e.N, M: e.M, bible: true });
+    };
+    for (const [k, e] of Object.entries(bible.lemmas)) if (k.length >= 2) put(k, e);
+    for (const [f, k] of Object.entries(bible.alias)) if (f.length >= 2 && bible.lemmas[k]) put(f, bible.lemmas[k]);
   }
   // The dictionary fills stems the hymns never use: its first verb meaning and first noun meaning.
   for (const e of dict) {
@@ -95,15 +124,36 @@ export function buildTranslator(c: Corpus, dict: Entry[]): Translator {
   for (const k of [...stems.keys()]) if (k.startsWith('ⲛⲁ') && stems.has(k.slice(2)) && k.length > 4) stems.delete(k);
   const tmIndex = new Map<string, number[]>();
   const tmList = c.tm.map(([cop, ar]) => [lineKey(cop), ar, cop] as [string, string, string]);
-  const tm = new Map<string, number>();
-  tmList.forEach(([k], i) => { if (!tm.has(k)) tm.set(k, i); });
+  const tm = new Map<string, number>(), tmFlat = new Map<string, number>();
+  tmList.forEach(([k], i) => { if (!tm.has(k)) tm.set(k, i); const f = k.replace(/ /g, ''); if (!tmFlat.has(f)) tmFlat.set(f, i); });
   tmList.forEach(([k], i) => { for (const w of new Set(k.split(' '))) { const l = tmIndex.get(w); if (l) l.push(i); else tmIndex.set(w, [i]); } });
   return {
     source: c.source, morphs: c.morphs, prefixes, suffixes, stems, trans: c.trans,
     transTotal: new Map(Object.entries(c.trans).map(([k, v]) => [k, Object.values(v).reduce((a, b) => a + b, 0)])),
     forms: new Map(c.forms.map(([k, seg, gloss, n, w]) => [k, [seg, gloss, n, w || k]])),
-    tm, tmList, tmIndex, dict,
+    tm, tmFlat, tmList, tmIndex, dict, bible, refs: new Map(),
   };
+}
+
+/** The Bible verses, for whole-verse lookups; loaded after the translator so it opens fast. */
+let verses: Promise<void> | null = null;
+export function loadVerses(t: Translator) {
+  verses ??= fetch(URL_VERSES).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<{ verses: [string, string, string][] }>; })
+    .then(({ verses }) => addVerses(t, verses));
+  verses.catch(() => { verses = null; });
+  return verses;
+}
+export function addVerses(t: Translator, list: [string, string, string][]) {
+  if (t.refs.size) return;
+  for (const [cop, ar, ref] of list) {
+    const i = t.tmList.length, k = lineKey(cop);
+    t.tmList.push([k, ar, cop]);
+    t.refs.set(i, ref);
+    if (!t.tm.has(k)) t.tm.set(k, i);
+    const f = k.replace(/ /g, '');
+    if (!t.tmFlat.has(f)) t.tmFlat.set(f, i);
+    for (const w of new Set(k.split(' '))) { const l = t.tmIndex.get(w); if (l) l.push(i); else t.tmIndex.set(w, [i]); }
+  }
 }
 
 const PERSON: Record<string, string> = { 'أنا': '1s', 'أنت': '2ms', 'أنتِ': '2fs', 'هو': '3ms', 'هي': '3fs', 'نحن': '1p', 'أنتم': '2p', 'هم': '3p', 'هما': '3p', 'هن': '3p' };
@@ -251,9 +301,9 @@ function stemGloss(t: Translator, s: string, before: Piece[]): { gloss: string; 
   const pick = past ? st.V ?? st.verb ?? st.S : cls === 'art' ? (plural ? st.M ?? st.S ?? st.N : st.N ?? st.noun ?? st.S) : cls === 'conj' || cls === 'fut' || cls === 'rel' ? st.S ?? st.V ?? st.verb : st.S ?? st.N ?? st.V;
   const gloss = pick ?? st.verb ?? st.noun ?? st.other;
   if (!gloss) return null;
-  const fromHymns = !!(st.S || st.V || st.N || st.M);
+  const fromHymns = !!(st.S || st.V || st.N || st.M) && !st.bible;
   const base = gloss === st.V ? 'past' as const : gloss === st.verb || /^[يت][ء-ي]{3}$|^ي[ء-ي]{2,6}$/.test(gloss) ? 'present' : undefined;
-  return { gloss, base, cost: (fromHymns ? 1 : 3) + (s.length < 3 ? 3 : 0) };
+  return { gloss, base, cost: (fromHymns ? 1 : st.bible ? 2 : 3) + (s.length < 3 ? 3 : 0) };
 }
 
 function deinflect(v: string) {
@@ -318,8 +368,8 @@ export const lineKey = (s: string) => s.split(/\s+/).map(copticKey).filter(Boole
 
 /** The closest line in the hymn library (by shared words), if it is close enough to be useful. */
 export function nearest(t: Translator, k: string, min = 0.6): Match | undefined {
-  const exact = t.tm.get(k);
-  if (exact !== undefined) return { coptic: t.tmList[exact][2], arabic: t.tmList[exact][1], score: 1 };
+  const exact = t.tm.get(k) ?? t.tmFlat.get(k.replace(/ /g, ''));
+  if (exact !== undefined) return { coptic: t.tmList[exact][2], arabic: t.tmList[exact][1], score: 1, ref: t.refs.get(exact) };
   const words = k.split(' ').filter(Boolean);
   if (words.length < 2) return undefined;
   const hits = new Map<number, number>();
@@ -330,7 +380,7 @@ export function nearest(t: Translator, k: string, min = 0.6): Match | undefined 
     const [ck, ar, written] = t.tmList[i];
     const other = ck.split(' ');
     const score = (2 * overlap(words, other)) / (words.length + other.length);
-    if (score >= min && (!best || score > best.score)) best = { coptic: written, arabic: ar, score };
+    if (score >= min && (!best || score > best.score)) best = { coptic: written, arabic: ar, score, ref: t.refs.get(i) };
   }
   return best;
 }

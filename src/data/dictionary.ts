@@ -4,10 +4,12 @@ import { searchVariants } from './arabicVariants';
 /**
  * Two dictionaries, searched together:
  * Osama Thabet's Coptic-Arabic dictionary (Bohairic), built by scripts/build-dictionary.py;
- * the Coptic dictionary of St. George church, Nazlet El Seman, with the sources it lists per word (scripts/build-stgeorge-dict.py).
+ * the Coptic dictionary of St. George church, Nazlet El Seman, with the sources it lists per word (scripts/build-stgeorge-dict.py);
+ * Coptic Dictionary Online (KELLIA), for each word's forms in every dialect, with English and the Arabic of its Bohairic form (scripts/build-kellia.py).
  */
 const URL_ = 'dict/coptic-arabic.json?v=1';
 const URL_SG = 'dict/stgeorge-dict.json?v=1';
+const URL_KELLIA = 'dict/kellia.json?v=1';
 
 export interface Entry {
   word: string;
@@ -20,24 +22,30 @@ export interface Entry {
   source?: string;
   english?: string;
   dialects?: string[];
+  /** The word in other dialects and spellings: [form, dialects]. */
+  forms?: [string, string[]][];
+  /** Only for looking up, not for the translators (its Arabic already comes from the other dictionaries). */
+  lookupOnly?: boolean;
 }
-interface Indexed extends Entry { cKey: string; lKey: string; mKeys: string[] }
+interface Indexed extends Entry { cKey: string; lKey: string; mKeys: string[]; alt?: string[] }
 export interface Hit { entry: Entry; note?: string }
 
 /** Entries the translators use: Bohairic ones (the other dictionary's Sahidic, Akhmimic... words are for looking up only), meanings without the machine-translation star. */
 export const bohairic = (dict: Entry[]) => dict
-  .filter(e => !e.dialects || e.dialects.includes('بحيري'))
+  .filter(e => !e.lookupOnly && (!e.dialects || e.dialects.includes('بحيري')))
   .map(e => e.source ? { ...e, meanings: e.meanings.map(m => m.replace(/ \*$/, '')) } : e);
 
 type SgWord = [string, string, number, number, number, string[], string, number[], number[]];
+type KelliaEntry = [[string, string[]][], string, string, string[], string];
 let loading: Promise<{ source: string; entries: Indexed[] }> | null = null;
 export function loadDictionary() {
   const json = (u: string) => fetch(u).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); });
   loading ??= Promise.all([
     json(URL_),
-    // The second dictionary is extra: without it the first still works.
+    // The other dictionaries are extra: without them the first still works.
     json(URL_SG).catch(() => null),
-  ]).then(([d, sg]: [{ source: string; labels: string[]; words: [string, string, number, number, number, string[]][] }, { labels: string[]; words: SgWord[] } | null]) => ({
+    json(URL_KELLIA).catch(() => null),
+  ]).then(([d, sg, kl]: [{ source: string; labels: string[]; words: [string, string, number, number, number, string[]][] }, { labels: string[]; words: SgWord[] } | null, { entries: KelliaEntry[] } | null]) => ({
     source: d.source,
     entries: [
       ...d.words.map(([word, latin, k, f, o, meanings]) => ({
@@ -49,6 +57,12 @@ export function loadDictionary() {
         dialects: dialects.map(i => sg!.labels[i]),
         source: ['نزلة السمان', ...sources.map(i => sg!.labels[i])].join('، '),
         cKey: copticKey(word), lKey: '', mKeys: meanings.map(m => norm(m.replace(/ \*$/, ''))),
+      })),
+      ...(kl?.entries ?? []).map(([forms, kind, english, arabic]) => ({
+        word: forms[0][0], latin: '', kind, form: '', origin: '', meanings: arabic, english, forms, lookupOnly: true,
+        dialects: [...new Set(forms.flatMap(f => f[1]))],
+        source: 'Coptic Dictionary Online' + (arabic.length ? '، والمعنى العربي من الكلمة البحيري' : ''),
+        cKey: copticKey(forms[0][0]), lKey: '', mKeys: arabic.map(m => norm(m)), alt: forms.slice(1).map(f => copticKey(f[0])).filter(Boolean),
       })),
     ],
   }));
@@ -115,7 +129,9 @@ export function search(entries: Indexed[], q: string, limit = 60): { hits: Hit[]
     const field = (e: Indexed) => script === 'coptic' ? e.cKey : e.lKey;
     for (const e of entries) {
       const f = field(e);
-      const s = f === k ? 0 : f.startsWith(k) ? 2 : k.length >= 2 && f.includes(k) ? 4 : 9;
+      let s = f === k ? 0 : f.startsWith(k) ? 2 : k.length >= 2 && f.includes(k) ? 4 : 9;
+      // The same word in another dialect or spelling.
+      if (s > 0 && script === 'coptic' && e.alt?.includes(k)) s = 0.5;
       if (s < 9) scored.push({ e, s: s + f.length / 1000 });
     }
     // Not in the dictionary as typed: try it without a glued article or preposition.

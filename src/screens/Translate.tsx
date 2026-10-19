@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { COPTIC_KEYS, scriptOf } from '../data/dictionary';
-import { loadTranslator, translate, type Translator, type WordResult } from '../data/translator';
+import { loadTranslator, loadVerses, translate, type Match, type Translator, type WordResult } from '../data/translator';
 import { loadArabicLexicon, toCoptic, type ArabicLexicon, type CWord } from '../data/toCoptic';
 
 const EXAMPLE = 'Ⲡⲓⲭⲣⲓⲥⲧⲟⲥ ⲁϥⲙⲓⲥⲓ ϧⲉⲛ Ⲃⲏⲑⲗⲉⲉⲙ';
@@ -21,14 +21,18 @@ export default function Translate({ base = '' }: { base?: string }) {
   const input = useRef<HTMLTextAreaElement>(null);
   const nav = useNavigate();
 
-  useEffect(() => { loadTranslator().then(setT).catch(() => setFailed(true)); }, []);
+  // The Bible verses come after the translator opens; the answer is worked out again once they are in.
+  const [versesIn, setVersesIn] = useState(false);
+  useEffect(() => { loadTranslator().then(x => { setT(x); loadVerses(x).then(() => setVersesIn(true)).catch(() => undefined); }).catch(() => setFailed(true)); }, []);
   useEffect(() => { const id = setTimeout(() => setParams(q ? { q } : {}, { replace: true }), 400); return () => clearTimeout(id); }, [q, setParams]);
   const script = scriptOf(q);
-  const result = useMemo(() => t && scriptOf(q) === 'coptic' ? translate(t, q) : null, [t, q]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const result = useMemo(() => t && scriptOf(q) === 'coptic' ? translate(t, q) : null, [t, q, versesIn]);
   // Osama Thabet's Arabic → Coptic lists load only once someone types Arabic; until then the hymns alone answer.
   const [lexicon, setLexicon] = useState<ArabicLexicon | null>(null);
   useEffect(() => { if (script === 'arabic' && !lexicon) loadArabicLexicon().then(setLexicon).catch(() => undefined); }, [script, lexicon]);
-  const back = useMemo(() => t && !result && scriptOf(q) === 'arabic' ? toCoptic(t, q, lexicon ?? undefined) : null, [t, q, result, lexicon]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const back = useMemo(() => t && !result && scriptOf(q) === 'arabic' ? toCoptic(t, q, lexicon ?? undefined) : null, [t, q, result, lexicon, versesIn]);
   const type = (ch: string) => setQ(x => x + ch);
   const whole = result?.whole?.score === 1 || (result && result.phrases.length > 0 && result.phrases.every(p => p.match?.score === 1));
   const wholeBack = back?.whole?.score === 1 || (back && back.phrases.length > 0 && back.phrases.every(p => p.match?.score === 1));
@@ -74,7 +78,7 @@ export default function Translate({ base = '' }: { base?: string }) {
         {back && back.phrases.length > 0 && (
           <>
             <div className="card">
-              <div className="row between"><h2>بالقبطي</h2><span className={`tag ${wholeBack ? 'tag-ok' : 'tag-ex'}`}>{wholeBack ? 'من الألحان' : 'ترجمة تقريبية'}</span></div>
+              <div className="row between"><h2>بالقبطي</h2><span className={`tag ${wholeBack ? 'tag-ok' : 'tag-ex'}`}>{wholeBack ? fromWhere(back.whole ?? back.phrases[0]?.match) : 'ترجمة تقريبية'}</span></div>
               <div className="coptic-font" dir="ltr" style={{ fontSize: 22, lineHeight: 1.8, textAlign: 'left' }}>{back.coptic || '…'}</div>
               {!wholeBack && <div className="note">اتركّبت كلمة كلمة، فراجعها بالتحليل اللي تحت. الكلمات اللي بين أقواس ما لقيتلهاش مقابل.</div>}
             </div>
@@ -89,13 +93,13 @@ export default function Translate({ base = '' }: { base?: string }) {
                 <div className="words">{p.words.filter(w => w.text).map((w, j) => <CopticWord key={j} w={w} base={base} />)}</div>
               </div>
             ))}
-            <details className="srcs span"><summary>المصادر</summary>نصوص وتحليل كلمات مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، وقاموس أسامة ثابت وبرنامجه للترجمة المساعدة آليًا من العربي للقبطي (2019).</details>
+            <details className="srcs span"><summary>المصادر</summary>نصوص وتحليل كلمات مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، وقاموس أسامة ثابت وبرنامجه للترجمة المساعدة آليًا من العربي للقبطي (2019)، والكتاب المقدس: النص البحيري من Coptic SCRIPTORIUM (CC BY 4.0) مربوط آية بآية بترجمة فاندايك (ملك عام).</details>
           </>
         )}
         {result && result.phrases.length > 0 && (
           <>
             <div className="card">
-              <div className="row between"><h2>المعنى</h2><span className={`tag ${whole ? 'tag-ok' : 'tag-ex'}`}>{whole ? 'من الألحان' : 'ترجمة تقريبية'}</span></div>
+              <div className="row between"><h2>المعنى</h2><span className={`tag ${whole ? 'tag-ok' : 'tag-ex'}`}>{whole ? fromWhere(result.whole ?? result.phrases[0]?.match) : 'ترجمة تقريبية'}</span></div>
               <div style={{ fontSize: 20, lineHeight: 1.8 }}>{result.arabic || '…'}</div>
               {!whole && <div className="note">اتركّبت من معاني الكلمات، فراجعها بالتحليل اللي تحت.</div>}
             </div>
@@ -108,7 +112,7 @@ export default function Translate({ base = '' }: { base?: string }) {
                 <div className="words">{p.words.map((w, j) => <Word key={j} w={w} base={base} />)}</div>
               </div>
             ))}
-            <details className="srcs span"><summary>المصادر</summary>تحليل كلمات ونصوص مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، قاموس أسامة ثابت، وقواعد اللغة القبطية للراهب أندرياس المقاري.</details>
+            <details className="srcs span"><summary>المصادر</summary>تحليل كلمات ونصوص مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، قاموس أسامة ثابت، قواعد اللغة القبطية للراهب أندرياس المقاري، والكتاب المقدس: النص البحيري من Coptic SCRIPTORIUM (CC BY 4.0) مربوط آية بآية بترجمة فاندايك (ملك عام).</details>
           </>
         )}
       </main>
@@ -116,10 +120,13 @@ export default function Translate({ base = '' }: { base?: string }) {
   );
 }
 
-function Near({ m }: { m: { coptic: string; arabic: string; score: number } }) {
+/** Where a line found whole comes from: the hymns, or a Bible verse with its reference. */
+const fromWhere = (m?: Match) => m?.ref ? `من الكتاب المقدس (${m.ref})` : 'من الألحان';
+
+function Near({ m }: { m: Match }) {
   return (
     <div className="near">
-      <div className="muted">أقرب سطر في الألحان ({Math.round(m.score * 100)}٪ شبهه)</div>
+      <div className="muted">{m.ref ? `أقرب آية: ${m.ref}` : 'أقرب سطر في الألحان'} ({Math.round(m.score * 100)}٪ شبهه)</div>
       <div className="coptic-font" dir="ltr" style={{ textAlign: 'left' }}>{m.coptic}</div>
       <div>{m.arabic}</div>
     </div>
