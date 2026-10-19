@@ -51,7 +51,12 @@ async function runChurch(church, publicKey, now) {
     return r.on && r.days.includes(now.day) && now.hour >= r.hour && now.hour < r.hour + LATE && log[k] !== now.date;
   });
   const test = s.testAt && s.testAt > (log.testAt ?? 0) && s.testUid;
-  if (!due.length && !test) { console.log(`${c.id}: nothing due at ${now.date} ${now.hour}:00 (day ${now.day}).`); return; }
+  // Session summaries saved since the last run go to that level's members. The first run only marks the time.
+  const since = log.summaryAt ?? Date.now();
+  const summaries = log.summaryAt === undefined ? [] : (await c.collection('sessions').where('summaryAt', '>', since).get()).docs.map(d => d.data());
+  const summaryAt = Math.max(since, ...summaries.map(x => x.summaryAt));
+  if (log.summaryAt === undefined) await logRef.set({ ...log, summaryAt }, { merge: true });
+  if (!due.length && !test && !summaries.length) { console.log(`${c.id}: nothing due at ${now.date} ${now.hour}:00 (day ${now.day}).`); return; }
 
   const subs = (await c.collection('pushSubs').get()).docs;
   const who = new Map();
@@ -60,12 +65,13 @@ async function runChurch(church, publicKey, now) {
       if ((await c.collection('servants').doc(uid).get()).exists) return { kind: 'servant' };
       const memberId = (await c.collection('accounts').doc(uid).get()).get('memberId');
       if (!memberId) return null;
-      return { kind: 'member', view: (await c.collection('memberViews').doc(memberId).get()).data() };
+      const levelId = (await c.collection('members').doc(memberId).get()).get('levelId');
+      return { kind: 'member', levelId, view: (await c.collection('memberViews').doc(memberId).get()).data() };
     })());
     return who.get(uid);
   };
 
-  const sent = { hymn: 0, session: 0, test: 0 };
+  const sent = { hymn: 0, session: 0, test: 0, summary: 0 };
   for (const sub of subs) {
     const d = sub.data();
     const p = await whoIs(d.uid);
@@ -75,6 +81,10 @@ async function runChurch(church, publicKey, now) {
       if (k === 'hymn' && p.kind !== 'member') continue;
       const r = s[k];
       msgs.push([k, { title: r.title, body: r.body.replaceAll(HYMNS_TAG, p.kind === 'member' ? hymnList(p.view) : 'ألحان الترم'), tag: k, url: p.kind === 'member' ? './#/me/home' : './#/' }]);
+    }
+    if (p.kind === 'member') for (const x of summaries.filter(x => x.levelId === p.levelId)) {
+      const what = x.summary ? x.summary.split('\n')[0].slice(0, 90) : 'التسجيل النهائي للحن نزل، اسمعه وراجع عليه';
+      msgs.push(['summary', { title: 'ملخص الحصة نزل 🎧', body: what, tag: `summary-${x.id}`, url: './#/me/sessions' }]);
     }
     if (test && d.uid === s.testUid) msgs.push(['test', { title: 'تنبيه تجربة', body: 'التنبيهات شغالة على الموبايل ده ✓', tag: 'test', url: './#/notify' }]);
     for (const [k, payload] of msgs) {
@@ -91,6 +101,7 @@ async function runChurch(church, publicKey, now) {
   const next = { ...log };
   for (const k of due) next[k] = now.date;
   if (test) next.testAt = s.testAt;
+  next.summaryAt = summaryAt;
   await logRef.set(next);
   console.log(`${c.id}: sent`, sent, `to ${subs.length} phones.`);
 }

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useData, useCan } from '../data/store';
 import { currentTerm, curriculumKey } from '../data/logic';
 import Duplicates from './Duplicates';
 
 export default function Library() {
   const [data] = useData();
+  const edit = useCan('curriculum');
   const [q, setQ] = useState('');
   const [prayer, setPrayer] = useState('');
   const term = currentTerm(data);
@@ -52,7 +53,7 @@ export default function Library() {
           {list.length === 0 && <div className="note">مفيش ألحان بالاسم ده.</div>}
         </div></div>
       </main>
-      <div className="bar gutter"><div><Link to="/hymns/new" className="btnp grow">لحن جديد</Link></div></div>
+      {edit && <div className="bar gutter"><div><Link to="/hymns/new" className="btnp grow">لحن جديد</Link></div></div>}
     </>
   );
 }

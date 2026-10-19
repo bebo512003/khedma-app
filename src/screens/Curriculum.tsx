@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useData, useIsLead } from '../data/store';
+import { useCan, useData, useIsLead } from '../data/store';
 import { currentTerm, curriculumKey, hymnsCount, uid } from '../data/logic';
 import { booksFor, hasPages, pageUrl } from '../data/books';
 import PageImg from './PageImg';
@@ -11,6 +11,7 @@ import Duplicates from './Duplicates';
 export default function Curriculum() {
   const [data, update] = useData();
   const lead = useIsLead();
+  const edit = useCan('curriculum');
   const levels = [...data.levels].sort((a, b) => a.order - b.order);
   const terms = [...data.terms].sort((a, b) => b.start.localeCompare(a.start));
   const [termId, setTermId] = useState(currentTerm(data)?.id ?? '');
@@ -87,17 +88,19 @@ export default function Curriculum() {
                 <b className="muted" style={{ width: 18 }}>{i + 1}</b>
                 <Link to={`/hymns/${id}`} className="grow" style={{ color: 'inherit', textDecoration: 'none' }}><b>{hymn(id)?.nameAr ?? 'لحن اتمسح'}</b>
                   <div className="muted">{hymn(id)?.prayer}</div></Link>
+                {edit && <>
                 <button className="icon" disabled={i === 0} onClick={() => move(i, -1)} aria-label="لفوق">↑</button>
                 <button className="icon" disabled={i === ids.length - 1} onClick={() => move(i, 1)} aria-label="لتحت">↓</button>
                 <button className="icon" onClick={() => setIds(ids.filter(x => x !== id))} aria-label="شيل من المنهج">✕</button>
+                </>}
               </div>
             ))}
             {ids.length === 0 && <div className="note">لسه مفيش ألحان للمستوى ده في الترم ده.</div>}
           </div>
-          {!adding && <button className="btn" onClick={() => setAdding(true)}>أضف لحن من المكتبة</button>}
+          {edit && !adding && <button className="btn" onClick={() => setAdding(true)}>أضف لحن من المكتبة</button>}
         </div>
 
-        <PackCard termId={termId} levelId={levelId} />
+        {edit && <PackCard termId={termId} levelId={levelId} />}
 
         {adding && (
           <div className="card">

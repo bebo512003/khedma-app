@@ -1,6 +1,6 @@
-import type { AppData, Hymn, HymnStatus, MemberEdit, Rating } from './types';
-import { currentTerm, curriculumKey, monthBreakdown, ranking, sessionAverage, todayISO } from './logic';
-import { bookOf, entryPages, pagesLabel } from './books';
+import type { Attendance, AppData, Hymn, HymnStatus, MemberEdit, Rating, Recording } from './types';
+import { currentTerm, curriculumKey, lateBy, monthBreakdown, ranking, sessionAverage, todayISO } from './logic';
+import { bookOf, entryPages, hasPages, pageUrl, pagesLabel } from './books';
 
 /**
  * Everything the member app shows, computed by a servant's device and published per member.
@@ -24,6 +24,13 @@ export interface MemberView {
   hymns: (Hymn & { status: HymnStatus; levels: string[]; book?: { title: string; label: string; pages: string[] } })[];
   ratings: { id: string; date: string; r: Rating; avg: number; memorized: number; solo: number; note?: string }[];
   attendanceRate: number | null;
+  /** The level's recent sessions: what was covered, the voice summary, and whether this member came. */
+  sessions?: { id: string; date: string; hymn?: string; summary?: string; recording?: Recording; att?: Attendance; arrived?: number; late?: number }[];
+  /** The level's booklets, newest term first. */
+  books?: { id: string; title: string; term?: string; current: boolean; pdfUrl?: string; pages: string[]; entries: { hymnId: string; name: string; label: string }[] }[];
+  code?: string;
+  gender?: 'm' | 'f';
+  grade?: string;
 }
 
 const clean = <T extends object>(o: T) => JSON.parse(JSON.stringify(o)) as T;
@@ -51,10 +58,28 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
     .sort((a, b) => b.date.localeCompare(a.date))
     .map(s => ({ id: s.id, date: s.date, r: s.ratings[m.id], avg: sessionAverage(s, m.id)!, memorized: s.milestones?.[m.id]?.memorized ?? 0, solo: s.milestones?.[m.id]?.solo ?? 0, note: s.notes?.[m.id] }));
   const mine = data.sessions.filter(s => s.attendance[m.id] !== undefined);
+  const sessions = data.sessions
+    .filter(s => s.levelId === m.levelId || s.attendance[m.id] !== undefined)
+    .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12)
+    .map(s => ({
+      id: s.id, date: s.date, hymn: data.hymns.find(h => h.id === s.hymnIds[0])?.nameAr, summary: s.summary, recording: s.recording,
+      att: s.attendance[m.id], arrived: s.arrivals?.[m.id], late: lateBy(s, m.id) ?? undefined,
+    }));
+  const termName = (id?: string) => data.terms.find(t => t.id === id)?.name;
+  const termStart = (id?: string) => data.terms.find(t => t.id === id)?.start ?? '';
+  const books = data.books
+    .filter(b => !b.levelId || b.levelId === m.levelId)
+    .sort((a, b) => Number(b.termId === term?.id) - Number(a.termId === term?.id) || termStart(b.termId).localeCompare(termStart(a.termId)))
+    .map(b => ({
+      id: b.id, title: b.title, term: termName(b.termId), current: !!term && b.termId === term.id, pdfUrl: b.pdfUrl,
+      pages: hasPages(b) ? Array.from({ length: b.pageCount! }, (_, i) => pageUrl(b, i + 1)) : [],
+      entries: b.entries.map(e => ({ hymnId: e.hymnId, name: data.hymns.find(h => h.id === e.hymnId)?.nameAr ?? '', label: pagesLabel(e) })).filter(e => e.name),
+    }));
   return clean({
     memberId: m.id, name: m.name, photo: m.photo, rank: m.rank,
     profile: { name: m.name, photo: m.photo, birthdate: m.birthdate, phone: m.phone, parentPhone: m.parentPhone }, levelName: level?.name ?? '', termName: term?.name, month,
     points: breakdown.total, place: pos + 1, gap: Math.max(0, (rows[0]?.points ?? 0) - breakdown.total), breakdown, top, hymns, ratings,
+    sessions, books, code: m.code, gender: m.gender, grade: m.grade,
     attendanceRate: mine.length ? Math.round(100 * mine.filter(s => s.attendance[m.id] === 'p').length / mine.length) : null,
   });
 }

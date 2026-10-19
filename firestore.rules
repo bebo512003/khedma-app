@@ -12,7 +12,12 @@ service cloud.firestore {
       function email() { return request.auth.token.email.lower(); }
       function servant() { return google() && exists(doc('servants', request.auth.uid)); }
       function me() { return get(doc('servants', request.auth.uid)).data; }
-      function lead() { return servant() && me().role == 'lead'; }
+      // admin: runs the team. lead: runs the school. servant: only the permissions the admin ticked.
+      function admin() { return servant() && me().role == 'admin'; }
+      function lead() { return servant() && me().role in ['admin', 'lead']; }
+      // Servants from before permissions existed have no perms field and keep every permission.
+      function can(p) { return lead() || (servant() && (!('perms' in me()) || me().perms.hasAny([p]))); }
+      function church() { return get(/databases/$(database)/documents/churches/$(c)).data; }
       function canLevel(l) { return me().levelIds.hasAny(['*', l]); }
       function member() { return signedIn() && exists(doc('accounts', request.auth.uid)); }
       function myMember(id) { return signedIn() && get(doc('accounts', request.auth.uid)).data.memberId == id; }
@@ -29,24 +34,28 @@ service cloud.firestore {
 
       match /servants/{uid} {
         allow read: if servant() || (signedIn() && request.auth.uid == uid);
-        allow create: if lead() || (google() && request.auth.uid == uid && (
-          (get(/databases/$(database)/documents/churches/$(c)).data.ownerUid == uid && request.resource.data.role == 'lead')
+        allow create: if admin() || (google() && request.auth.uid == uid && (
+          (church().ownerUid == uid && request.resource.data.role in ['admin', 'lead'])
           || (exists(doc('invites', email()))
               && request.resource.data.role == get(doc('invites', email())).data.role
-              && request.resource.data.levelIds == get(doc('invites', email())).data.levelIds)));
-        allow update: if lead() || (servant() && request.auth.uid == uid
+              && request.resource.data.levelIds == get(doc('invites', email())).data.levelIds
+              && request.resource.data.get('perms', null) == get(doc('invites', email())).data.get('perms', null))));
+        // The founder upgrades their own record to admin.
+        allow update: if admin() || (servant() && request.auth.uid == uid && church().ownerUid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']) && request.resource.data.role == 'admin')
+          || (servant() && request.auth.uid == uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photo', 'phone', 'birthdate', 'rank', 'about'])
           && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
           && img(request.resource.data, 'photo') && phone(request.resource.data, 'phone') && day(request.resource.data, 'birthdate')
           && str(request.resource.data, 'rank', 30) && str(request.resource.data, 'about', 300));
-        allow delete: if lead();
+        allow delete: if admin();
       }
 
       match /invites/{inviteEmail} {
         allow get: if servant() || (google() && email() == inviteEmail);
         allow list: if servant();
-        allow create, update: if lead();
-        allow delete: if lead() || (google() && email() == inviteEmail);
+        allow create, update: if admin();
+        allow delete: if admin() || (google() && email() == inviteEmail);
       }
 
       // code → how many times the PIN was reset; needed before sign-in, holds nothing private.
@@ -68,10 +77,10 @@ service cloud.firestore {
       // A servant can record sessions only for the levels the lead gave them.
       match /sessions/{id} {
         allow read: if servant();
-        allow create: if servant() && canLevel(request.resource.data.levelId);
+        allow create: if can('sessions') && canLevel(request.resource.data.levelId);
         // Both levels: a servant can't pull another level's session into theirs.
-        allow update: if servant() && canLevel(resource.data.levelId) && canLevel(request.resource.data.levelId);
-        allow delete: if servant() && canLevel(resource.data.levelId);
+        allow update: if can('sessions') && canLevel(resource.data.levelId) && canLevel(request.resource.data.levelId);
+        allow delete: if can('sessions') && canLevel(resource.data.levelId);
       }
 
       // A member's edit of their own photo and details; a servant's app copies it into the member record.
@@ -88,13 +97,13 @@ service cloud.firestore {
       // Pages of uploaded booklets (images only). Members read them under their hymns.
       match /bookPages/{id} {
         allow read: if servant() || member();
-        allow write: if servant();
+        allow write: if can('curriculum');
       }
 
       // Levels, terms and removing members are the lead's call.
       match /levels/{id} { allow read: if servant(); allow write: if lead(); }
       match /terms/{id} { allow read: if servant(); allow write: if lead(); }
-      match /members/{id} { allow read, create, update: if servant(); allow delete: if lead(); }
+      match /members/{id} { allow read: if servant(); allow create, update: if can('members'); allow delete: if lead(); }
 
       // Reminder schedule (lead edits) and what the scheduled job last sent (only it writes).
       match /settings/{id} {
@@ -112,8 +121,19 @@ service cloud.firestore {
           && str(request.resource.data, 'p256dh', 200) && str(request.resource.data, 'auth', 100);
       }
 
-      match /{coll}/{id} {
-        allow read, write: if servant() && coll in ['hymns', 'books', 'meta', 'progress'];
+      // Voice summaries of sessions, split into pieces under 1 MB. Members play them from their app.
+      match /recordings/{id} {
+        allow read: if servant() || member();
+        allow write: if can('sessions');
+      }
+
+      match /hymns/{id} { allow read: if servant(); allow write: if can('curriculum'); }
+      match /books/{id} { allow read: if servant(); allow write: if can('curriculum'); }
+      match /progress/{id} { allow read, write: if servant(); }
+      // meta also holds the next member code and message templates, which any servant may change; the curriculum needs the permission.
+      match /meta/{id} {
+        allow read: if servant();
+        allow write: if can('curriculum') || (servant() && resource != null && request.resource.data.get('curricula', null) == resource.data.get('curricula', null));
       }
     }
   }

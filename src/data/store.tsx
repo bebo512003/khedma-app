@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { get, set } from 'idb-keyval';
 import type { User } from 'firebase/auth';
-import { applyMemberEdit, type AppData, type Invite, type MemberEdit, type Servant } from './types';
+import { applyMemberEdit, type AppData, type Invite, type MemberEdit, type Perm, type Servant } from './types';
 import { seedData } from './seed';
 import { cloudEnabled } from '../firebase/config';
 
@@ -76,7 +76,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         stopServant = onSnapshot(paths.ref(db, 'servants', u.uid), { includeMetadataChanges: true }, async snap => {
           if (snap.exists() && snap.metadata.hasPendingWrites) return;
           if (snap.exists()) {
-            setServant(snap.data() as Servant);
+            const sv = snap.data() as Servant;
+            setServant(sv);
+            // The church's founder becomes its admin (they were "lead" before admins existed).
+            if (sv.role !== 'admin') getDoc(paths.churchRef(db)).then(c => {
+              if (c.get('ownerUid') === u.uid) import('firebase/firestore').then(({ updateDoc }) => updateDoc(paths.ref(db, 'servants', u.uid), { role: 'admin' }));
+            }).catch(() => undefined);
             setPhase('ready');
             if (!subscribed) {
               subscribed = true;
@@ -118,13 +123,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // A member changed their photo or details from the member app: copy it into their record, then clear it.
   useEffect(() => {
-    if (!data || !edits.length) return;
+    if (!data || !edits.length || !canDo(servant, 'members')) return;
     const known = edits.filter(e => data.members.some(m => m.id === e.id));
     // A malformed edit is dropped rather than applied, and is cleared either way so it can't block the app.
     if (known.length) update(d => ({ ...d, members: d.members.map(m => { const e = known.find(x => x.id === m.id); try { return e ? applyMemberEdit(m, e.edit) : m; } catch { return m; } }) }));
     Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]).then(([{ servantFb }, { deleteDoc }, paths]) =>
       edits.forEach(e => deleteDoc(paths.ref(servantFb().db, 'memberEdits', e.id)).catch(() => undefined)));
-  }, [data, edits, update]);
+  }, [data, edits, update, servant]);
 
   const reset = useCallback(() => update(() => seedData()), [update]);
 
@@ -156,7 +161,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const { db } = servantFb();
     const local = await loadLocal();
     await setDoc(paths.churchRef(db), { name: 'مدرسة الشهيد اسطفانوس للشمامسة', ownerUid: user.uid, createdAt: serverTimestamp() });
-    await setDoc(paths.ref(db, 'servants', user.uid), { ...profile(user), role: 'lead', levelIds: ['*'] } satisfies Servant);
+    await setDoc(paths.ref(db, 'servants', user.uid), { ...profile(user), role: 'admin', levelIds: ['*'] } satisfies Servant);
     await sync.writeDiff(db, sync.emptyData(), local);
     await sync.publishViews(db, local, published.current);
   }, [user]);
@@ -166,7 +171,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!user || !invite) return;
     const [{ servantFb }, { setDoc, deleteDoc }, paths] = await Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]);
     const { db } = servantFb();
-    await setDoc(paths.ref(db, 'servants', user.uid), { ...profile(user), role: invite.role, levelIds: invite.levelIds } satisfies Servant);
+    await setDoc(paths.ref(db, 'servants', user.uid), { ...profile(user), role: invite.role, levelIds: invite.levelIds, ...(invite.perms ? { perms: invite.perms } : {}) } satisfies Servant);
     await deleteDoc(paths.ref(db, 'invites', invite.email)).catch(() => undefined);
   }, [user, access]);
 
@@ -189,10 +194,25 @@ export function useData(): [AppData, Store['update']] {
   return [data as AppData, update];
 }
 
-/** Lead servant, or offline mode (one device, no roles). Only they change levels and terms or delete members. */
+/** Lead servant or admin, or offline mode (one device, no roles). Only they change levels and terms or delete members. */
 export function useIsLead() {
   const { servant, cloud } = useStore();
-  return !cloud || servant?.role === 'lead';
+  return !cloud || servant?.role === 'lead' || servant?.role === 'admin';
+}
+
+/** Admin, or offline mode: runs the team and its permissions. */
+export function useIsAdmin() {
+  const { servant, cloud } = useStore();
+  return !cloud || servant?.role === 'admin';
+}
+
+/** Mirrors can() in firestore.rules. */
+export function canDo(servant: Servant | null, p: Perm) {
+  return !servant || servant.role !== 'servant' || !servant.perms || servant.perms.includes(p);
+}
+export function useCan(p: Perm) {
+  const { servant, cloud } = useStore();
+  return !cloud || canDo(servant, p);
 }
 
 /** Levels this servant may run sessions for. Offline mode and leads see every level. */

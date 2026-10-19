@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useAllowedLevel, useData } from '../data/store';
+import { useAllowedLevel, useData, useCan } from '../data/store';
 import { LATE_GRACE_MIN, absenceStreak, formatDay, formatTime, lateBy, needsFollowUp, sessionAverage } from '../data/logic';
 import FollowUpList from './FollowUpList';
+import SessionSummary from './SessionSummary';
 import Icon from '../ui/Icon';
+import { deleteRecording } from '../firebase/recordings';
 
 const fmt = (ms = 0) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
@@ -11,6 +13,7 @@ const fmt = (ms = 0) => { const s = Math.round(ms / 1000); return `${Math.floor(
 export default function Summary() {
   const { sessionId } = useParams();
   const [data, update] = useData();
+  const edit = useCan('sessions');
   const nav = useNavigate();
   const fresh = !!(useLocation().state as { fresh?: boolean } | null)?.fresh;
   const allowed = useAllowedLevel();
@@ -32,7 +35,7 @@ export default function Summary() {
   const memorized = ms.reduce((a, m) => a + m.memorized, 0), solo = ms.reduce((a, m) => a + m.solo, 0);
   const scanned = present.filter(id => s.arrivals?.[id]).sort((a, b) => s.arrivals![a] - s.arrivals![b]);
   const late = scanned.filter(id => (lateBy(s, id) ?? 0) > LATE_GRACE_MIN);
-  const remove = () => { update(d => ({ ...d, sessions: d.sessions.filter(x => x.id !== s.id) })); nav('/sessions', { replace: true }); };
+  const remove = () => { if (s.recording) deleteRecording(s.recording); update(d => ({ ...d, sessions: d.sessions.filter(x => x.id !== s.id) })); nav('/sessions', { replace: true }); };
 
   return (
     <>
@@ -41,7 +44,7 @@ export default function Summary() {
           {!fresh && <button className="icon" onClick={() => nav(-1)} aria-label="رجوع"><Icon name="back" size={20} /></button>}
           <div className="grow"><h1>{fresh ? 'اتحفظت الحصة' : `حصة ${level?.name ?? ''}`}</h1>
             <div className="muted">{fresh ? `${level?.name} • ` : ''}{formatDay(s.date)}{hymn ? ` • ${hymn.nameAr}` : ''}</div></div>
-          <Link to={`/sessions/${s.id}/edit`} className="icon" aria-label="تعديل الحصة"><Icon name="edit" size={20} /></Link>
+          {edit && <Link to={`/sessions/${s.id}/edit`} className="icon" aria-label="تعديل الحصة"><Icon name="edit" size={20} /></Link>}
         </div>
       </header>
       <main className="main gutter">
@@ -52,6 +55,8 @@ export default function Summary() {
           </div>
           {memorized + solo > 0 && <div>اتقدّموا في الألحان: {memorized ? `${memorized} وصلوا "حافظه"` : ''}{memorized && solo ? ' و' : ''}{solo ? `${solo} وصلوا "بيقوله لوحده"` : ''}</div>}
         </div>
+        <SessionSummary s={s} open={fresh} />
+
         <div className="card"><div className="stats">
           <div className="stat"><b>{present.length} / {ids.length}</b><span className="muted">حضروا</span></div>
           <div className="stat"><b>{late.length}</b><span className="muted">اتأخروا</span></div>
@@ -90,7 +95,7 @@ export default function Summary() {
           ? <FollowUpList members={followUp} />
           : <div className="card"><div className="note">مفيش حد محتاج افتقاد من الحصة دي.</div></div>)}
 
-        {!fresh && (confirmDelete
+        {!fresh && edit && (confirmDelete
           ? <div className="card alert"><b>تمسح حصة {formatDay(s.date)}؟</b>
             <div className="note">الحضور والتقييمات والنقط بتاعتها هتتشال. مستوى الألحان اللي اتغير فيها هيفضل زي ما هو.</div>
             <div className="row"><button className="btn grow" onClick={() => setConfirmDelete(false)}>لا</button><button className="btnp grow" onClick={remove}>امسح</button></div></div>

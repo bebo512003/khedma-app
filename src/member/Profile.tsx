@@ -24,7 +24,7 @@ export default function MemberProfile() {
     if (!p.name?.trim()) { setError('اكتب اسمك.'); return; }
     for (const ph of [p.phone, p.parentPhone]) if (ph?.trim() && !/^\+?[\d\s-]{8,15}$/.test(ph.trim())) { setError('رقم الموبايل مش مظبوط.'); return; }
     setBusy(true);
-    try { await save(v.memberId, p); nav('/me/home', { replace: true }); }
+    try { await save(v.memberId, p); nav('/me/profile', { replace: true }); }
     catch { setError('مقدرناش نحفظ دلوقتي. اتأكد إن معاك نت وجرّب تاني.'); }
     setBusy(false);
   };
@@ -37,7 +37,7 @@ export default function MemberProfile() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/me/home" className="icon" aria-label="رجوع">→</Link><h1>بياناتي</h1>
+        <Link to="/me/profile" className="icon" aria-label="رجوع">→</Link><h1>بياناتي</h1>
       </div></header>
       <main className="main gutter">
         <div className="row" style={{ gap: 14 }}>
@@ -55,7 +55,7 @@ export default function MemberProfile() {
         {error && <div className="alert-t" role="alert">{error}</div>}
         {/* Inline, not a bottom bar: the member tabs sit at the bottom. */}
         <div className="row">
-          <Link to="/me/home" className="btn">إلغاء</Link>
+          <Link to="/me/profile" className="btn">إلغاء</Link>
           <button className="btnp grow" onClick={submit} disabled={busy}>احفظ</button>
         </div>
       </main>

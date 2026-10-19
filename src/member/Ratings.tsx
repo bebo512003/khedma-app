@@ -4,14 +4,23 @@ import { useView } from './Layout';
 
 export default function MemberRatings() {
   const v = useView();
+  return (
+    <>
+      <header className="top gutter"><div><h1>تقييماتي</h1><div className="muted">{v.termName ? `ترم ${v.termName} • ` : ''}{sessionsCount(v.ratings.length)}</div></div></header>
+      <main className="main gutter"><RatingsBody /></main>
+    </>
+  );
+}
+
+/** Term average per criterion and every rated session. */
+export function RatingsBody() {
+  const v = useView();
   const avg = (xs: number[]) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
   const overall = avg(v.ratings.map(s => s.avg));
   const perCrit = CRITERIA.map((_, j) => avg(v.ratings.map(s => s.r[j])));
 
   return (
     <>
-      <header className="top gutter"><div><h1>تقييماتي</h1><div className="muted">{v.termName ? `ترم ${v.termName} • ` : ''}{sessionsCount(v.ratings.length)}</div></div></header>
-      <main className="main gutter">
         <div className="hero">
           <div><div className="big">{overall?.toFixed(1) ?? '–'}</div><div>متوسطك في الترم من 5</div></div>
           <div className="stats">{CRITERIA.map((c, j) =>
@@ -28,7 +37,6 @@ export default function MemberRatings() {
           ))}
           {v.ratings.length === 0 && <div className="note">لسه مفيش تقييمات في الترم ده.</div>}
         </div></div>
-      </main>
     </>
   );
 }

@@ -294,3 +294,19 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .tiles4 .tile { min-height: 76px; font-size: 12px; background: var(--surface); }
 .brand-t { color: var(--act); }
 .brand-t { font-size: 18px; white-space: nowrap; }
+
+/* Voice notes, played in place like a WhatsApp voice message */
+.voice { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 22px; padding: 8px 10px; }
+.voice .vplay { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 0; background: var(--act); color: var(--on-act); display: grid; place-items: center; cursor: pointer; }
+.voice .vbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.voice .wave { height: 30px; display: flex; align-items: center; gap: 2px; cursor: pointer; direction: ltr; }
+.voice .wave i { flex: 1; min-width: 2px; border-radius: 2px; background: var(--line); transition: background .15s; }
+.voice .wave i.p { background: var(--act); }
+.voice .vmeta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); direction: ltr; }
+.voice .vspeed { flex: none; min-width: 40px; height: 28px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-weight: 700; font-size: 12px; cursor: pointer; }
+.voice.rec { border-color: var(--alert); }
+.voice .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--alert); animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: .3; } }
+.spin { width: 18px; height: 18px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (min-width: 900px) { .mtabs.member { display: block; } }

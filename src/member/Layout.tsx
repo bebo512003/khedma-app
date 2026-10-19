@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 import { NavLink, Navigate, Outlet } from 'react-router-dom';
 import type { MemberView } from '../data/memberView';
 import { useMemberView } from './session';
+import Icon from '../ui/Icon';
 
 const ViewCtx = createContext<MemberView | null>(null);
 /** Screens under the layout render only once the view exists. */
@@ -20,11 +21,12 @@ export default function MemberLayout() {
   return (
     <ViewCtx.Provider value={view}>
       <Outlet />
-      <nav className="tabs gutter" aria-label="تطبيق المخدوم"><div>
-        <NavLink to="/me/home">الرئيسية</NavLink>
-        <NavLink to="/me/ratings">تقييماتي</NavLink>
-        <NavLink to="/me/rank">الترتيب</NavLink>
-        <NavLink to="/me/dictionary">القاموس</NavLink>
+      <nav className="mtabs member" aria-label="تطبيق المخدوم"><div>
+        <NavLink to="/me/home"><Icon name="home" />الرئيسية</NavLink>
+        <NavLink to="/me/sessions"><Icon name="clock" />الحصص</NavLink>
+        <NavLink to="/me/books"><Icon name="books" />الكتب</NavLink>
+        <NavLink to="/me/rank"><Icon name="chart" />الترتيب</NavLink>
+        <NavLink to="/me/profile"><Icon name="user" />بروفايلي</NavLink>
       </div></nav>
     </ViewCtx.Provider>
   );

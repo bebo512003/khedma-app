@@ -8,6 +8,8 @@ const PATHS: Record<string, string> = {
   list: 'M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01',
   books: 'M5 3h4v18H5zM10 3h4v18h-4zM15.5 4.5l3.8-1 3.2 17-3.8 1z',
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
+  pause: 'M8 5v14M16 5v14',
+  mic: 'M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3',
   chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
   dict: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21a2 2 0 0 1 2-2h13M9 8h6M9 12h4',
   qr: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v7M14 20h3',
@@ -29,7 +31,7 @@ export default function Icon({ name, size = 22 }: { name: keyof typeof PATHS | s
   const fill = name === 'play';
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke={fill ? 'none' : 'currentColor'}
-      strokeWidth={name === 'more' ? 3 : 1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      strokeWidth={name === 'more' || name === 'pause' ? 3 : 1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={PATHS[name] ?? ''} />
     </svg>
   );

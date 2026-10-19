@@ -132,6 +132,20 @@ export interface Session {
   arrivals?: Record<string, number>;
   /** Servant's short note to a member, shown in their ratings. */
   notes?: Record<string, string>;
+  /** What the class covered, e.g. how far into the hymn they memorized. Shown to the level's members. */
+  summary?: string;
+  /** Voice recording of the hymn as sung at the end of the session, for members to practise with. */
+  recording?: Recording;
+  /** When the summary or recording last changed (epoch ms); the reminder job tells members about it once. */
+  summaryAt?: number;
+}
+
+/** A voice note kept in the recordings collection, split into `parts` pieces. */
+export interface Recording {
+  id: string;
+  mime: string;
+  ms: number;
+  parts: number;
 }
 
 export interface Templates {
@@ -159,13 +173,33 @@ export const STATUS_LABELS = ['لسه مبدأش', 'بيتعلمه', 'حافظه
 export const CRITERIA = ['حفظ', 'أداء', 'التزام'] as const;
 export const RANKS = ['أبصالتس', 'أغنسطس', 'إيبودياكون', 'دياكون', 'أرشيدياكون'] as const;
 
+/**
+ * admin: runs the team and hands out permissions (the church's founder is one).
+ * lead: everything about the school (levels, terms, deleting members, reminders) but not the team.
+ * servant: only the permissions the admin ticked.
+ */
+export type Role = 'admin' | 'lead' | 'servant';
+export const ROLE_LABELS: Record<Role, string> = { admin: 'أدمن', lead: 'خادم مسؤول', servant: 'خادم' };
+
+/** What a servant may do beyond reading. Mirrored in firestore.rules (can()). */
+export type Perm = 'sessions' | 'members' | 'curriculum' | 'reports';
+export const PERMS: [Perm, string][] = [
+  ['sessions', 'يسجّل الحصص ويعدّلها ويبعت ملخصها'],
+  ['members', 'يضيف ويعدّل المخدومين وكروتهم'],
+  ['curriculum', 'يعدّل المكتبة والمنهج والكتب'],
+  ['reports', 'يشوف التقارير'],
+];
+export const DEFAULT_PERMS: Perm[] = ['sessions', 'members'];
+
 /** A servant's access. levelIds ['*'] means every level. */
 export interface Servant {
   uid: string;
   name: string;
   email: string;
-  role: 'lead' | 'servant';
+  role: Role;
   levelIds: string[];
+  /** Only for role 'servant'. Missing on servants from before permissions existed: they keep every one. */
+  perms?: Perm[];
   /** Profile the servant fills in themselves (see SERVANT_PROFILE_KEYS). */
   photo?: string;
   phone?: string;
@@ -180,7 +214,8 @@ export const SERVANT_PROFILE_KEYS = ['name', 'photo', 'phone', 'birthdate', 'ran
 
 export interface Invite {
   email: string;
-  role: 'lead' | 'servant';
+  role: Role;
   levelIds: string[];
+  perms?: Perm[];
   invitedBy: string;
 }

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useData, useCan } from '../data/store';
 import { currentTerm, uid } from '../data/logic';
 import { hasPages, pageUrl } from '../data/books';
 import PageImg from './PageImg';
@@ -8,6 +8,7 @@ import PackCard from './PackCard';
 /** The school's booklets. Each one's index is a level's curriculum for a term. */
 export default function Books() {
   const [data, update] = useData();
+  const edit = useCan('curriculum');
   const nav = useNavigate();
   const term = currentTerm(data);
   const levelName = (id?: string) => data.levels.find(l => l.id === id)?.name;
@@ -39,7 +40,7 @@ export default function Books() {
         {data.books.length === 0 && <div className="card"><b>لسه مفيش كتب.</b><div className="muted">ضيف كتاب الميلاد الجاهز تحت، أو اعمل كتاب جديد وحط فيه ألحانه من المكتبة.</div></div>}
         <PackCard termId={term?.id ?? ''} />
       </main>
-      <div className="bar gutter"><div><button className="btnp grow" onClick={add}>كتاب جديد</button></div></div>
+      {edit && <div className="bar gutter"><div><button className="btnp grow" onClick={add}>كتاب جديد</button></div></div>}
     </>
   );
 }

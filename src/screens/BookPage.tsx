@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useData, useCan } from '../data/store';
 import { applyBook, hasPages, pageUrl, pagesLabel } from '../data/books';
 import { deletePages, savePage } from '../firebase/bookPages';
 import { pdfToImages } from '../data/pdfPages';
@@ -14,6 +14,7 @@ export default function BookPage() {
   const { bookId } = useParams();
   const [params] = useSearchParams();
   const [data, update] = useData();
+  const edit = useCan('curriculum');
   const nav = useNavigate();
   const saved = data.books.find(b => b.id === bookId);
   const [draft, setDraft] = useState<Book | null>(params.get('edit') && saved ? saved : null);
@@ -150,7 +151,7 @@ export default function BookPage() {
       <header className="top gutter"><div className="row between">
         <div className="row"><Link to="/books" className="icon" aria-label="رجوع">→</Link>
           <div><h1>{saved.title}</h1><div className="muted">{[level?.name, term?.name].filter(Boolean).join(' • ')}</div></div></div>
-        <button className="btn" style={{ minHeight: 40 }} onClick={() => setDraft(saved)}>تعديل</button>
+        {edit && <button className="btn" style={{ minHeight: 40 }} onClick={() => setDraft(saved)}>تعديل</button>}
       </div></header>
       <main className="main gutter">
         {level && term && <div className="note">الفهرس ده هو منهج {level.name} في ترم {term.name}، بنفس الترتيب. أي لحن تضيفه هنا بيتضاف للمنهج.</div>}

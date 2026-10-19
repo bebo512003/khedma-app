@@ -1,11 +1,11 @@
-import { useData } from '../data/store';
+import { useCan, useData } from '../data/store';
 import { duplicateGroups, mergeDuplicates } from '../data/dedupe';
 
 /** Shown when the library has the same hymn more than once; one tap keeps a single copy everywhere. */
 export default function Duplicates() {
   const [data, update] = useData();
   const groups = duplicateGroups(data);
-  if (!groups.length) return null;
+  if (!useCan('curriculum') || !groups.length) return null;
   return (
     <div className="card alert span">
       <div className="alert-t">فيه {groups.length === 1 ? 'لحن متسجل' : `${groups.length} ألحان متسجلة`} أكتر من مرة</div>

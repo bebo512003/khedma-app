@@ -1,23 +1,25 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { applyTheme, loadTheme } from '../theme';
-import { useStore } from '../data/store';
+import { useStore, useCan } from '../data/store';
 import logo from '../logo.png';
 import Icon from '../ui/Icon';
 
 /** Top menu on computers. Phones keep the in-screen buttons. */
 export default function DeskNav() {
   const { cloud, servant, signOut } = useStore();
+  const canReports = useCan('reports'), canMembers = useCan('members');
   const [theme, setTheme] = useState(loadTheme());
   const toggle = () => { const t = theme === 'light' ? 'maroon' : 'light'; applyTheme(t); setTheme(t); };
   const links: [string, string][] = [['/', 'الرئيسية'], ['/members', 'المخدومين'], ['/library', 'المكتبة'], ['/books', 'الكتب'], ['/curriculum', 'المنهج'], ['/sessions', 'سجل الحصص'], ['/reports', 'التقارير'], ['/cards', 'كروت QR'], ['/dictionary', 'القاموس']];
-  if (servant) links.push(['/team', 'الفريق'], ['/notify', 'التنبيهات']);
+  const shown = links.filter(([to]) => (to !== '/reports' || canReports) && (to !== '/cards' || canMembers));
+  if (servant) shown.push(['/team', 'الفريق'], ['/notify', 'التنبيهات']);
   return (
     <nav className="desknav" aria-label="القايمة">
       <div>
         <div className="row"><img src={logo} alt="" width={36} height={36} /><b>مدرسة الشهيد اسطفانوس</b></div>
         <div className="row" style={{ gap: 4 }}>
-          {links.map(([to, label]) => <NavLink key={to} to={to} end={to === '/'}>{label}</NavLink>)}
+          {shown.map(([to, label]) => <NavLink key={to} to={to} end={to === '/'}>{label}</NavLink>)}
           <button onClick={toggle} aria-label={theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={18} /></button>
           {servant && <NavLink to="/profile" className="me" aria-label="بروفايلي">{servant.photo ? <img src={servant.photo} alt="" /> : servant.name[0]}</NavLink>}
           {cloud && <button onClick={signOut}>خروج</button>}

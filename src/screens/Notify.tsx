@@ -10,7 +10,7 @@ const HOURS = Array.from({ length: 17 }, (_, i) => i + 7);
 export default function Notify() {
   const { servant } = useStore();
   const nav = useNavigate();
-  const lead = servant?.role === 'lead';
+  const lead = !servant || servant.role === 'lead' || servant.role === 'admin';
   const [s, setS] = useState<NotifySettings | null>(null);
   const [log, setLog] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState('');

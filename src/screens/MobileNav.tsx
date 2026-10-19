@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useAllowedLevel, useData, useIsLead, useStore } from '../data/store';
+import { useAllowedLevel, useData, useIsLead, useStore, useCan } from '../data/store';
 import { applyTheme, loadTheme } from '../theme';
 import Icon from '../ui/Icon';
 
@@ -10,6 +10,7 @@ const TAB_ROUTES = ['/', '/sessions', '/members', '/library', '/curriculum', '/b
 export default function MobileNav() {
   const { pathname } = useLocation();
   const [data] = useData();
+  const canSessions = useCan('sessions'), canReports = useCan('reports'), canMembers = useCan('members');
   const { cloud, servant, signOut } = useStore();
   const allowed = useAllowedLevel();
   const lead = useIsLead();
@@ -27,6 +28,7 @@ export default function MobileNav() {
     ...(cloud ? [['/team', 'team', 'الفريق'], ['/notify', 'bell', 'التنبيهات'], ['/profile', 'user', 'بروفايلي']] as [string, string, string][] : []),
     ...(lead ? [['/levels', 'layers', 'المستويات']] as [string, string, string][] : []),
   ];
+  const shown = more.filter(([to]) => (to !== '/reports' || canReports) && (to !== '/cards' || canMembers));
   const inMore = more.some(([to]) => to === pathname);
 
   return (
@@ -35,7 +37,9 @@ export default function MobileNav() {
         <div>
           <NavLink to="/" end><Icon name="home" />الرئيسية</NavLink>
           <NavLink to="/members"><Icon name="people" />المخدومين</NavLink>
-          <button className="fab" onClick={start} aria-label="ابدأ حصة"><Icon name="play" size={20} />ابدأ حصة</button>
+          {canSessions
+            ? <button className="fab" onClick={start} aria-label="ابدأ حصة"><Icon name="play" size={20} />ابدأ حصة</button>
+            : <NavLink to="/sessions"><Icon name="clock" />الحصص</NavLink>}
           <NavLink to="/library"><Icon name="book" />المكتبة</NavLink>
           <button className={inMore ? 'active' : ''} onClick={() => setSheet('more')}><Icon name="more" />المزيد</button>
         </div>
@@ -61,7 +65,7 @@ export default function MobileNav() {
             <button className="icon" onClick={() => setSheet(null)} aria-label="اقفل"><Icon name="close" size={18} /></button>
           </div>
           <div className="tiles">
-            {more.map(([to, icon, label]) => <Link key={to} to={to} className="tile" onClick={() => setSheet(null)}><Icon name={icon} />{label}</Link>)}
+            {shown.map(([to, icon, label]) => <Link key={to} to={to} className="tile" onClick={() => setSheet(null)}><Icon name={icon} />{label}</Link>)}
             <button className="tile" onClick={toggleTheme}><Icon name={theme === 'light' ? 'moon' : 'sun'} />{theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}</button>
             {cloud && <button className="tile" onClick={signOut}><Icon name="logout" />خروج</button>}
           </div>

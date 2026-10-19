@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useAllowedLevel, useData, useIsLead, useStore } from '../data/store';
+import { useAllowedLevel, useData, useIsLead, useStore, useCan } from '../data/store';
 import { absenceStreak, needsFollowUp } from '../data/logic';
 import { applyTheme, loadTheme } from '../theme';
 import { useState } from 'react';
@@ -11,6 +11,7 @@ import Icon from '../ui/Icon';
 
 export default function Home() {
   const [data] = useData();
+  const canReports = useCan('reports'), canSessions = useCan('sessions');
   const { update, cloud, syncError, servant } = useStore();
   const allowed = useAllowedLevel();
   const lead = useIsLead();
@@ -47,7 +48,7 @@ export default function Home() {
       </header>
       <main className="main gutter wide dash">
         <CopticToday />
-        <div className="card">
+        {canSessions && <div className="card">
           <h2>ابدأ حصة</h2>
           <div className="list">
             {levels.map(l => {
@@ -60,7 +61,7 @@ export default function Home() {
               );
             })}
           </div>
-        </div>
+        </div>}
 
         {followUp.length > 0 && (
           <div className="card alert">
@@ -85,7 +86,7 @@ export default function Home() {
         <div className="card mobile-only">
           <h2>اختصارات</h2>
           <div className="tiles tiles4">
-            {([['/curriculum', 'list', 'المنهج'], ['/books', 'books', 'الكتب'], ['/reports', 'chart', 'التقارير'], ['/sessions', 'clock', 'سجل الحصص']] as const).map(([to, icon, label]) =>
+            {([['/curriculum', 'list', 'المنهج'], ['/books', 'books', 'الكتب'], ['/reports', 'chart', 'التقارير'], ['/sessions', 'clock', 'سجل الحصص']] as const).filter(([to]) => to !== '/reports' || canReports).map(([to, icon, label]) =>
               <Link key={to} to={to} className="tile"><Icon name={icon} />{label}</Link>)}
           </div>
         </div>

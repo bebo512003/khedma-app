@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useData, useCan } from '../data/store';
 import { STATUS_LABELS, type HymnStatus } from '../data/types';
 import {
   absenceStreak, contact, formatTime, isLate, lateBy, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, ranking,
@@ -20,6 +20,7 @@ type Tab = 'hymns' | 'ratings' | 'info';
 export default function MemberProfile() {
   const { memberId } = useParams();
   const [data, update] = useData();
+  const edit = useCan('members');
   const nav = useNavigate();
   const [tab, setTab] = useState<Tab>('hymns');
   const m = data.members.find(x => x.id === memberId);
@@ -50,7 +51,7 @@ export default function MemberProfile() {
           <div className="row" style={{ gap: 8 }}>
             {c.phone && <a className="icon" href={waLink(c.phone, '')} target="_blank" rel="noopener noreferrer" aria-label="واتساب"><Icon name="whatsapp" size={20} /></a>}
             <Link to={`/cards?member=${m.id}`} className="icon" aria-label="كارت QR"><Icon name="qr" size={20} /></Link>
-            <Link to={`/members/${m.id}/edit`} className="icon" aria-label="تعديل"><Icon name="edit" size={20} /></Link>
+            {edit && <Link to={`/members/${m.id}/edit`} className="icon" aria-label="تعديل"><Icon name="edit" size={20} /></Link>}
           </div>
         </div>
         <div className="profile-hero">
@@ -91,7 +92,7 @@ export default function MemberProfile() {
                   <Link to={`/hymns/${h.id}`} style={{ color: "inherit" }}><b>{h.nameAr}</b></Link>
                   <div className="lvl" role="group" aria-label={`مستواه في ${h.nameAr}`}>
                     {STATUS_LABELS.map((l, i) =>
-                      <button key={l} className={`st${i}`} aria-pressed={s === i} onClick={() => setStatus(h.id, i as HymnStatus)}>{l}</button>)}
+                      <button key={l} className={`st${i}`} aria-pressed={s === i} disabled={!edit && s !== i} onClick={() => setStatus(h.id, i as HymnStatus)}>{l}</button>)}
                   </div>
                 </div>
               );
@@ -121,7 +122,7 @@ export default function MemberProfile() {
           {row('موبايل ولي الأمر', m.parentPhone)}
           {row('دخول التطبيق', m.account || m.pinHash ? 'معمول له رقم سري' : 'لسه مالوش رقم سري')}
           {mine[0] && row('آخر حصة', `${formatDay(mine[0].date)} (${mine[0].attendance[m.id] === 'p' ? 'حضر' : mine[0].attendance[m.id] === 'e' ? 'اعتذر' : 'غاب'})`)}
-          <Link to={`/members/${m.id}/edit`} className="btn">عدّل البيانات</Link>
+          {edit && <Link to={`/members/${m.id}/edit`} className="btn">عدّل البيانات</Link>}
         </div>}
       </main>
     </>

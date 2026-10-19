@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useData, useCan } from '../data/store';
 import { absenceStreak, birthdayWhen, fold, needsFollowUp, upcomingBirthdays } from '../data/logic';
 
 export default function Members() {
   const [data] = useData();
+  const edit = useCan('members');
   const [level, setLevel] = useState<string>('all');
   const [q, setQ] = useState('');
   const levels = [...data.levels].sort((a, b) => a.order - b.order);
@@ -19,9 +20,9 @@ export default function Members() {
       <header className="top gutter">
         <div className="row between">
           <div className="row"><Link to="/" className="icon" aria-label="رجوع">→</Link><div><h1>المخدومين</h1><div className="muted">{data.members.length} مخدوم</div></div></div>
-          <Link to="/members/new" className="btnp" style={{ minHeight: 44 }}>+ مخدوم</Link>
+          {edit && <Link to="/members/new" className="btnp" style={{ minHeight: 44 }}>+ مخدوم</Link>}
         </div>
-        <div className="row" style={{ gap: 6 }}><Link to={`/cards${level !== 'all' ? `?level=${level}` : ''}`} className="btn grow" style={{ minHeight: 40 }}>كروت QR</Link><Link to="/members/import" className="btn grow" style={{ minHeight: 40 }}>إضافة من Excel</Link></div>
+        {edit && <div className="row" style={{ gap: 6 }}><Link to={`/cards${level !== 'all' ? `?level=${level}` : ''}`} className="btn grow" style={{ minHeight: 40 }}>كروت QR</Link><Link to="/members/import" className="btn grow" style={{ minHeight: 40 }}>إضافة من Excel</Link></div>}
         <input id="search" className="input" placeholder="دوّر بالاسم أو الكود" value={q} onChange={e => setQ(e.target.value)} />
         <div className="chips">
           <button className="chip" aria-pressed={level === 'all'} onClick={() => setLevel('all')}>الكل</button>

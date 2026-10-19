@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useData, useCan } from '../data/store';
 import { bookOf, entryPages, pagesLabel } from '../data/books';
 import { currentTerm, curriculumKey, safeUrl } from '../data/logic';
 import HymnText from './HymnText';
@@ -10,6 +10,7 @@ import Icon from '../ui/Icon';
 export default function HymnView() {
   const { hymnId } = useParams();
   const [data] = useData();
+  const edit = useCan('curriculum');
   const nav = useNavigate();
   const h = data.hymns.find(x => x.id === hymnId);
   if (!h) return <main className="main gutter"><div className="card">اللحن ده مش موجود. <Link to="/library">ارجع للمكتبة</Link></div></main>;
@@ -27,7 +28,7 @@ export default function HymnView() {
           <button className="icon" onClick={() => nav(-1)} aria-label="رجوع"><Icon name="back" size={20} /></button>
           <div className="grow"><h1>{h.nameAr}</h1>{h.nameCoptic && <div className="muted coptic-font">{h.nameCoptic}</div>}</div>
         </div>
-        <Link to={`/hymns/${h.id}/edit`} className="icon" aria-label="تعديل"><Icon name="edit" size={20} /></Link>
+        {edit ? <Link to={`/hymns/${h.id}/edit`} className="icon" aria-label="تعديل"><Icon name="edit" size={20} /></Link> : <span />}
       </div></header>
       <main className="main gutter">
         <div className="row">
