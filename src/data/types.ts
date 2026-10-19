@@ -126,6 +126,10 @@ export interface Session {
   /** Hymns that reached حافظه / بيقوله لوحده during this session, per member (drives milestone points). */
   milestones?: Record<string, { memorized: number; solo: number }>;
   durationMs?: number;
+  /** When the session was due to start (epoch ms); arrivals after it plus a grace period count as late. */
+  startedAt?: number;
+  /** When each member's card was scanned at the door (epoch ms). */
+  arrivals?: Record<string, number>;
   /** Servant's short note to a member, shown in their ratings. */
   notes?: Record<string, string>;
 }

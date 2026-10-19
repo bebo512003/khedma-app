@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../data/store';
 import { STATUS_LABELS, type HymnStatus } from '../data/types';
 import {
-  absenceStreak, contact, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, ranking,
+  absenceStreak, contact, formatTime, isLate, lateBy, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, ranking,
   sessionAverage, todayISO, waLink, yearsCount,
 } from '../data/logic';
 import Icon from '../ui/Icon';
@@ -107,6 +107,7 @@ export default function MemberProfile() {
               <Link key={s.id} to={`/summary/${s.id}`} className="li" style={{ alignItems: 'flex-start' }}>
                 <div className="grow"><b>{formatDay(s.date)}</b>
                   <div className="muted">{s.hymnIds.map(id => data.hymns.find(h => h.id === id)?.nameAr).filter(Boolean).join('، ') || 'من غير لحن محدد'}</div>
+                  {s.arrivals?.[m.id] && <div className="muted">وصل {formatTime(s.arrivals[m.id])}{isLate(s, m.id) ? ` • متأخر ${lateBy(s, m.id)} دقيقة` : ''}</div>}
                   {s.notes?.[m.id] && <div className="note">«{s.notes[m.id]}»</div>}</div>
                 <b className="score">{sessionAverage(s, m.id)?.toFixed(1)}</b>
               </Link>

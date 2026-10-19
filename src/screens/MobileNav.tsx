@@ -5,7 +5,7 @@ import { applyTheme, loadTheme } from '../theme';
 import Icon from '../ui/Icon';
 
 /** Main sections get a bottom tab bar on phones; forms and the session keep their own action bar instead. */
-const TAB_ROUTES = ['/', '/members', '/library', '/curriculum', '/books', '/reports', '/dictionary', '/followup', '/team', '/notify', '/levels'];
+const TAB_ROUTES = ['/', '/sessions', '/members', '/library', '/curriculum', '/books', '/reports', '/dictionary', '/followup', '/team', '/notify', '/levels'];
 
 export default function MobileNav() {
   const { pathname } = useLocation();
@@ -22,7 +22,7 @@ export default function MobileNav() {
   const start = () => levels.length === 1 ? nav(`/session/${levels[0].id}`) : setSheet('start');
   const toggleTheme = () => { const t = theme === 'light' ? 'maroon' : 'light'; applyTheme(t); setTheme(t); };
   const more: [string, string, string][] = [
-    ['/curriculum', 'list', 'المنهج'], ['/books', 'books', 'الكتب'], ['/reports', 'chart', 'التقارير'],
+    ['/sessions', 'clock', 'سجل الحصص'], ['/curriculum', 'list', 'المنهج'], ['/books', 'books', 'الكتب'], ['/reports', 'chart', 'التقارير'],
     ['/followup', 'heart', 'الافتقاد'], ['/dictionary', 'dict', 'القاموس'], ['/cards', 'qr', 'كروت QR'],
     ...(cloud ? [['/team', 'team', 'الفريق'], ['/notify', 'bell', 'التنبيهات'], ['/profile', 'user', 'بروفايلي']] as [string, string, string][] : []),
     ...(lead ? [['/levels', 'layers', 'المستويات']] as [string, string, string][] : []),

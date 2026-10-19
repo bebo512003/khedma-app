@@ -2,31 +2,48 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { CRITERIA, STATUS_LABELS, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
-import { currentTerm, todayISO, uid } from '../data/logic';
+import { LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid } from '../data/logic';
 import Scanner from './Scanner';
 
 type Mode = 'att' | 'rate' | 'hym';
 const fmt = (ms: number) => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
-export default function SessionScreen() {
-  const { levelId = '' } = useParams();
+/** A new session (/session/:levelId) or a correction to a saved one (/sessions/:sessionId/edit). */
+export default function SessionRoute() {
+  const { levelId = '', sessionId } = useParams();
+  const [data] = useData();
+  const allowed = useAllowedLevel();
+  const editing = sessionId ? data.sessions.find(s => s.id === sessionId && allowed(s.levelId)) : undefined;
+  if (sessionId && !editing) return <main className="main gutter"><div className="card">الحصة دي مش موجودة. <Link to="/sessions">سجل الحصص</Link></div></main>;
+  return <SessionScreen key={sessionId ?? levelId} levelId={editing?.levelId ?? levelId} editing={editing} />;
+}
+
+function SessionScreen({ levelId, editing }: { levelId: string; editing?: Session }) {
   const [data, update] = useData();
   const nav = useNavigate();
   const allowed = useAllowedLevel();
   const level = allowed(levelId) ? data.levels.find(l => l.id === levelId) : undefined;
   const term = currentTerm(data);
-  const hymnIds = data.curricula[`${term?.id}:${levelId}`] ?? [];
+  const termId = editing?.termId ?? term?.id;
+  const hymnIds = data.curricula[`${termId}:${levelId}`] ?? [];
   const hymns = hymnIds.map(id => data.hymns.find(h => h.id === id)!).filter(Boolean);
-  const members = useMemo(() => data.members.filter(m => m.levelId === levelId).sort((a, b) => a.name.localeCompare(b.name, 'ar')), [data.members, levelId]);
+  // A saved session keeps the members it recorded, even ones who moved level since.
+  const members = useMemo(() => data.members.filter(m => m.levelId === levelId || (editing && editing.attendance[m.id] !== undefined))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ar')), [data.members, levelId, editing]);
 
   // One hymn per session: the servant picks it, and its status and the ratings belong to it. Other hymns are set from each member's profile.
   const lastHymn = [...data.sessions].filter(s => s.levelId === levelId).sort((a, b) => b.date.localeCompare(a.date))[0]?.hymnIds?.[0];
-  const [hymnId, setHymnId] = useState<string | undefined>(() => hymnIds.includes(lastHymn ?? '') ? lastHymn : hymnIds[0]);
+  const [hymnId, setHymnId] = useState<string | undefined>(() => editing ? editing.hymnIds[0] : hymnIds.includes(lastHymn ?? '') ? lastHymn : hymnIds[0]);
   const hymn = hymns.find(h => h.id === hymnId);
   const [mode, setMode] = useState<Mode>('att');
-  const [att, setAtt] = useState<Record<string, Attendance>>(() => Object.fromEntries(members.map(m => [m.id, 'a'])));
-  const [rate, setRate] = useState<Record<string, Rating>>({});
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [att, setAtt] = useState<Record<string, Attendance>>(() => ({ ...Object.fromEntries(members.map(m => [m.id, 'a'])), ...editing?.attendance }));
+  const [rate, setRate] = useState<Record<string, Rating>>(() => ({ ...editing?.ratings }));
+  const [notes, setNotes] = useState<Record<string, string>>(() => ({ ...editing?.notes }));
+  const [arrivals, setArrivals] = useState<Record<string, number>>(() => ({ ...editing?.arrivals }));
+  const [date, setDate] = useState(editing?.date ?? todayISO());
+  // When the session is due to start; late arrivals are counted from it. Old sessions may have none.
+  const [startTime, setStartTime] = useState(() => editing ? (editing.startedAt ? hhmm(editing.startedAt) : '') : hhmm(Date.now()));
+  const startedAt = startTime ? atTime(date, startTime) : undefined;
   const [noteOpen, setNoteOpen] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [toast, setToast] = useState<{ text: string; bad?: boolean } | null>(null);
@@ -48,9 +65,12 @@ export default function SessionScreen() {
     const m = data.members.find(x => x.code === code);
     if (!m) { setToast({ text: `مفيش مخدوم بالكود ${code}`, bad: true }); return; }
     if (m.levelId !== levelId) { setToast({ text: `${m.name} مش في ${level?.name}`, bad: true }); return; }
-    if (att[m.id] === 'p') { setToast({ text: `${m.name} متسجل قبل كده` }); return; }
+    if (att[m.id] === 'p' && arrivals[m.id]) { setToast({ text: `${m.name} متسجل قبل كده` }); return; }
+    const now = Date.now();
+    const late = startedAt ? minutesLate(now, startedAt) : 0;
     setAtt(a => ({ ...a, [m.id]: 'p' }));
-    setToast({ text: `✓ ${m.name} حاضر` });
+    setArrivals(a => ({ ...a, [m.id]: now }));
+    setToast(late > LATE_GRACE_MIN ? { text: `✓ ${m.name} حاضر، متأخر ${late} دقيقة`, bad: true } : { text: `✓ ${m.name} حاضر` });
     navigator.vibrate?.(60);
   };
   const cycleAtt = (id: string) => setAtt(a => ({ ...a, [id]: (a[id] ?? 'a') === 'a' ? 'p' : a[id] === 'p' ? 'e' : 'a' }));
@@ -69,7 +89,8 @@ export default function SessionScreen() {
   const finish = () => {
     const milestones: Session['milestones'] = {};
     present.forEach(m => {
-      let memorized = 0, solo = 0;
+      // A correction adds to what the session already counted; progress already holds its earlier changes.
+      let memorized = editing?.milestones?.[m.id]?.memorized ?? 0, solo = editing?.milestones?.[m.id]?.solo ?? 0;
       sessionHymns.forEach(h => {
         const before = data.progress[m.id]?.[h] ?? 0, after = hs(m.id, h);
         if (before < 2 && after >= 2) memorized++;
@@ -78,18 +99,20 @@ export default function SessionScreen() {
       if (memorized || solo) milestones[m.id] = { memorized, solo };
     });
     const session: Session = {
-      id: uid(), date: todayISO(), levelId, termId: term.id, hymnIds: sessionHymns,
+      ...editing,
+      id: editing?.id ?? uid(), date, levelId, termId: termId!, hymnIds: sessionHymns,
       attendance: Object.fromEntries(members.map(m => [m.id, att[m.id] ?? 'a'])),
       ratings: Object.fromEntries(present.map(m => [m.id, rate[m.id] ?? [3, 3, 3]])),
-      milestones, durationMs: Date.now() - start,
+      milestones, durationMs: editing ? editing.durationMs : Date.now() - start,
+      startedAt, arrivals: Object.fromEntries(present.filter(m => arrivals[m.id]).map(m => [m.id, arrivals[m.id]])),
       notes: Object.fromEntries(present.map(m => [m.id, (notes[m.id] ?? '').trim()]).filter(([, n]) => n)),
     };
     update(d => {
       const progress = { ...d.progress };
       present.forEach(m => { progress[m.id] = { ...(progress[m.id] ?? {}), ...memberHym(m.id) }; });
-      return { ...d, sessions: [...d.sessions, session], progress };
+      return { ...d, sessions: editing ? d.sessions.map(s => s.id === session.id ? session : s) : [...d.sessions, session], progress };
     });
-    nav(`/summary/${session.id}`, { replace: true });
+    nav(`/summary/${session.id}`, { replace: true, state: editing ? undefined : { fresh: true } });
   };
 
   const picker = hymns.length > 0 && (
@@ -102,8 +125,8 @@ export default function SessionScreen() {
     <>
       <header className="top gutter">
         <div className="row between">
-          <div><h1>{level.name}</h1><div className="muted">{hymn ? `لحن الحصة: ${hymn.nameAr}` : hymns.length ? 'اختار لحن الحصة' : 'مفيش ألحان في منهج الترم لسه'}</div></div>
-          <span className="timer" aria-label="وقت الحصة">{fmt(now - start)}</span>
+          <div><h1>{editing ? `تعديل حصة ${level.name}` : level.name}</h1><div className="muted">{editing ? formatDay(date) + ' • ' : ''}{hymn ? `لحن الحصة: ${hymn.nameAr}` : hymns.length ? 'اختار لحن الحصة' : 'مفيش ألحان في منهج الترم لسه'}</div></div>
+          {!editing && <span className="timer" aria-label="وقت الحصة">{fmt(now - start)}</span>}
         </div>
         <div className="seg" role="group" aria-label="وضع الحصة">
           {([['att', 'الحضور'], ['rate', 'التقييم'], ['hym', 'الألحان']] as const).map(([k, l]) =>
@@ -113,6 +136,13 @@ export default function SessionScreen() {
 
       <main className="main gutter wide">
         {mode === 'att' && (<>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            {editing && <label className="field grow" htmlFor="sdate"><span>يوم الحصة</span>
+              <input id="sdate" type="date" className="input" value={date} max={todayISO()} onChange={e => e.target.value && setDate(e.target.value)} /></label>}
+            <label className="field grow" htmlFor="stime"><span>ميعاد بداية الحصة</span>
+              <input id="stime" type="time" className="input" value={startTime} onChange={e => setStartTime(e.target.value)} /></label>
+          </div>
+          <span className="muted">اللي بيتسجل بالـ QR بعد الميعاد بأكتر من {LATE_GRACE_MIN} دقايق بيتحسب متأخر.</span>
           <div className="row between"><b>حضر {present.length} من {members.length}</b>
             <button className={scanning ? 'btnp' : 'btn'} style={{ minHeight: 40 }} onClick={() => setScanning(x => !x)}>{scanning ? 'اقفل الكاميرا' : 'اسكان الكروت'}</button></div>
           {scanning && <Scanner onCode={onScan} />}
@@ -121,11 +151,12 @@ export default function SessionScreen() {
           <div className="grid3">
             {members.map(m => {
               const s = att[m.id];
+              const late = s === 'p' && arrivals[m.id] && startedAt ? minutesLate(arrivals[m.id], startedAt) : 0;
               return (
                 <button key={m.id} className={`kid ${s === 'p' ? 'p' : s === 'e' ? 'e' : ''}`} onClick={() => cycleAtt(m.id)} aria-pressed={s === 'p'}>
                   <span className="ph">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
                   <span className="nm">{m.name}</span>
-                  <span className="tg">{s === 'p' ? 'حاضر' : s === 'e' ? 'اعتذر' : ''}</span>
+                  <span className="tg">{s === 'p' ? (arrivals[m.id] ? `${formatTime(arrivals[m.id])}${late > LATE_GRACE_MIN ? ' • متأخر' : ''}` : 'حاضر') : s === 'e' ? 'اعتذر' : ''}</span>
                 </button>
               );
             })}
@@ -183,8 +214,8 @@ export default function SessionScreen() {
 
       {toast && <div className={`toast${toast.bad ? ' bad' : ''}`} role="status">{toast.text}</div>}
       <div className="bar gutter"><div>
-        <Link to="/" className="btn">إلغاء</Link>
-        <button className="btnp grow" onClick={finish} disabled={!members.length}>خلّص الحصة</button>
+        <Link to={editing ? `/summary/${editing.id}` : '/'} className="btn">إلغاء</Link>
+        <button className="btnp grow" onClick={finish} disabled={!members.length}>{editing ? 'احفظ التعديل' : 'خلّص الحصة'}</button>
       </div></div>
     </>
   );

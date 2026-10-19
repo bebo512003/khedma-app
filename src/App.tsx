@@ -3,6 +3,7 @@ import { HashRouter, Route, Routes } from 'react-router-dom';
 import Gate from './screens/Gate';
 import Home from './screens/Home';
 import SessionScreen from './screens/Session';
+import Sessions from './screens/Sessions';
 import Summary from './screens/Summary';
 import FollowUp from './screens/FollowUp';
 import Members from './screens/Members';
@@ -41,6 +42,8 @@ export default function App() {
           <Route path="/" element={s(<Home />)} />
           <Route path="/session/:levelId" element={s(<SessionScreen />)} />
           <Route path="/summary/:sessionId" element={s(<Summary />)} />
+          <Route path="/sessions" element={s(<Sessions />)} />
+          <Route path="/sessions/:sessionId/edit" element={s(<SessionScreen />)} />
           <Route path="/followup" element={s(<FollowUp />)} />
           <Route path="/members" element={s(<Members />)} />
           <Route path="/members/new" element={s(<MemberForm />)} />

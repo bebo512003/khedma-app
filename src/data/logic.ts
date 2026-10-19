@@ -87,6 +87,29 @@ export function nextFriday(from = new Date()) {
 
 const dayFmt = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' });
 export const formatDay = (iso: string) => dayFmt.format(new Date(`${iso}T12:00:00`));
+const timeFmt = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
+export const formatTime = (ms: number) => timeFmt.format(new Date(ms));
+
+/** Minutes of grace after the session's start before a scanned arrival counts as late. */
+export const LATE_GRACE_MIN = 10;
+/** Minutes a member arrived after the session started, or null when their card wasn't scanned. */
+export function lateBy(s: Session, memberId: string): number | null {
+  const at = s.arrivals?.[memberId];
+  if (at === undefined || !s.startedAt) return null;
+  return minutesLate(at, s.startedAt);
+}
+/** Compared by time of day, so a session whose date was corrected afterwards still counts right. */
+export function minutesLate(at: number, start: number) {
+  const mins = (ms: number) => { const d = new Date(ms); return d.getHours() * 60 + d.getMinutes(); };
+  return Math.max(0, mins(at) - mins(start));
+}
+export const isLate = (s: Session, memberId: string) => (lateBy(s, memberId) ?? 0) > LATE_GRACE_MIN;
+/** "HH:MM" on the session's day as epoch ms, for the start-time field. */
+export function atTime(dateISO: string, hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number);
+  return new Date(`${dateISO}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`).getTime();
+}
+export const hhmm = (ms: number) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
 
 /** Member PINs are stored only as a salted SHA-256 hash. Real verification moves server-side with Firebase. */
 export async function hashPin(memberId: string, pin: string) {

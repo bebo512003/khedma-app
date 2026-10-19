@@ -75,17 +75,17 @@ export default function Home() {
         <Birthdays levelIds={allowed} />
 
         {last && (
-          <div className="card row between">
+          <Link to={`/summary/${last.id}`} className="card row between" style={{ color: 'inherit', textDecoration: 'none' }}>
             <div><div className="muted">آخر حصة: {data.levels.find(l => l.id === last.levelId)?.name}</div>
               <b>حضر {Object.values(last.attendance).filter(a => a === 'p').length} من {Object.keys(last.attendance).length}</b></div>
             <span className="muted">{last.date}</span>
-          </div>
+          </Link>
         )}
 
         <div className="card mobile-only">
           <h2>اختصارات</h2>
           <div className="tiles tiles4">
-            {([['/curriculum', 'list', 'المنهج'], ['/books', 'books', 'الكتب'], ['/reports', 'chart', 'التقارير'], ['/dictionary', 'dict', 'القاموس']] as const).map(([to, icon, label]) =>
+            {([['/curriculum', 'list', 'المنهج'], ['/books', 'books', 'الكتب'], ['/reports', 'chart', 'التقارير'], ['/sessions', 'clock', 'سجل الحصص']] as const).map(([to, icon, label]) =>
               <Link key={to} to={to} className="tile"><Icon name={icon} />{label}</Link>)}
           </div>
         </div>

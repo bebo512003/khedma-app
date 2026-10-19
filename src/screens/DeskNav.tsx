@@ -10,7 +10,7 @@ export default function DeskNav() {
   const { cloud, servant, signOut } = useStore();
   const [theme, setTheme] = useState(loadTheme());
   const toggle = () => { const t = theme === 'light' ? 'maroon' : 'light'; applyTheme(t); setTheme(t); };
-  const links: [string, string][] = [['/', 'الرئيسية'], ['/members', 'المخدومين'], ['/library', 'المكتبة'], ['/books', 'الكتب'], ['/curriculum', 'المنهج'], ['/reports', 'التقارير'], ['/cards', 'كروت QR'], ['/dictionary', 'القاموس']];
+  const links: [string, string][] = [['/', 'الرئيسية'], ['/members', 'المخدومين'], ['/library', 'المكتبة'], ['/books', 'الكتب'], ['/curriculum', 'المنهج'], ['/sessions', 'سجل الحصص'], ['/reports', 'التقارير'], ['/cards', 'كروت QR'], ['/dictionary', 'القاموس']];
   if (servant) links.push(['/team', 'الفريق'], ['/notify', 'التنبيهات']);
   return (
     <nav className="desknav" aria-label="القايمة">
