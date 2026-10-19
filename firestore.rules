@@ -150,7 +150,8 @@ service cloud.firestore {
         allow delete: if lead();
       }
 
-      match /hymns/{id} { allow read: if servant(); allow write: if can('curriculum'); }
+      // The hymn library is open to anyone (#/open/library), signed in or not.
+      match /hymns/{id} { allow read: if true; allow write: if can('curriculum'); }
       match /books/{id} { allow read: if servant(); allow write: if can('curriculum'); }
       match /progress/{id} { allow read, write: if servant(); }
       // meta also holds the next member code and message templates, which any servant may change; the curriculum needs the permission.

@@ -6,7 +6,7 @@ each hymn page has a word-by-word analysis table (segmented word, gloss) and the
 Coptic and Arabic line by line. We keep:
   forms: every analysed word form -> its most common segmentation and gloss
   morphs: every segment -> its glosses as a prefix (P), last piece (L) or whole word / stem (S)
-  tm: Coptic line -> Arabic line, for exact and near matches
+  tm: Coptic line -> Arabic line, for exact and near matches (both ways)
   grammar: pieces from the grammar books (scripts/translator-grammar.json) the corpus never shows
 
 Usage: python3 scripts/build-translator.py path/to/corpus.json [--holdout 10] [--out public/dict/hymn-corpus.json]
@@ -46,6 +46,8 @@ PAST = {key(f) for f, g, cls in gram['prefixes'] if g in ('هو قد', 'الذي
 PLURAL = {key(f) for f, g, cls in gram['prefixes'] if cls == 'art' and (f.startswith('ⲛ') or f == 'ϩⲁⲛ')}
 
 forms = collections.defaultdict(collections.Counter)
+# How each form is written in the hymns (jinkim, capitals): shown when translating into Coptic.
+spell = collections.defaultdict(collections.Counter)
 # Per piece: P (glued in front), S (stem), L (glued at the end), V (stem right after a past-tense piece: the "he did" form),
 # N / M (stem right after a singular / plural article or possessive: the noun).
 morphs = collections.defaultdict(lambda: collections.defaultdict(collections.Counter))
@@ -59,6 +61,7 @@ for p in train:
             if not seg or not gloss or gloss == '-':
                 continue
             forms[seg.replace('-', '')][(seg, gloss)] += 1
+            spell[seg.replace('-', '')][re.sub(r'[^Ⲁ-⳿Ϣ-ϯ̀]', '', r[0])] += 1
             parts = seg.split('-')
             bare = re.sub(r'\s*\(([^()]*)\)\s*$', '', gloss) if len(parts) > 1 else gloss
             gp = [x.strip() for x in re.split(r'\s+-\s+', bare)] if len(parts) > 1 else [gloss]
@@ -95,14 +98,24 @@ for p in train:
                     k = ' '.join(x for x in (key(w, '') for w in cc.split()) if x)
                     aa = aa.strip(' .:')
                     if k and aa and (len(k) > 6 or ' ' in k):
-                        tm.setdefault(k, aa)
+                        tm.setdefault(k, (' '.join(cc.split()).strip(' .:'), aa))
+
+def written(f):
+    """The usual spelling, lowercase unless the hymns always capitalise it (a name). Left out when it is the key itself."""
+    c = spell[f]
+    w = c.most_common(1)[0][0] if c else f
+    if any(key(x[:1]) == x[:1] for x in c):
+        w = key(w[:1]) + w[1:]
+    return w if w != f else ''
+
 
 data = {
     'source': 'مكتبة ألحان كنيسة مارجرجس نزلة السمان (stgeorgesaman.com)',
-    'forms': sorted([[f, *c.most_common(1)[0][0], sum(c.values())] for f, c in forms.items()], key=lambda x: x[0]),
+    'forms': sorted([[f, *c.most_common(1)[0][0], sum(c.values()), *([written(f)] if written(f) else [])] for f, c in forms.items()], key=lambda x: x[0]),
     'morphs': {m: {pos: [[g, n] for g, n in c.most_common(3)] for pos, c in v.items()} for m, v in sorted(morphs.items())},
     'trans': {a: dict(c.most_common()) for a, c in trans.items()},
-    'tm': sorted([[k, a] for k, a in tm.items()]),
+    # Coptic line as written in the hymns, Arabic line.
+    'tm': sorted([[c, a] for c, a in tm.values()]),
     'grammar': gram,
 }
 os.makedirs(os.path.dirname(out), exist_ok=True)

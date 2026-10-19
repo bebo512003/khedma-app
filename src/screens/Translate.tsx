@@ -3,10 +3,15 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { COPTIC_KEYS, scriptOf } from '../data/dictionary';
 import { loadTranslator, translate, type Translator, type WordResult } from '../data/translator';
+import { toCoptic, type CWord } from '../data/toCoptic';
 
 const EXAMPLE = 'Ⲡⲓⲭⲣⲓⲥⲧⲟⲥ ⲁϥⲙⲓⲥⲓ ϧⲉⲛ Ⲃⲏⲑⲗⲉⲉⲙ';
+const EXAMPLE_AR = 'قام المسيح من الأموات';
 
-/** Coptic sentence → Arabic. Hymn lines come back as printed; anything else is put together word by word, with each word's pieces shown. */
+/**
+ * Coptic ⇄ Arabic, picked by the script typed. Hymn lines come back as printed; anything else is put together
+ * word by word, with each word's pieces shown.
+ */
 export default function Translate({ base = '' }: { base?: string }) {
   const [t, setT] = useState<Translator | null>(null);
   const [failed, setFailed] = useState(false);
@@ -18,21 +23,24 @@ export default function Translate({ base = '' }: { base?: string }) {
 
   useEffect(() => { loadTranslator().then(setT).catch(() => setFailed(true)); }, []);
   useEffect(() => { const id = setTimeout(() => setParams(q ? { q } : {}, { replace: true }), 400); return () => clearTimeout(id); }, [q, setParams]);
+  const script = scriptOf(q);
   const result = useMemo(() => t && scriptOf(q) === 'coptic' ? translate(t, q) : null, [t, q]);
+  const back = useMemo(() => t && !result && scriptOf(q) === 'arabic' ? toCoptic(t, q) : null, [t, q, result]);
   const type = (ch: string) => setQ(x => x + ch);
   const whole = result?.whole?.score === 1 || (result && result.phrases.length > 0 && result.phrases.every(p => p.match?.score === 1));
+  const wholeBack = back?.whole?.score === 1 || (back && back.phrases.length > 0 && back.phrases.every(p => p.match?.score === 1));
 
   return (
     <>
       <header className="top gutter">
-        <div className="row"><Link to={base || '/'} className="icon" aria-label="رجوع">→</Link><div><h1>ترجمة جملة قبطي</h1>
-          <div className="muted">قبطي بحيري ← عربي</div></div></div>
+        <div className="row"><Link to={base || '/'} className="icon" aria-label="رجوع">→</Link><div><h1>ترجمة جملة</h1>
+          <div className="muted">{script === 'arabic' ? 'عربي ← قبطي بحيري' : script === 'coptic' ? 'قبطي بحيري ← عربي' : 'قبطي بحيري ⇄ عربي'}</div></div></div>
         <div className="seg" role="tablist">
           <button role="tab" aria-pressed={false} onClick={() => nav(`${base}/dictionary`)}>كلمة</button>
           <button role="tab" aria-pressed>جملة</button>
         </div>
-        <textarea ref={input} id="tr-q" className="input coptic-font" dir="ltr" rows={3} spellCheck={false} autoComplete="off"
-          inputMode={keyboard ? 'none' : 'text'} placeholder="الصق أو اكتب جملة قبطي" value={q} onChange={e => setQ(e.target.value)}
+        <textarea ref={input} id="tr-q" className="input coptic-font" dir={script === 'arabic' ? 'rtl' : 'ltr'} rows={3} spellCheck={false} autoComplete="off"
+          inputMode={keyboard ? 'none' : 'text'} placeholder="اكتب جملة بالقبطي أو بالعربي" value={q} onChange={e => setQ(e.target.value)}
           style={{ fontSize: 20, minHeight: 90 }} />
         <div className="row" style={{ gap: 6 }}>
           <button className="btn" aria-pressed={keyboard} onClick={() => { setKeyboard(k => !k); input.current?.focus(); }}>{keyboard ? 'اقفل الكيبورد' : 'كيبورد ⲁⲃⲅ'}</button>
@@ -52,11 +60,35 @@ export default function Translate({ base = '' }: { base?: string }) {
         {t && !q.trim() && (
           <div className="card">
             <b>إزاي يشتغل</b>
-            <div className="muted">الصق سطر من لحن أو اكتب جملة بالقبطي. لو السطر موجود في مكتبة الألحان هتطلع ترجمته المعتمدة، ولو مش موجود المترجم بيفك كل كلمة لأجزائها (أداة، ضمير، زمن، جذر) ويركّب المعنى.</div>
-            <button className="btn" onClick={() => setQ(EXAMPLE)}>جرّب مثال</button>
+            <div className="muted">اكتب بالقبطي يترجم للعربي، واكتب بالعربي يترجم للقبطي. لو السطر موجود في مكتبة الألحان هيطلع نصه المعتمد، ولو مش موجود المترجم بيفك كل كلمة لأجزائها (أداة، ضمير، زمن، جذر) ويركّب الجملة.</div>
+            <div className="row" style={{ gap: 6 }}>
+              <button className="btn" onClick={() => setQ(EXAMPLE)}>مثال قبطي</button>
+              <button className="btn" onClick={() => setQ(EXAMPLE_AR)}>مثال عربي</button>
+            </div>
           </div>
         )}
-        {t && q.trim() && !result && <div className="card"><div className="note">اكتب الجملة بالحروف القبطي (دوس على كيبورد ⲁⲃⲅ).</div></div>}
+        {t && q.trim() && !result && !back && <div className="card"><div className="note">اكتب الجملة بالحروف القبطي (دوس على كيبورد ⲁⲃⲅ) أو بالعربي.</div></div>}
+        {back && back.phrases.length > 0 && (
+          <>
+            <div className="card">
+              <div className="row between"><h2>بالقبطي</h2><span className={`tag ${wholeBack ? 'tag-ok' : 'tag-ex'}`}>{wholeBack ? 'من الألحان' : 'ترجمة تقريبية'}</span></div>
+              <div className="coptic-font" dir="ltr" style={{ fontSize: 22, lineHeight: 1.8, textAlign: 'left' }}>{back.coptic || '…'}</div>
+              {!wholeBack && <div className="note">اتركّبت كلمة كلمة، فراجعها بالتحليل اللي تحت. الكلمات اللي بين أقواس ما لقيتلهاش مقابل.</div>}
+            </div>
+            {back.whole && !wholeBack && <Near m={back.whole} />}
+            {back.phrases.map((p, i) => (
+              <div key={i} className="card">
+                {back.phrases.length > 1 && <>
+                  <b>{p.text}</b>
+                  <div className="coptic-font cword" dir="ltr" style={{ textAlign: 'left' }}>{p.coptic}</div>
+                </>}
+                {p.match && p.match.score < 1 && <Near m={p.match} />}
+                <div className="words">{p.words.filter(w => w.text).map((w, j) => <CopticWord key={j} w={w} base={base} />)}</div>
+              </div>
+            ))}
+            <div className="note span">المصادر: نصوص وتحليل كلمات مكتبة ألحان كنيسة مارجرجس نزلة السمان، وقاموس أسامة ثابت.</div>
+          </>
+        )}
         {result && result.phrases.length > 0 && (
           <>
             <div className="card">
@@ -87,6 +119,29 @@ function Near({ m }: { m: { coptic: string; arabic: string; score: number } }) {
       <div className="muted">أقرب سطر في الألحان ({Math.round(m.score * 100)}٪ شبهه)</div>
       <div className="coptic-font" dir="ltr" style={{ textAlign: 'left' }}>{m.coptic}</div>
       <div>{m.arabic}</div>
+    </div>
+  );
+}
+
+const HOW: Record<CWord['how'], string> = { hymns: 'من الألحان', grammar: 'متركّبة', dictionary: 'من القاموس', unknown: '' };
+
+function CopticWord({ w, base }: { w: CWord; base: string }) {
+  return (
+    <div className={`wcard ${w.how === 'dictionary' ? 'grammar' : w.how}`}>
+      <div className="row between">
+        <b>{w.text}</b>
+        {w.coptic
+          ? <Link to={`${base}/dictionary?q=${encodeURIComponent(w.pieces[w.pieces.length - 1]?.form.split(' ')[0] || w.coptic)}`} className="coptic-font cword" dir="ltr">{w.coptic}</Link>
+          : <b>؟</b>}
+      </div>
+      {w.pieces.length > 1 && (
+        <div className="pieces" dir="ltr">
+          {w.pieces.map((p, i) => <span key={i} className="piece"><span className="coptic-font">{p.form}</span><small dir="rtl">{p.gloss}</small></span>)}
+        </div>
+      )}
+      {w.how === 'unknown'
+        ? <div className="muted" style={{ fontSize: 12 }}>مش لاقيها، جرّب كلمة بنفس المعنى أو دوّر في القاموس.</div>
+        : <div className="muted" style={{ fontSize: 12 }}>{HOW[w.how]}</div>}
     </div>
   );
 }

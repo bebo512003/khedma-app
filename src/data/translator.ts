@@ -7,15 +7,17 @@ import { copticKey, loadDictionary, type Entry } from './dictionary';
  *    the grammar pieces glued to it (articles, possessives, tense and person prefixes, prepositions, object pronouns)
  *    and a stem from the library or the dictionary. The Arabic is put together from those pieces.
  */
-const URL_ = 'dict/hymn-corpus.json?v=1';
+const URL_ = 'dict/hymn-corpus.json?v=2';
 
 type Gloss = [string, number][];
 interface Corpus {
   source: string;
-  forms: [string, string, string, number][];
+  /** key, segmentation, gloss, count, and the usual spelling when it differs from the key (jinkim, capitals). */
+  forms: [string, string, string, number, string?][];
   morphs: Record<string, { P?: Gloss; L?: Gloss; S?: Gloss; V?: Gloss; N?: Gloss; M?: Gloss }>;
   /** How often one glued piece follows another in the library ("^" = word start, "$" = the stem comes next). */
   trans: Record<string, Record<string, number>>;
+  /** Coptic line as written, Arabic line. */
   tm: [string, string][];
   /** Grammar pieces (scripts/translator-grammar.json): [form, Arabic, class] and object pronouns [form, Arabic]. */
   grammar: { prefixes: [string, string, string][]; suffixes: [string, string][]; words?: [string, string][] };
@@ -42,16 +44,19 @@ interface Stem { S?: string; V?: string; N?: string; M?: string; verb?: string; 
 
 export interface Translator {
   source: string;
-  forms: Map<string, [string, string, number]>;
+  forms: Map<string, [string, string, number, string]>;
   morphs: Corpus['morphs'];
   prefixes: Map<string, { gloss: string; cls: string }>;
   suffixes: Map<string, string>;
   stems: Map<string, Stem>;
   trans: Corpus['trans'];
   transTotal: Map<string, number>;
-  tm: Map<string, string>;
-  tmList: [string, string][];
+  tm: Map<string, number>;
+  /** Line key, Arabic, Coptic as written. */
+  tmList: [string, string, string][];
   tmIndex: Map<string, number[]>;
+  /** The dictionary, for translating into Coptic (toCoptic.ts). */
+  dict: Entry[];
 }
 
 const top = (g?: Gloss, min = 1) => g && g[0] && g[0][1] >= min ? g[0][0] : undefined;
@@ -89,12 +94,15 @@ export function buildTranslator(c: Corpus, dict: Entry[]): Translator {
   // "ⲛⲁϩⲱⲥ" is the future ⲛⲁ + ϩⲱⲥ, not a word of its own, even where the library left it unsplit.
   for (const k of [...stems.keys()]) if (k.startsWith('ⲛⲁ') && stems.has(k.slice(2)) && k.length > 4) stems.delete(k);
   const tmIndex = new Map<string, number[]>();
-  c.tm.forEach(([k], i) => { for (const w of new Set(k.split(' '))) { const l = tmIndex.get(w); if (l) l.push(i); else tmIndex.set(w, [i]); } });
+  const tmList = c.tm.map(([cop, ar]) => [lineKey(cop), ar, cop] as [string, string, string]);
+  const tm = new Map<string, number>();
+  tmList.forEach(([k], i) => { if (!tm.has(k)) tm.set(k, i); });
+  tmList.forEach(([k], i) => { for (const w of new Set(k.split(' '))) { const l = tmIndex.get(w); if (l) l.push(i); else tmIndex.set(w, [i]); } });
   return {
     source: c.source, morphs: c.morphs, prefixes, suffixes, stems, trans: c.trans,
     transTotal: new Map(Object.entries(c.trans).map(([k, v]) => [k, Object.values(v).reduce((a, b) => a + b, 0)])),
-    forms: new Map(c.forms.map(([k, seg, gloss, n]) => [k, [seg, gloss, n]])),
-    tm: new Map(c.tm), tmList: c.tm, tmIndex,
+    forms: new Map(c.forms.map(([k, seg, gloss, n, w]) => [k, [seg, gloss, n, w || k]])),
+    tm, tmList, tmIndex, dict,
   };
 }
 
@@ -311,7 +319,7 @@ export const lineKey = (s: string) => s.split(/\s+/).map(copticKey).filter(Boole
 /** The closest line in the hymn library (by shared words), if it is close enough to be useful. */
 export function nearest(t: Translator, k: string, min = 0.6): Match | undefined {
   const exact = t.tm.get(k);
-  if (exact) return { coptic: k, arabic: exact, score: 1 };
+  if (exact !== undefined) return { coptic: t.tmList[exact][2], arabic: t.tmList[exact][1], score: 1 };
   const words = k.split(' ').filter(Boolean);
   if (words.length < 2) return undefined;
   const hits = new Map<number, number>();
@@ -319,14 +327,14 @@ export function nearest(t: Translator, k: string, min = 0.6): Match | undefined 
   let best: Match | undefined;
   for (const [i, n] of hits) {
     if (n < 2) continue;
-    const [ck, ar] = t.tmList[i];
+    const [ck, ar, written] = t.tmList[i];
     const other = ck.split(' ');
     const score = (2 * overlap(words, other)) / (words.length + other.length);
-    if (score >= min && (!best || score > best.score)) best = { coptic: ck, arabic: ar, score };
+    if (score >= min && (!best || score > best.score)) best = { coptic: written, arabic: ar, score };
   }
   return best;
 }
-function overlap(a: string[], b: string[]) {
+export function overlap(a: string[], b: string[]) {
   const c = new Map<string, number>();
   for (const w of b) c.set(w, (c.get(w) ?? 0) + 1);
   let n = 0;
