@@ -88,7 +88,9 @@ service cloud.firestore {
         allow read, delete: if servant();
         allow get: if myMember(memberId);
         allow create, update: if myMember(memberId)
-          && request.resource.data.keys().hasOnly(['name', 'photo', 'birthdate', 'phone', 'parentPhone', 'at'])
+          && request.resource.data.keys().hasOnly(['name', 'photo', 'birthdate', 'phone', 'parentPhone', 'gender', 'grade', 'address', 'at'])
+          && (!('gender' in request.resource.data) || request.resource.data.gender in ['m', 'f'])
+          && str(request.resource.data, 'grade', 30) && str(request.resource.data, 'address', 200)
           && str(request.resource.data, 'name', 80) && img(request.resource.data, 'photo') && day(request.resource.data, 'birthdate')
           && phone(request.resource.data, 'phone') && phone(request.resource.data, 'parentPhone')
           && (!('at' in request.resource.data) || request.resource.data.at is number);
@@ -122,9 +124,30 @@ service cloud.firestore {
       }
 
       // Voice summaries of sessions, split into pieces under 1 MB. Members play them from their app.
+      // Members may add only their own home recordings (named sub_<their code>_…), each piece under 1 MB.
       match /recordings/{id} {
         allow read: if servant() || member();
         allow write: if can('sessions');
+        allow create: if member() && id.matches('sub_' + get(doc('accounts', request.auth.uid)).data.memberId + '_[a-z0-9]+-[0-2]')
+          && request.resource.data.keys().hasOnly(['data', 'i', 'parts', 'mime'])
+          && request.resource.data.data is bytes && request.resource.data.data.size() <= 700000
+          && request.resource.data.parts is int && request.resource.data.parts <= 3;
+      }
+
+      // «سمّع للخادم»: a member sends a hymn recording; a servant listens and replies with a level and a note.
+      match /submissions/{id} {
+        function mine() { return get(doc('accounts', request.auth.uid)).data.memberId; }
+        allow read: if servant() || (member() && resource.data.memberId == mine());
+        allow create: if member() && request.resource.data.memberId == mine()
+          && id.matches(mine() + '_[0-9]+')
+          && request.resource.data.keys().hasOnly(['id', 'memberId', 'memberName', 'levelId', 'hymnId', 'hymnName', 'recording', 'at', 'pending'])
+          && request.resource.data.pending == true && request.resource.data.id == id
+          && str(request.resource.data, 'memberName', 80) && str(request.resource.data, 'hymnName', 120)
+          && str(request.resource.data, 'levelId', 40) && str(request.resource.data, 'hymnId', 80)
+          && request.resource.data.recording.id.matches('sub_' + mine() + '_[a-z0-9]+')
+          && request.resource.data.recording.parts is int && request.resource.data.recording.parts <= 3;
+        allow update: if can('sessions');
+        allow delete: if lead();
       }
 
       match /hymns/{id} { allow read: if servant(); allow write: if can('curriculum'); }

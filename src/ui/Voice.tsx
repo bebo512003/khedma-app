@@ -79,7 +79,7 @@ const MAX_MS = 10 * 60_000;
 const MAX_FILE = 8 * 1024 * 1024;
 
 /** Records a voice note in place (or takes an audio file), then hands back the audio and its length. */
-export function Recorder({ onDone }: { onDone: (blob: Blob, ms: number) => void }) {
+export function Recorder({ onDone, maxMs = MAX_MS, bitrate = 32000, file = true, label = 'سجّل' }: { onDone: (blob: Blob, ms: number) => void; maxMs?: number; bitrate?: number; file?: boolean; label?: string }) {
   const [rec, setRec] = useState<MediaRecorder | null>(null);
   const [start, setStart] = useState(0);
   const [now, setNow] = useState(0);
@@ -87,9 +87,9 @@ export function Recorder({ onDone }: { onDone: (blob: Blob, ms: number) => void 
   const cancelled = useRef(false);
   useEffect(() => {
     if (!rec) return;
-    const t = setInterval(() => { setNow(Date.now()); if (Date.now() - start > MAX_MS) rec.stop(); }, 250);
+    const t = setInterval(() => { setNow(Date.now()); if (Date.now() - start > maxMs) rec.stop(); }, 250);
     return () => clearInterval(t);
-  }, [rec, start]);
+  }, [rec, start, maxMs]);
   useEffect(() => () => { rec?.stream.getTracks().forEach(t => t.stop()); }, [rec]);
 
   const begin = async () => {
@@ -97,7 +97,7 @@ export function Recorder({ onDone }: { onDone: (blob: Blob, ms: number) => void 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
       const mimeType = MIME.find(m => MediaRecorder.isTypeSupported?.(m));
-      const r = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 32000 });
+      const r = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: bitrate });
       const chunks: Blob[] = [];
       const t0 = Date.now();
       cancelled.current = false;
@@ -125,7 +125,7 @@ export function Recorder({ onDone }: { onDone: (blob: Blob, ms: number) => void 
 
   if (rec) return (
     <div className="voice rec">
-      <span className="dot" aria-hidden /><b className="grow">بيسجّل… {clock((now - start) / 1000)}</b>
+      <span className="dot" aria-hidden /><b className="grow">بيسجّل… {clock((now - start) / 1000)}<span className="muted"> / {clock(maxMs / 1000)}</span></b>
       <button className="btn" style={{ minHeight: 40 }} onClick={() => stop(true)}>إلغاء</button>
       <button className="btnp" style={{ minHeight: 40 }} onClick={() => stop()}>خلاص</button>
     </div>
@@ -133,9 +133,9 @@ export function Recorder({ onDone }: { onDone: (blob: Blob, ms: number) => void 
   return (
     <>
       <div className="row" style={{ gap: 8 }}>
-        <button className="btnp grow" onClick={begin}><Icon name="mic" size={18} /> سجّل</button>
-        <label className="btn" htmlFor="voice-file" style={{ cursor: 'pointer' }}>اختار ملف صوت</label>
-        <input id="voice-file" type="file" accept="audio/*" hidden onChange={pick} />
+        <button className="btnp grow" onClick={begin}><Icon name="mic" size={18} /> {label}</button>
+        {file && <><label className="btn" htmlFor="voice-file" style={{ cursor: 'pointer' }}>اختار ملف صوت</label>
+        <input id="voice-file" type="file" accept="audio/*" hidden onChange={pick} /></>}
       </div>
       {error && <div className="alert-t" role="alert">{error}</div>}
     </>

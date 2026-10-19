@@ -17,6 +17,30 @@ export function absenceStreak(data: AppData, member: Member, extra?: Session): n
 
 export const needsFollowUp = (streak: number) => streak > 2;
 
+/**
+ * Members to keep an eye on before they need a visit: missing sessions lately, or stuck on the same hymn.
+ * Members already due a visit (needsFollowUp) are left to the follow-up list.
+ */
+export function watchList(data: AppData, allowed: (levelId: string) => boolean) {
+  const out: { member: Member; reasons: string[] }[] = [];
+  for (const m of data.members) {
+    if (!allowed(m.levelId) || needsFollowUp(absenceStreak(data, m))) continue;
+    const mine = data.sessions.filter(s => s.levelId === m.levelId && s.attendance[m.id] !== undefined).sort((a, b) => b.date.localeCompare(a.date));
+    const reasons: string[] = [];
+    const recent = mine.slice(0, 4);
+    const missed = recent.filter(s => s.attendance[m.id] === 'a').length;
+    if (recent.length >= 3 && missed >= 2) reasons.push(`غاب ${missed} من آخر ${recent.length} حصص`);
+    // Present for the last three sessions on the same hymn and still hasn't memorized it.
+    const present = mine.filter(s => s.attendance[m.id] === 'p').slice(0, 3);
+    const h = present[0]?.hymnIds[0];
+    if (present.length === 3 && h && present.every(s => s.hymnIds[0] === h) && (data.progress[m.id]?.[h] ?? 0) < 2) {
+      reasons.push(`لسه ما حفظش «${data.hymns.find(x => x.id === h)?.nameAr ?? 'لحن الحصة'}» بعد 3 حصص`);
+    }
+    if (reasons.length) out.push({ member: m, reasons });
+  }
+  return out;
+}
+
 export function sessionAverage(s: Session, memberId: string): number | null {
   const r = s.ratings[memberId];
   return r ? (r[0] + r[1] + r[2]) / 3 : null;

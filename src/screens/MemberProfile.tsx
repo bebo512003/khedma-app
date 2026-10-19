@@ -120,6 +120,7 @@ export default function MemberProfile() {
           {row('السنة الدراسية', m.grade)}
           {row('موبايله', m.phone)}
           {row('موبايل ولي الأمر', m.parentPhone)}
+          {row('العنوان', m.address)}
           {row('دخول التطبيق', m.account || m.pinHash ? 'معمول له رقم سري' : 'لسه مالوش رقم سري')}
           {mine[0] && row('آخر حصة', `${formatDay(mine[0].date)} (${mine[0].attendance[m.id] === 'p' ? 'حضر' : mine[0].attendance[m.id] === 'e' ? 'اعتذر' : 'غاب'})`)}
           {edit && <Link to={`/members/${m.id}/edit`} className="btn">عدّل البيانات</Link>}

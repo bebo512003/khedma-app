@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData, useIsLead, useStore, useCan } from '../data/store';
-import { absenceStreak, needsFollowUp } from '../data/logic';
+import { absenceStreak, watchList, needsFollowUp } from '../data/logic';
 import { applyTheme, loadTheme } from '../theme';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import logo from '../logo.png';
 import Birthdays from './Birthdays';
 import CopticToday from './CopticToday';
@@ -18,6 +18,15 @@ export default function Home() {
   const [theme, setTheme] = useState(loadTheme());
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const followUp = data.members.filter(m => needsFollowUp(absenceStreak(data, m)));
+  const watch = watchList(data, allowed);
+  const [pending, setPending] = useState(0);
+  useEffect(() => {
+    if (!cloud || !canSessions) return;
+    let stop = () => {};
+    import('../firebase/submissions').then(m => { stop = m.watchPending(l => setPending(l.filter(s => allowed(s.levelId)).length)); });
+    return () => stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloud, canSessions]);
   const last = data.sessions.filter(s => allowed(s.levelId)).sort((a, b) => b.date.localeCompare(a.date))[0];
   const hasExamples = data.members.some(m => m.example);
 
@@ -68,6 +77,29 @@ export default function Home() {
             <div className="alert-t">{followUp.length} محتاجين افتقاد</div>
             <div className="muted">غابوا أكتر من مرتين ورا بعض: {followUp.map(m => m.name).join('، ')}</div>
             <Link to="/followup" className="btnp">افتقد دلوقتي</Link>
+          </div>
+        )}
+
+        {pending > 0 && (
+          <Link to="/reviews" className="card row between" style={{ color: 'inherit', textDecoration: 'none' }}>
+            <div><b>{pending === 1 ? 'تسميع واحد مستنيك' : `${pending} تسميعات مستنياك`}</b><div className="muted">مخدومين سجّلوا ألحانهم من البيت</div></div>
+            <span className="btnp" style={{ minHeight: 40 }}>اسمع</span>
+          </Link>
+        )}
+
+        {watch.length > 0 && (
+          <div className="card">
+            <h2>خلّي بالك منهم <span className="muted">({watch.length})</span></h2>
+            <div className="note">لسه مش محتاجين افتقاد، بس ممكن كلمة تشجيع دلوقتي تفرق.</div>
+            <div className="list">
+              {watch.slice(0, 8).map(({ member: m, reasons }) => (
+                <Link key={m.id} to={`/members/${m.id}`} className="li">
+                  <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
+                  <div className="grow"><b>{m.name}</b><div className="muted">{reasons.join(' • ')}</div></div>
+                </Link>
+              ))}
+            </div>
+            {watch.length > 8 && <div className="muted">و{watch.length - 8} كمان</div>}
           </div>
         )}
 

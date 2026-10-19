@@ -1,3 +1,4 @@
+import { GRADES } from './logic';
 export type Gender = 'm' | 'f';
 
 /** Hymn progress, in order: لسه مبدأش → بيتعلمه → حافظه → بيقوله لوحده */
@@ -29,6 +30,8 @@ export interface Member {
   parentPhone?: string;
   /** The member's own mobile, for older members. Messages go here first when it's set. */
   phone?: string;
+  /** Home address, for visits (افتقاد). */
+  address?: string;
   photo?: string;
   /** Offline mode: SHA-256 of `${id}:${pin}`; never the PIN itself. */
   pinHash?: string;
@@ -44,6 +47,9 @@ export interface MemberEdit {
   birthdate?: string;
   phone?: string;
   parentPhone?: string;
+  gender?: Gender;
+  grade?: string;
+  address?: string;
 }
 
 /** Applies a member's own edit, keeping only the fields they're allowed to change. */
@@ -59,6 +65,12 @@ export const applyMemberEdit = (m: Member, e: MemberEdit): Member => {
     birthdate: birthdate && /^\d{4}-\d{2}-\d{2}$/.test(birthdate) ? birthdate : undefined,
     phone: phone(e.phone),
     parentPhone: phone(e.parentPhone),
+    ...(e.gender === 'm' || e.gender === 'f' ? { gender: e.gender } : {}),
+    // Grade only: the servants decide when a member moves level.
+    ...(typeof e.grade === 'string' && GRADES.includes(e.grade) ? { grade: e.grade } : {}),
+    address: str(e.address, 200),
+    // Girls have no deacon rank.
+    ...(e.gender === 'f' ? { rank: undefined } : {}),
   };
 };
 
@@ -150,6 +162,24 @@ export interface Recording {
   mime: string;
   ms: number;
   parts: number;
+}
+
+/** A member's recording of a hymn sent from home for a servant to listen to. Kept in the submissions collection. */
+export interface Submission {
+  id: string;
+  memberId: string;
+  memberName: string;
+  levelId: string;
+  hymnId: string;
+  hymnName: string;
+  recording: Recording;
+  at: number;
+  /** True until a servant reviews it. */
+  pending: boolean;
+  review?: { status: HymnStatus; note?: string; by: string; byName: string };
+  reviewAt?: number;
+  /** The audio is removed a month after the review to keep storage small. */
+  audioGone?: boolean;
 }
 
 export interface Templates {

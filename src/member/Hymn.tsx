@@ -4,6 +4,10 @@ import { STATUS_LABELS } from '../data/types';
 import { useView } from './Layout';
 import HymnText from '../screens/HymnText';
 import BookPages from '../screens/BookPages';
+import Practice from '../ui/Practice';
+import { loadRecording } from '../firebase/recordings';
+import { formatDay } from '../data/logic';
+import Submit from './Submit';
 
 export default function MemberHymn() {
   const { hymnId } = useParams();
@@ -30,6 +34,20 @@ export default function MemberHymn() {
             <span key={l} className={`pill ${h.status >= i + 1 ? `st${i + 1}` : 'st0'}`} style={{ display: 'inline-flex', alignItems: 'center' }}>{l}{h.status === i + 1 ? ' ✓' : ''}</span>)}</div>
           <div className="note">اسمعه كل يوم وقوله مع التسجيل، والخادم هيسمعه منك في الحصة.</div>
         </div>
+
+        {(h.recordings?.length ?? 0) > 0 && (
+          <div className="card">
+            <h2>اتدرّب عليه</h2>
+            {h.recordings!.map(r => (
+              <div key={r.id} className="vrow">
+                <b>{r.title ?? 'تسجيل الحصة'} <span className="muted">• {formatDay(r.date)}</span></b>
+                <Practice ms={r.ms} getBlob={() => loadRecording(r)} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Submit hymnId={h.id} hymnName={h.nameAr} />
 
         <HymnText hymn={h} dictLink="/me/dictionary" />
         <BookPages book={h.book} />

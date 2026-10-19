@@ -322,3 +322,9 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .crop-zoom { width: min(100%, 420px); accent-color: var(--gold); }
 .crop-bar { display: flex; gap: 10px; width: min(100%, 420px); }
 .cropper .btn { background: transparent; color: #fff; border-color: rgba(255,255,255,.4); }
+.practice { display: flex; flex-direction: column; gap: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 18px; padding: 10px; }
+.practice .vplay { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 0; background: var(--act); color: var(--on-act); display: grid; place-items: center; cursor: pointer; }
+.practice .vmeta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); direction: ltr; }
+.ptrack { position: relative; height: 28px; display: flex; align-items: center; }
+.ptrack input { width: 100%; accent-color: var(--act); position: relative; z-index: 1; margin: 0; }
+.pseg { position: absolute; top: 6px; bottom: 6px; background: var(--gold); opacity: .55; border-radius: 6px; }

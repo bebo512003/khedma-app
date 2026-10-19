@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { MemberEdit } from '../data/types';
+import { GRADES } from '../data/logic';
 import { cancelled, shrinkPhoto } from '../data/photo';
 import { useView } from './Layout';
 import { useSaveProfile } from './session';
@@ -28,7 +29,7 @@ export default function MemberProfile() {
     catch { setError('مقدرناش نحفظ دلوقتي. اتأكد إن معاك نت وجرّب تاني.'); }
     setBusy(false);
   };
-  const field = (key: 'name' | 'phone' | 'parentPhone' | 'birthdate', label: string, type = 'text') => (
+  const field = (key: 'name' | 'phone' | 'parentPhone' | 'birthdate' | 'address', label: string, type = 'text') => (
     <label className="field" htmlFor={key}><span>{label}</span>
       <input id={key} className="input" type={type} dir={type === 'tel' ? 'ltr' : undefined} inputMode={type === 'tel' ? 'tel' : undefined}
         value={p[key] ?? ''} onChange={e => set({ [key]: e.target.value })} /></label>
@@ -48,10 +49,20 @@ export default function MemberProfile() {
           <label className="btn" htmlFor="photo" style={{ cursor: 'pointer' }}>{p.photo ? 'غيّر الصورة' : 'حط صورتك'}</label>
         </div>
         {field('name', 'اسمك')}
+        <div className="field"><span>النوع</span>
+          <div className="seg">
+            <button aria-pressed={(p.gender ?? 'm') === 'm'} onClick={() => set({ gender: 'm' })}>ذكر</button>
+            <button aria-pressed={p.gender === 'f'} onClick={() => set({ gender: 'f' })}>أنثى</button>
+          </div></div>
         {field('birthdate', 'تاريخ ميلادك', 'date')}
+        <label className="field" htmlFor="grade"><span>سنتك الدراسية</span>
+          <select id="grade" className="input" value={p.grade ?? ''} onChange={e => set({ grade: e.target.value })}>
+            {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+          </select></label>
         {field('phone', 'موبايلك (لو معاك)', 'tel')}
         {field('parentPhone', 'موبايل ولي الأمر', 'tel')}
-        <div className="note">الخدام بيشوفوا التعديل أول ما حد فيهم يفتح التطبيق. المستوى والرتبة بيعدّلهم الخدام.</div>
+        {field('address', 'عنوانك')}
+        <div className="note">الخدام بيشوفوا التعديل أول ما حد فيهم يفتح التطبيق. المستوى والرتبة بيعدّلهم الخدام، فلو غيّرت سنتك الخادم هيشوف لو محتاج تتنقل مستوى.</div>
         {error && <div className="alert-t" role="alert">{error}</div>}
         {/* Inline, not a bottom bar: the member tabs sit at the bottom. */}
         <div className="row">

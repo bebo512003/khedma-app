@@ -14,6 +14,7 @@ export interface MemberView {
   /** The member's own details, which they can edit from the member app. */
   profile?: MemberEdit;
   levelName: string;
+  levelId?: string;
   termName?: string;
   month: string;
   points: number;
@@ -21,7 +22,7 @@ export interface MemberView {
   gap: number;
   breakdown: ReturnType<typeof monthBreakdown>;
   top: { id: string; name: string; photo?: string; points: number; place: number }[];
-  hymns: (Hymn & { status: HymnStatus; levels: string[]; book?: { title: string; label: string; pages: string[] } })[];
+  hymns: (Hymn & { status: HymnStatus; levels: string[]; book?: { title: string; label: string; pages: string[] }; recordings?: (Recording & { date: string })[] })[];
   ratings: { id: string; date: string; r: Rating; avg: number; memorized: number; solo: number; note?: string }[];
   attendanceRate: number | null;
   /** The level's recent sessions: what was covered, the voice summary, and whether this member came. */
@@ -51,6 +52,9 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
       ...h,
       book: (b => b && { title: b.book.title, label: pagesLabel(b.entry), pages: entryPages(b.book, b.entry) })(bookOf(data, h.id, term?.id)),
       status: (data.progress[m.id]?.[h.id] ?? 0) as HymnStatus,
+      // Recordings from this level's sessions on this hymn, newest first, to practise with.
+      recordings: data.sessions.filter(s => s.levelId === m.levelId && s.hymnIds[0] === h.id).sort((a, b) => b.date.localeCompare(a.date))
+        .flatMap(s => sessionRecordings(s).map(r => ({ ...r, date: s.date }))).slice(0, 6),
       levels: data.levels.filter(l => (data.curricula[curriculumKey(term?.id, l.id)] ?? []).includes(h.id)).map(l => l.name),
     }));
   const ratings = data.sessions
@@ -77,9 +81,9 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
     }));
   return clean({
     memberId: m.id, name: m.name, photo: m.photo, rank: m.rank,
-    profile: { name: m.name, photo: m.photo, birthdate: m.birthdate, phone: m.phone, parentPhone: m.parentPhone }, levelName: level?.name ?? '', termName: term?.name, month,
+    profile: { name: m.name, photo: m.photo, birthdate: m.birthdate, phone: m.phone, parentPhone: m.parentPhone, gender: m.gender, grade: m.grade, address: m.address }, levelName: level?.name ?? '', termName: term?.name, month,
     points: breakdown.total, place: pos + 1, gap: Math.max(0, (rows[0]?.points ?? 0) - breakdown.total), breakdown, top, hymns, ratings,
-    sessions, books, code: m.code, gender: m.gender, grade: m.grade,
+    sessions, books, levelId: m.levelId, code: m.code, gender: m.gender, grade: m.grade,
     attendanceRate: mine.length ? Math.round(100 * mine.filter(s => s.attendance[m.id] === 'p').length / mine.length) : null,
   });
 }

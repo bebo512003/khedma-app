@@ -65,9 +65,11 @@ export default function MemberMe() {
         {tab === 'info' && <>
           <div className="card">
             {p.birthdate && row('تاريخ الميلاد', formatDay(p.birthdate))}
-            {row('السنة الدراسية', v.grade)}
+            {row('السنة الدراسية', p.grade ?? v.grade)}
             {row('موبايلي', p.phone)}
             {row('موبايل ولي الأمر', p.parentPhone)}
+            {row('العنوان', p.address)}
+            {row('النوع', p.gender === 'f' ? 'أنثى' : p.gender === 'm' ? 'ذكر' : undefined)}
             <Link to="/me/profile/edit" className="btn">عدّل بياناتي</Link>
           </div>
           <Link to="/me/dictionary" className="btn">القاموس القبطي</Link>

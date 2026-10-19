@@ -1,4 +1,4 @@
-import { Bytes, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
+import { Bytes, deleteDoc, getDoc, setDoc, type Firestore } from 'firebase/firestore';
 import { del, get, set } from 'idb-keyval';
 import { cloudEnabled } from './config';
 import { memberFb, servantFb } from './app';
@@ -13,12 +13,12 @@ const PART = 700_000;
 const key = (id: string, i: number) => `${id}-${i}`;
 const db = () => (servantFb().auth.currentUser || !memberFb().auth.currentUser ? servantFb() : memberFb()).db;
 
-export async function saveRecording(id: string, blob: Blob): Promise<number> {
+export async function saveRecording(id: string, blob: Blob, to?: Firestore): Promise<number> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   const parts = Math.max(1, Math.ceil(bytes.length / PART));
   for (let i = 0; i < parts; i++) {
     const piece = bytes.slice(i * PART, (i + 1) * PART);
-    if (cloudEnabled) await setDoc(ref(db(), 'recordings', key(id, i)), { data: Bytes.fromUint8Array(piece), i, parts, mime: blob.type });
+    if (cloudEnabled) await setDoc(ref(to ?? db(), 'recordings', key(id, i)), { data: Bytes.fromUint8Array(piece), i, parts, mime: blob.type });
     else await set(`rec:${key(id, i)}`, piece);
   }
   return parts;

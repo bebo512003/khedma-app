@@ -6,6 +6,8 @@ import Gate from './screens/Gate';
 import Home from './screens/Home';
 import SessionScreen from './screens/Session';
 import Sessions from './screens/Sessions';
+import Backup from './screens/Backup';
+import Reviews from './screens/Reviews';
 import Summary from './screens/Summary';
 import FollowUp from './screens/FollowUp';
 import Members from './screens/Members';
@@ -53,6 +55,8 @@ export default function App() {
           <Route path="/session/:levelId" element={n('sessions', <SessionScreen />)} />
           <Route path="/summary/:sessionId" element={s(<Summary />)} />
           <Route path="/sessions" element={s(<Sessions />)} />
+          <Route path="/backup" element={s(<Backup />)} />
+          <Route path="/reviews" element={n('sessions', <Reviews />)} />
           <Route path="/sessions/:sessionId/edit" element={n('sessions', <SessionScreen />)} />
           <Route path="/followup" element={s(<FollowUp />)} />
           <Route path="/members" element={s(<Members />)} />

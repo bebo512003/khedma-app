@@ -117,6 +117,9 @@ export default function MemberForm() {
           <input id="phone" className="input" inputMode="tel" dir="ltr" style={{ textAlign: 'right' }} value={m.parentPhone ?? ''} onChange={e => set({ parentPhone: e.target.value || undefined })} placeholder="01xxxxxxxxx" /></label>
         <div className="note">رسايل الافتقاد وأعياد الميلاد بتروح لموبايل المخدوم لو موجود، ولو مش موجود بتروح لولي الأمر.</div>
 
+        <label className="field" htmlFor="address"><span>العنوان (للافتقاد)</span>
+          <input id="address" className="input" maxLength={200} value={m.address ?? ''} onChange={e => set({ address: e.target.value || undefined })} /></label>
+
         <div className="card">
           <div className="row between"><b>دخول المخدوم للتطبيق</b><span className="muted">{m.pinHash || m.account ? 'معمول له رقم سري' : 'لسه مالوش رقم سري'}</span></div>
           {shownPin ? (
