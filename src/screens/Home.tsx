@@ -7,10 +7,11 @@ import logo from '../logo.png';
 import Birthdays from './Birthdays';
 import CopticToday from './CopticToday';
 import PushToggle from './PushToggle';
+import Icon from '../ui/Icon';
 
 export default function Home() {
   const [data] = useData();
-  const { update, cloud, syncError, signOut } = useStore();
+  const { update, cloud, syncError, servant } = useStore();
   const allowed = useAllowedLevel();
   const lead = useIsLead();
   const [theme, setTheme] = useState(loadTheme());
@@ -34,11 +35,14 @@ export default function Home() {
           <div className="row">
             <img src={logo} alt="شعار مدرسة الشهيد اسطفانوس للشمامسة" width={48} height={48} />
             <div>
-              <h1>مدرسة الشهيد اسطفانوس</h1>
-              <div className="muted">إتعلم … رتل … افرح</div>
+              <h1 className="brand-t">مدرسة الشهيد اسطفانوس</h1>
+              <div className="muted">{servant ? `أهلاً يا ${servant.name.split(' ')[0]}` : 'إتعلم … رتل … افرح'}</div>
             </div>
           </div>
-          <button className="icon" onClick={toggle} aria-label={theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}>{theme === 'light' ? '☾' : '☀'}</button>
+          <div className="row" style={{ gap: 8 }}>
+            {!servant && <button className="icon" onClick={toggle} aria-label={theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={20} /></button>}
+            {servant && <Link to="/profile" className="av" style={{ width: 44, height: 44 }} aria-label="بروفايلي">{servant.photo ? <img src={servant.photo} alt="" /> : servant.name[0]}</Link>}
+          </div>
         </div>
       </header>
       <main className="main gutter wide dash">
@@ -78,11 +82,14 @@ export default function Home() {
           </div>
         )}
 
-        <div className="row mobile-only"><Link to="/members" className="btn grow">المخدومين</Link><Link to="/library" className="btn grow">مكتبة الألحان</Link></div>
-        <div className="row mobile-only"><Link to="/reports" className="btn grow">التقارير</Link><Link to="/dictionary" className="btn grow">القاموس القبطي</Link></div>
-        {cloud
-          ? <div className="row mobile-only"><Link to="/team" className="btn grow">الفريق</Link><Link to="/notify" className="btn grow">التنبيهات</Link><Link to="/profile" className="btn grow">بروفايلي</Link><button className="btn grow" onClick={signOut}>خروج</button></div>
-          : <Link to="/me" className="btn">جرّب تطبيق المخدوم</Link>}
+        <div className="card mobile-only">
+          <h2>اختصارات</h2>
+          <div className="tiles tiles4">
+            {([['/curriculum', 'list', 'المنهج'], ['/books', 'books', 'الكتب'], ['/reports', 'chart', 'التقارير'], ['/dictionary', 'dict', 'القاموس']] as const).map(([to, icon, label]) =>
+              <Link key={to} to={to} className="tile"><Icon name={icon} />{label}</Link>)}
+          </div>
+        </div>
+        {!cloud && <Link to="/me" className="btn">جرّب تطبيق المخدوم</Link>}
 
         {hasExamples && lead && (
           <div className="card">
