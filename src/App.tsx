@@ -24,6 +24,7 @@ import Levels from './screens/Levels';
 import Team from './screens/Team';
 import Cards from './screens/Cards';
 import Dictionary from './screens/Dictionary';
+import Translate from './screens/Translate';
 import Reports from './screens/Reports';
 import MemberLogin from './member/Login';
 import Install from './screens/Install';
@@ -77,6 +78,7 @@ export default function App() {
           <Route path="/notify" element={s(<Notify />)} />
           <Route path="/cards" element={n('members', <Cards />)} />
           <Route path="/dictionary" element={s(<Dictionary />)} />
+          <Route path="/translate" element={s(<Translate />)} />
           <Route path="/reports" element={n('reports', <Reports />)} />
           <Route path="/install" element={<Install />} />
           <Route path="/me" element={<MemberLogin />} />
@@ -90,7 +92,8 @@ export default function App() {
             <Route path="books" element={<MemberBooks />} />
             <Route path="books/:bookId" element={<MemberBook />} />
             <Route path="rank" element={<MemberRank />} />
-            <Route path="dictionary" element={<Dictionary back="/me/home" />} />
+            <Route path="dictionary" element={<Dictionary back="/me/home" base="/me" />} />
+            <Route path="translate" element={<Translate base="/me" />} />
           </Route>
         </Routes>
       </div>

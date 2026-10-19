@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { COPTIC_KEYS, loadDictionary, search, scriptOf, type Hit } from '../data/dictionary';
 import { count } from '../data/logic';
@@ -7,7 +7,8 @@ import { count } from '../data/logic';
 type Dict = Awaited<ReturnType<typeof loadDictionary>>;
 
 /** Coptic ⇄ Arabic dictionary. Type Coptic (on-screen keyboard), Arabic, or Coptic in Latin letters. */
-export default function Dictionary({ back = '/' }: { back?: string }) {
+export default function Dictionary({ back = '/', base = '' }: { back?: string; base?: string }) {
+  const nav = useNavigate();
   const [dict, setDict] = useState<Dict | null>(null);
   const [failed, setFailed] = useState(false);
   const [params] = useSearchParams();
@@ -24,6 +25,10 @@ export default function Dictionary({ back = '/' }: { back?: string }) {
       <header className="top gutter">
         <div className="row"><Link to={back} className="icon" aria-label="رجوع">→</Link><div><h1>القاموس القبطي</h1>
           <div className="muted">{dict ? `${dict.entries.length.toLocaleString('en')} كلمة • قبطي بحيري` : 'بيحمّل…'}</div></div></div>
+        <div className="seg" role="tablist">
+          <button role="tab" aria-pressed>كلمة</button>
+          <button role="tab" aria-pressed={false} onClick={() => nav(`${base}/translate`)}>جملة</button>
+        </div>
         <div className="row" style={{ gap: 6 }}>
           <input ref={input} id="dict-q" className="input grow coptic-font" dir="auto" autoComplete="off" spellCheck={false}
             inputMode={keyboard ? 'none' : 'text'} placeholder="اكتب كلمة قبطي أو عربي" value={q} onChange={e => setQ(e.target.value)} />

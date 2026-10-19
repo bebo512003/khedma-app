@@ -11,7 +11,7 @@ export default function DeskNav() {
   const canReports = useCan('reports'), canMembers = useCan('members'), lead = useIsLead();
   const [theme, setTheme] = useState(loadTheme());
   const toggle = () => { const t = theme === 'light' ? 'maroon' : 'light'; applyTheme(t); setTheme(t); };
-  const links: [string, string][] = [['/', 'الرئيسية'], ['/members', 'المخدومين'], ['/library', 'المكتبة'], ['/books', 'الكتب'], ['/curriculum', 'المنهج'], ['/sessions', 'سجل الحصص'], ['/reviews', 'التسميع'], ['/reports', 'التقارير'], ['/cards', 'كروت QR'], ['/dictionary', 'القاموس']];
+  const links: [string, string][] = [['/', 'الرئيسية'], ['/members', 'المخدومين'], ['/library', 'المكتبة'], ['/books', 'الكتب'], ['/curriculum', 'المنهج'], ['/sessions', 'سجل الحصص'], ['/reviews', 'التسميع'], ['/reports', 'التقارير'], ['/cards', 'كروت QR'], ['/dictionary', 'القاموس'], ['/translate', 'ترجمة جملة']];
   const shown = links.filter(([to]) => (to !== '/reports' || canReports) && (to !== '/cards' || canMembers));
   if (lead) shown.push(['/backup', 'نسخة احتياطية']);
   if (servant) shown.push(['/team', 'الفريق'], ['/notify', 'التنبيهات']);

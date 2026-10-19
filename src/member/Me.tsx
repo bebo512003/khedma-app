@@ -73,6 +73,7 @@ export default function MemberMe() {
             <Link to="/me/profile/edit" className="btn">عدّل بياناتي</Link>
           </div>
           <Link to="/me/dictionary" className="btn">القاموس القبطي</Link>
+          <Link to="/me/translate" className="btn">ترجمة جملة قبطي</Link>
           <button className="btn" onClick={logout}>خروج</button>
         </>}
       </main>
