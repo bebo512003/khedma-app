@@ -61,14 +61,14 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
             </div>
           </>
         )}
-        {dict && <div className="note span">المصدر: قاموس قبطي عربي من إعداد أسامة ثابت، منشور على archive.org كملك عام.</div>}
+        {dict && <div className="note span">المصادر: قاموس قبطي عربي من إعداد أسامة ثابت (archive.org، ملك عام)، وقاموس اللغة القبطية لكنيسة الشهيد العظيم مارجرجس بنزلة السمان (stgeorgesaman.com) بمراجعه: قاموس أبونا أندرياس المقاري، مشروع كيليا، قاموس كروم، ومراجع عربية وإنجليزية مجمعة. المعاني اللي عليها نجمة (*) ترجمة آلية حسب الموقع.</div>}
       </main>
     </>
   );
 }
 
 function Row({ hit: { entry: e, note } }: { hit: Hit }) {
-  const tags = [e.kind, e.form, e.origin].filter(Boolean);
+  const tags = [e.kind, e.form, e.origin, ...(e.dialects ?? [])].filter(Boolean);
   return (
     <div className="li" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 4 }}>
       <div className="row between" style={{ width: '100%' }}>
@@ -76,7 +76,9 @@ function Row({ hit: { entry: e, note } }: { hit: Hit }) {
         <span className="muted" dir="ltr">{e.latin}</span>
       </div>
       <b>{e.meanings.join('، ')}</b>
+      {e.english && <div className="muted" dir="ltr" style={{ fontSize: 13 }}>{e.english}</div>}
       {tags.length > 0 && <div className="muted" style={{ fontSize: 12 }}>{tags.join(' • ')}</div>}
+      {e.source && <div className="muted" style={{ fontSize: 12 }}>المصدر: {e.source}</div>}
       {note && <span className="tag tag-ex">بعد ما شلنا {note}</span>}
     </div>
   );

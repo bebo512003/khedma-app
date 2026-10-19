@@ -1,4 +1,4 @@
-import { copticKey, loadDictionary, type Entry } from './dictionary';
+import { bohairic, copticKey, loadDictionary, type Entry } from './dictionary';
 
 /**
  * Coptic → Arabic sentence translator (Bohairic).
@@ -64,7 +64,7 @@ const top = (g?: Gloss, min = 1) => g && g[0] && g[0][1] >= min ? g[0][0] : unde
 let loading: Promise<Translator> | null = null;
 export function loadTranslator() {
   loading ??= Promise.all([fetch(URL_).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Corpus>; }), loadDictionary()])
-    .then(([c, dict]) => buildTranslator(c, dict.entries));
+    .then(([c, dict]) => buildTranslator(c, bohairic(dict.entries)));
   loading.catch(() => { loading = null; });
   return loading;
 }

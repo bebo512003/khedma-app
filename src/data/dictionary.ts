@@ -1,7 +1,12 @@
 import { norm } from './importSheet';
 
-/** Osama Thabet's Coptic-Arabic dictionary (Bohairic), built by scripts/build-dictionary.py. */
+/**
+ * Two dictionaries, searched together:
+ * Osama Thabet's Coptic-Arabic dictionary (Bohairic), built by scripts/build-dictionary.py;
+ * the Coptic dictionary of St. George church, Nazlet El Seman, with the sources it lists per word (scripts/build-stgeorge-dict.py).
+ */
 const URL_ = 'dict/coptic-arabic.json?v=1';
+const URL_SG = 'dict/stgeorge-dict.json?v=1';
 
 export interface Entry {
   word: string;
@@ -10,18 +15,41 @@ export interface Entry {
   form: string;
   origin: string;
   meanings: string[];
+  /** Where the entry comes from, when it isn't Osama Thabet's dictionary. */
+  source?: string;
+  english?: string;
+  dialects?: string[];
 }
 interface Indexed extends Entry { cKey: string; lKey: string; mKeys: string[] }
 export interface Hit { entry: Entry; note?: string }
 
+/** Entries the translators use: Bohairic ones (the other dictionary's Sahidic, Akhmimic... words are for looking up only), meanings without the machine-translation star. */
+export const bohairic = (dict: Entry[]) => dict
+  .filter(e => !e.dialects || e.dialects.includes('بحيري'))
+  .map(e => e.source ? { ...e, meanings: e.meanings.map(m => m.replace(/ \*$/, '')) } : e);
+
+type SgWord = [string, string, number, number, number, string[], string, number[], number[]];
 let loading: Promise<{ source: string; entries: Indexed[] }> | null = null;
 export function loadDictionary() {
-  loading ??= fetch(URL_).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }).then((d: { source: string; labels: string[]; words: [string, string, number, number, number, string[]][] }) => ({
+  const json = (u: string) => fetch(u).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); });
+  loading ??= Promise.all([
+    json(URL_),
+    // The second dictionary is extra: without it the first still works.
+    json(URL_SG).catch(() => null),
+  ]).then(([d, sg]: [{ source: string; labels: string[]; words: [string, string, number, number, number, string[]][] }, { labels: string[]; words: SgWord[] } | null]) => ({
     source: d.source,
-    entries: d.words.map(([word, latin, k, f, o, meanings]) => ({
-      word: display(word), latin, kind: d.labels[k], form: d.labels[f], origin: d.labels[o], meanings,
-      cKey: copticKey(word), lKey: latinKey(latin), mKeys: meanings.map(m => norm(m)),
-    })),
+    entries: [
+      ...d.words.map(([word, latin, k, f, o, meanings]) => ({
+        word: display(word), latin, kind: d.labels[k], form: d.labels[f], origin: d.labels[o], meanings,
+        cKey: copticKey(word), lKey: latinKey(latin), mKeys: meanings.map(m => norm(m)),
+      })),
+      ...(sg?.words ?? []).map(([word, greek, k, f, o, meanings, english, dialects, sources]) => ({
+        word, latin: greek, kind: sg!.labels[k], form: sg!.labels[f], origin: sg!.labels[o], meanings, english,
+        dialects: dialects.map(i => sg!.labels[i]),
+        source: ['نزلة السمان', ...sources.map(i => sg!.labels[i])].join('، '),
+        cKey: copticKey(word), lKey: '', mKeys: meanings.map(m => norm(m.replace(/ \*$/, ''))),
+      })),
+    ],
   }));
   loading.catch(() => { loading = null; });
   return loading;
