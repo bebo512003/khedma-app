@@ -48,6 +48,7 @@ export default function Login() {
       </div>
       <div className="muted" style={{ textAlign: 'center' }}>مش فاكره؟ اسأل الخادم بتاعك يعملك واحد جديد.
         {!cloudEnabled && data?.members.some(m => m.example) && <><br />للتجربة: الكود 0001 والرقم 1234</>}</div>
+      <Link to="/install" className="muted">إزاي أنزّل التطبيق؟</Link>
       <Link to="/" className="muted">رجوع لتطبيق الخادم</Link>
     </main>
   );

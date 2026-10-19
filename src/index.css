@@ -236,6 +236,10 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
 .pages img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
 .page-wait { aspect-ratio: 595 / 842; display: grid; place-items: center; text-align: center; padding: 12px; border-radius: 8px; border: 1px dashed var(--line); font-size: 12px; overflow: hidden; }
 .book-li .page-wait { font-size: 0; padding: 0; }
+.guide ol { margin: 6px 0; padding-inline-start: 20px; line-height: 1.9; }
+.guide .step { display: block; margin-top: 8px; }
+.guide .step b { display: block; }
+.guide .step.dim { opacity: .75; }
 .progress-bar { height: 8px; border-radius: 4px; background: var(--ph); overflow: hidden; }
 .progress-bar > div { height: 100%; background: var(--act); transition: width .2s; }
 .input.pg { width: 72px; min-height: 40px; padding: 6px 8px; }

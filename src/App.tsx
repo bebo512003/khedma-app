@@ -19,6 +19,7 @@ import Cards from './screens/Cards';
 import Dictionary from './screens/Dictionary';
 import Reports from './screens/Reports';
 import MemberLogin from './member/Login';
+import Install from './screens/Install';
 import MemberLayout from './member/Layout';
 import MemberHome from './member/Home';
 import MemberHymn from './member/Hymn';
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/cards" element={s(<Cards />)} />
           <Route path="/dictionary" element={s(<Dictionary />)} />
           <Route path="/reports" element={s(<Reports />)} />
+          <Route path="/install" element={<Install />} />
           <Route path="/me" element={<MemberLogin />} />
           <Route path="/me" element={<MemberLayout />}>
             <Route path="home" element={<MemberHome />} />

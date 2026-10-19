@@ -49,6 +49,7 @@ export default function Gate({ children }: { children: ReactNode }) {
       <div style={{ textAlign: 'center' }}><h1>مدرسة الشهيد اسطفانوس للشمامسة</h1><div className="muted">إتعلم … رتل … افرح</div></div>
       {body}
       {error && <div className="alert-t" role="alert">{error}</div>}
+      <Link to="/install" className="muted">إزاي أنزّل التطبيق؟</Link>
     </main>
   );
 }
