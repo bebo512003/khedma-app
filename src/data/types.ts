@@ -134,7 +134,9 @@ export interface Session {
   notes?: Record<string, string>;
   /** What the class covered, e.g. how far into the hymn they memorized. Shown to the level's members. */
   summary?: string;
-  /** Voice recording of the hymn as sung at the end of the session, for members to practise with. */
+  /** Voice recordings of the hymn from the session (the servant alone, everyone together…), for members to practise with. */
+  recordings?: Recording[];
+  /** The single recording sessions had before there could be several; read through sessionRecordings(). */
   recording?: Recording;
   /** When the summary or recording last changed (epoch ms); the reminder job tells members about it once. */
   summaryAt?: number;
@@ -143,6 +145,8 @@ export interface Session {
 /** A voice note kept in the recordings collection, split into `parts` pieces. */
 export interface Recording {
   id: string;
+  /** What's on it, e.g. "الخادم لوحده" or "مع المخدومين". */
+  title?: string;
   mime: string;
   ms: number;
   parts: number;

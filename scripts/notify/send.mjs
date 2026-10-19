@@ -83,7 +83,7 @@ async function runChurch(church, publicKey, now) {
       msgs.push([k, { title: r.title, body: r.body.replaceAll(HYMNS_TAG, p.kind === 'member' ? hymnList(p.view) : 'ألحان الترم'), tag: k, url: p.kind === 'member' ? './#/me/home' : './#/' }]);
     }
     if (p.kind === 'member') for (const x of summaries.filter(x => x.levelId === p.levelId)) {
-      const what = x.summary ? x.summary.split('\n')[0].slice(0, 90) : 'التسجيل النهائي للحن نزل، اسمعه وراجع عليه';
+      const what = x.summary ? x.summary.split('\n')[0].slice(0, 90) : 'تسجيلات الحصة نزلت، اسمعها وراجع عليها';
       msgs.push(['summary', { title: 'ملخص الحصة نزل 🎧', body: what, tag: `summary-${x.id}`, url: './#/me/sessions' }]);
     }
     if (test && d.uid === s.testUid) msgs.push(['test', { title: 'تنبيه تجربة', body: 'التنبيهات شغالة على الموبايل ده ✓', tag: 'test', url: './#/notify' }]);

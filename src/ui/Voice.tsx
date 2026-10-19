@@ -133,7 +133,7 @@ export function Recorder({ onDone }: { onDone: (blob: Blob, ms: number) => void 
   return (
     <>
       <div className="row" style={{ gap: 8 }}>
-        <button className="btnp grow" onClick={begin}><Icon name="mic" size={18} /> سجّل اللحن</button>
+        <button className="btnp grow" onClick={begin}><Icon name="mic" size={18} /> سجّل</button>
         <label className="btn" htmlFor="voice-file" style={{ cursor: 'pointer' }}>اختار ملف صوت</label>
         <input id="voice-file" type="file" accept="audio/*" hidden onChange={pick} />
       </div>

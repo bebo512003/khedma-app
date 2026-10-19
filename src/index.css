@@ -310,3 +310,6 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .spin { width: 18px; height: 18px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (min-width: 900px) { .mtabs.member { display: block; } }
+.vrow { display: flex; flex-direction: column; gap: 6px; }
+.vrow > b { font-size: 13px; }
+.vedit { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--line); }

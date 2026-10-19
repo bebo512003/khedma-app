@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useCan } from '../data/store';
-import { LATE_GRACE_MIN, absenceStreak, formatDay, formatTime, lateBy, needsFollowUp, sessionAverage } from '../data/logic';
+import { LATE_GRACE_MIN, sessionRecordings, absenceStreak, formatDay, formatTime, lateBy, needsFollowUp, sessionAverage } from '../data/logic';
 import FollowUpList from './FollowUpList';
 import SessionSummary from './SessionSummary';
 import Icon from '../ui/Icon';
@@ -35,7 +35,7 @@ export default function Summary() {
   const memorized = ms.reduce((a, m) => a + m.memorized, 0), solo = ms.reduce((a, m) => a + m.solo, 0);
   const scanned = present.filter(id => s.arrivals?.[id]).sort((a, b) => s.arrivals![a] - s.arrivals![b]);
   const late = scanned.filter(id => (lateBy(s, id) ?? 0) > LATE_GRACE_MIN);
-  const remove = () => { if (s.recording) deleteRecording(s.recording); update(d => ({ ...d, sessions: d.sessions.filter(x => x.id !== s.id) })); nav('/sessions', { replace: true }); };
+  const remove = () => { sessionRecordings(s).forEach(r => deleteRecording(r)); update(d => ({ ...d, sessions: d.sessions.filter(x => x.id !== s.id) })); nav('/sessions', { replace: true }); };
 
   return (
     <>

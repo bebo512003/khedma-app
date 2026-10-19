@@ -1,5 +1,5 @@
 import type { Attendance, AppData, Hymn, HymnStatus, MemberEdit, Rating, Recording } from './types';
-import { currentTerm, curriculumKey, lateBy, monthBreakdown, ranking, sessionAverage, todayISO } from './logic';
+import { currentTerm, curriculumKey, lateBy, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO } from './logic';
 import { bookOf, entryPages, hasPages, pageUrl, pagesLabel } from './books';
 
 /**
@@ -25,7 +25,7 @@ export interface MemberView {
   ratings: { id: string; date: string; r: Rating; avg: number; memorized: number; solo: number; note?: string }[];
   attendanceRate: number | null;
   /** The level's recent sessions: what was covered, the voice summary, and whether this member came. */
-  sessions?: { id: string; date: string; hymn?: string; summary?: string; recording?: Recording; att?: Attendance; arrived?: number; late?: number }[];
+  sessions?: { id: string; date: string; hymn?: string; summary?: string; recordings?: Recording[]; att?: Attendance; arrived?: number; late?: number }[];
   /** The level's booklets, newest term first. */
   books?: { id: string; title: string; term?: string; current: boolean; pdfUrl?: string; pages: string[]; entries: { hymnId: string; name: string; label: string }[] }[];
   code?: string;
@@ -62,7 +62,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
     .filter(s => s.levelId === m.levelId || s.attendance[m.id] !== undefined)
     .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12)
     .map(s => ({
-      id: s.id, date: s.date, hymn: data.hymns.find(h => h.id === s.hymnIds[0])?.nameAr, summary: s.summary, recording: s.recording,
+      id: s.id, date: s.date, hymn: data.hymns.find(h => h.id === s.hymnIds[0])?.nameAr, summary: s.summary, recordings: sessionRecordings(s),
       att: s.attendance[m.id], arrived: s.arrivals?.[m.id], late: lateBy(s, m.id) ?? undefined,
     }));
   const termName = (id?: string) => data.terms.find(t => t.id === id)?.name;

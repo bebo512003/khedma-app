@@ -22,7 +22,7 @@ export default function MemberSessions() {
             </div>
             {s.arrived && <div className="muted">وصلت {formatTime(s.arrived)}{(s.late ?? 0) > 10 ? `، متأخر ${s.late} دقيقة` : ''}</div>}
             {s.summary && <div style={{ whiteSpace: 'pre-wrap' }}>{s.summary}</div>}
-            {s.recording && <VoiceNote id={s.recording.id} ms={s.recording.ms} getBlob={() => loadRecording(s.recording!)} />}
+            {(s.recordings ?? []).map(r => <div key={r.id} className="vrow">{r.title && <b>{r.title}</b>}<VoiceNote id={r.id} ms={r.ms} getBlob={() => loadRecording(r)} /></div>)}
           </div>
         ))}
       </main>

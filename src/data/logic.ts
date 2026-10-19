@@ -86,6 +86,9 @@ export function nextFriday(from = new Date()) {
 }
 
 const dayFmt = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' });
+/** A session's recordings, including the single one older sessions kept. */
+export const sessionRecordings = (s: Session) => s.recordings ?? (s.recording ? [s.recording] : []);
+
 export const formatDay = (iso: string) => dayFmt.format(new Date(`${iso}T12:00:00`));
 const timeFmt = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
 export const formatTime = (ms: number) => timeFmt.format(new Date(ms));
