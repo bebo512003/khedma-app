@@ -16,7 +16,7 @@ export default function Home() {
   const [theme, setTheme] = useState(loadTheme());
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const followUp = data.members.filter(m => needsFollowUp(absenceStreak(data, m)));
-  const last = [...data.sessions].sort((a, b) => b.date.localeCompare(a.date))[0];
+  const last = data.sessions.filter(s => allowed(s.levelId)).sort((a, b) => b.date.localeCompare(a.date))[0];
   const hasExamples = data.members.some(m => m.example);
 
   const toggle = () => { const t = theme === 'light' ? 'maroon' : 'light'; applyTheme(t); setTheme(t); };

@@ -1,4 +1,4 @@
-import { hymnsCount, POINTS, sessionsCount } from '../data/logic';
+import { hymnsCount, pointsCount, POINTS, sessionsCount } from '../data/logic';
 import { useView } from './Layout';
 
 const monthName = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { month: 'long' });
@@ -9,12 +9,12 @@ export default function MemberRank() {
   // Members see the top 3 and their own place only, never the full list.
   const shown = [...v.top];
   if (v.place > 3) shown.push({ id: v.memberId, name: v.name, photo: v.photo, points: v.points, place: v.place });
-  const parts: [string, number][] = [
+  const parts = ([
     [`حضور ${sessionsCount(b.attended)}`, b.attendance],
     ['تقييم الحصص (متوسط كل حصة)', b.rating],
     [`وصلت "حافظه" في ${hymnsCount(b.memorized)}`, b.memorized * POINTS.memorized],
     [`وصلت "بيقوله لوحده" في ${hymnsCount(b.solo)}`, b.solo * POINTS.solo],
-  ];
+  ] as [string, number][]).filter(([, pts], i) => i < 2 || pts > 0);
 
   return (
     <>
@@ -31,7 +31,7 @@ export default function MemberRank() {
           ))}
         </div></div>
         {v.place > 1 && v.gap > 0 && (
-          <div className="card"><b>عشان تطلع الأول ناقصك {v.gap} نقط</b>
+          <div className="card"><b>عشان تطلع الأول ناقصك {pointsCount(v.gap)}</b>
             <div className="note">لو حضرت وخدت تقييم كويس، أو قلت لحن لوحدك ({POINTS.solo} نقط)، توصل.</div></div>
         )}
         <div className="card"><h2>نقطك الشهر ده جت منين</h2>

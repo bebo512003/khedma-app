@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData, useIsLead } from '../data/store';
-import { currentTerm, curriculumKey, uid } from '../data/logic';
+import { currentTerm, curriculumKey, hymnsCount, uid } from '../data/logic';
 import { booksFor, hasPages, pageUrl } from '../data/books';
 import PageImg from './PageImg';
 import PackCard from './PackCard';
@@ -78,7 +78,7 @@ export default function Curriculum() {
         ))}
 
         <div className="card">
-          <div className="row between"><h2>ألحان الترم</h2><span className="muted">{ids.length} ألحان</span></div>
+          <div className="row between"><h2>ألحان الترم</h2><span className="muted">{ids.length ? hymnsCount(ids.length) : 'لسه مفيش'}</span></div>
           <div className="list">
             {ids.map((id, i) => (
               <div key={id} className="li">

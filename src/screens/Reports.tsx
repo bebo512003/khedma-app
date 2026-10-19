@@ -64,7 +64,7 @@ export default function Reports() {
           <div className="stat"><b>{report.sessions}</b><span className="muted">{report.sessions === 1 ? 'حصة' : 'حصص'}</span></div>
           <div className="stat"><b>{report.rate === null ? '–' : `${report.rate}%`}</b><span className="muted">نسبة الحضور</span></div>
           <div className="stat"><b>{report.avg === null ? '–' : round1(report.avg)}</b><span className="muted">متوسط التقييم من 5</span></div>
-          <div className="stat"><b>{report.memorized + report.solo}</b><span className="muted">لحن اتحفظ أو اتقال لوحده</span></div>
+          <div className="stat"><b>{report.memorized + report.solo}</b><span className="muted">مرة لحن اتحفظ أو اتقال لوحده</span></div>
         </div>
           {report.sessions === 0 && <div className="note">مفيش حصص متسجلة لـ{level?.name} في {range.label}.</div>}
         </div>

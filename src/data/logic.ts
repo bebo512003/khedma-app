@@ -93,10 +93,10 @@ export async function hashPin(memberId: string, pin: string) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${memberId}:${pin}`));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
-/** Six digits: a million guesses per member instead of ten thousand. Older 4-digit PINs keep working. */
 /** Only http(s) links are opened from hymn and book records. */
 export const safeUrl = (u?: string) => (u && /^https?:\/\//i.test(u.trim()) ? u.trim() : undefined);
 
+/** Six digits: a million guesses per member instead of ten thousand. Older 4-digit PINs keep working. */
 export const newPin = () => String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
 
 /** Arabic counting: 1 → لحن واحد, 2 → لحنين, 3–10 → 3 ألحان, 11+ → 11 لحن. */
@@ -106,6 +106,10 @@ export function count(n: number, one: string, two: string, few: string) {
   return n >= 3 && n <= 10 ? `${n} ${few}` : `${n} ${one}`;
 }
 export const hymnsCount = (n: number) => count(n, 'لحن', 'لحنين', 'ألحان');
+export const pointsCount = (n: number) => n === 1 ? 'نقطة واحدة' : count(n, 'نقطة', 'نقطتين', 'نقط');
+export const pagesCount = (n: number) => n === 1 ? 'صفحة واحدة' : count(n, 'صفحة', 'صفحتين', 'صفحات');
+/** Searches match whatever hamza or ta marbuta spelling was typed. */
+export const fold = (s: string) => s.trim().toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/[ً-ْ]/g, '').replace(/\s+/g, ' ');
 export const sessionsCount = (n: number) => n === 1 ? 'حصة واحدة' : count(n, 'حصة', 'حصتين', 'حصص');
 
 export const DEFAULT_BIRTHDAY = 'كل سنة وأنت {طيب} يا {الاسم}! مدرسة الشهيد اسطفانوس للشمامسة بتتمنالك سنة جديدة مليانة فرح وألحان.';
@@ -124,7 +128,7 @@ export function upcomingBirthdays(members: Member[], days = 7, from = new Date()
 }
 
 export const birthdayWhen = (daysAway: number) =>
-  daysAway === 0 ? 'النهارده' : daysAway === 1 ? 'بكرة' : `بعد ${daysAway} أيام`;
+  daysAway === 0 ? 'النهارده' : daysAway === 1 ? 'بكرة' : daysAway === 2 ? 'بعد يومين' : `بعد ${count(daysAway, 'يوم', 'يومين', 'أيام')}`;
 export const yearsCount = (n: number) => n === 1 ? 'سنة واحدة' : n === 2 ? 'سنتين' : n >= 3 && n <= 10 ? `${n} سنين` : `${n} سنة`;
 
 /** Who gets WhatsApp messages about a member: their own number if they have one, otherwise the parent's. */

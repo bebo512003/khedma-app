@@ -57,7 +57,15 @@ export default function MemberForm() {
     }
     setPinBusy(false);
   };
-  const remove = () => { update(d => ({ ...d, members: d.members.filter(x => x.id !== m.id) })); nav('/members', { replace: true }); };
+  const remove = () => {
+    update(d => ({ ...d, members: d.members.filter(x => x.id !== m.id) }));
+    // Their login and the copy the member app reads go too, so the old code and PIN stop working.
+    if (cloud) Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]).then(([{ servantFb }, { deleteDoc }, paths]) => {
+      const db = servantFb().db;
+      for (const r of [paths.ref(db, 'memberViews', m.id), paths.ref(db, 'logins', m.code), ...(m.account ? [paths.ref(db, 'accounts', m.account.uid)] : [])]) deleteDoc(r).catch(() => undefined);
+    });
+    nav('/members', { replace: true });
+  };
 
   return (
     <>

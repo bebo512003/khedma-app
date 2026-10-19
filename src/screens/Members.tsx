@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../data/store';
-import { absenceStreak, birthdayWhen, needsFollowUp, upcomingBirthdays } from '../data/logic';
+import { absenceStreak, birthdayWhen, fold, needsFollowUp, upcomingBirthdays } from '../data/logic';
 
 export default function Members() {
   const [data] = useData();
@@ -10,7 +10,7 @@ export default function Members() {
   const levels = [...data.levels].sort((a, b) => a.order - b.order);
   const list = data.members
     .filter(m => level === 'all' || m.levelId === level)
-    .filter(m => !q || m.name.includes(q) || m.code.includes(q))
+    .filter(m => !q || fold(m.name).includes(fold(q)) || m.code.includes(q.trim()))
     .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
   const birthdays = new Map(upcomingBirthdays(data.members).map(b => [b.member.id, b.daysAway]));
 

@@ -6,7 +6,7 @@ import { deletePages, savePage } from '../firebase/bookPages';
 import { pdfToImages } from '../data/pdfPages';
 import PageImg from './PageImg';
 import type { Book } from '../data/types';
-import { safeUrl } from '../data/logic';
+import { pagesCount, safeUrl } from '../data/logic';
 
 
 /** One booklet: its index (hymns with pages) drives the level's curriculum for its term. */
@@ -17,6 +17,8 @@ export default function BookPage() {
   const nav = useNavigate();
   const saved = data.books.find(b => b.id === bookId);
   const [draft, setDraft] = useState<Book | null>(params.get('edit') && saved ? saved : null);
+  // Leaving edit mode drops ?edit=1, so a reload or Back doesn't reopen it.
+  const close = () => { setDraft(null); if (params.get('edit')) nav(`/books/${bookId}`, { replace: true }); };
   const [q, setQ] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [upload, setUpload] = useState<{ n: number; total: number } | null>(null);
@@ -38,7 +40,7 @@ export default function BookPage() {
     const save = () => {
       const b = { ...draft, title: draft.title.trim() || 'كتاب', pdfUrl: safeUrl(draft.pdfUrl) };
       update(d => applyBook({ ...d, books: d.books.map(x => x.id === b.id ? b : x) }, b));
-      setDraft(null);
+      close();
     };
     const remove = () => {
       if (saved.uploaded && saved.pageCount) deletePages(saved.id, saved.pageCount);
@@ -73,7 +75,7 @@ export default function BookPage() {
     return (
       <>
         <header className="top gutter"><div className="row">
-          <button className="icon" onClick={() => setDraft(null)} aria-label="رجوع">→</button><h1>تعديل الكتاب</h1>
+          <button className="icon" onClick={() => close()} aria-label="رجوع">→</button><h1>تعديل الكتاب</h1>
         </div></header>
         <main className="main gutter">
           <label className="field" htmlFor="btitle"><span>اسم الكتاب</span>
@@ -85,7 +87,7 @@ export default function BookPage() {
           <div className="card">
             <h2>ملف الكتاب (PDF)</h2>
             <div className="note">التطبيق بيحوّل كل صفحة لصورة، فكل لحن بيعرض صفحاته بالهزات، والمخدومين بيشوفوها كمان. ملف 40 صفحة بياخد دقيقة تقريباً.</div>
-            {hasPages(draft) && !upload && <div className="muted">الكتاب فيه {draft.pageCount} صفحة.</div>}
+            {hasPages(draft) && !upload && <div className="muted">الكتاب فيه {pagesCount(draft.pageCount ?? 0)}.</div>}
             {upload
               ? <><div className="muted">بيجهّز الصفحات {upload.n ? `${upload.n} من ${upload.total}` : '…'}</div>
                   <div className="progress-bar"><div style={{ width: `${upload.total ? (upload.n / upload.total) * 100 : 5}%` }} /></div></>
@@ -136,7 +138,7 @@ export default function BookPage() {
             : <button className="btn" onClick={() => setConfirmDelete(true)}>امسح الكتاب</button>}
         </main>
         <div className="bar gutter"><div>
-          <button className="btn" onClick={() => setDraft(null)}>إلغاء</button>
+          <button className="btn" onClick={() => close()}>إلغاء</button>
           <button className="btnp grow" onClick={save} disabled={!!upload}>احفظ</button>
         </div></div>
       </>

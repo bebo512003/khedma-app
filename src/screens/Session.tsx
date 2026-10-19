@@ -35,6 +35,9 @@ export default function SessionScreen() {
 
   if (!level) return <main className="main gutter"><div className="card">المستوى ده مش موجود. <Link to="/">ارجع للرئيسية</Link></div></main>;
 
+  // Members added while the session is open (by another servant) start absent with their saved hymn progress.
+  const hs = (id: string, h: string): HymnStatus => hym[id]?.[h] ?? data.progress[id]?.[h] ?? 0;
+  const memberHym = (id: string) => Object.fromEntries(hymnIds.map(h => [h, hs(id, h)]));
   const present = members.filter(m => att[m.id] === 'p');
   const onScan = (code: string) => {
     const m = data.members.find(x => x.code === code);
@@ -45,16 +48,16 @@ export default function SessionScreen() {
     setToast({ text: `✓ ${m.name} حاضر` });
     navigator.vibrate?.(60);
   };
-  const cycleAtt = (id: string) => setAtt(a => ({ ...a, [id]: a[id] === 'a' ? 'p' : a[id] === 'p' ? 'e' : 'a' }));
+  const cycleAtt = (id: string) => setAtt(a => ({ ...a, [id]: (a[id] ?? 'a') === 'a' ? 'p' : a[id] === 'p' ? 'e' : 'a' }));
   const step = (id: string, j: number, d: number) => setRate(r => {
     const cur: Rating = r[id] ?? [3, 3, 3];
     const next = [...cur] as Rating; next[j] = Math.min(5, Math.max(1, cur[j] + d));
     return { ...r, [id]: next };
   });
-  const cycleHym = (id: string, h: string) => setHym(s => ({ ...s, [id]: { ...s[id], [h]: (((s[id][h] ?? 0) + 1) % 4) as HymnStatus } }));
+  const cycleHym = (id: string, h: string) => setHym(s => ({ ...s, [id]: { ...memberHym(id), ...s[id], [h]: ((hs(id, h) + 1) % 4) as HymnStatus } }));
   const bulk = () => setHym(s => {
     const n = { ...s };
-    present.forEach(m => { n[m.id] = Object.fromEntries(hymnIds.map(h => [h, Math.max(1, s[m.id][h]) as HymnStatus])); });
+    present.forEach(m => { n[m.id] = Object.fromEntries(hymnIds.map(h => [h, Math.max(1, s[m.id]?.[h] ?? hs(m.id, h)) as HymnStatus])); });
     return n;
   });
 
@@ -63,7 +66,7 @@ export default function SessionScreen() {
     present.forEach(m => {
       let memorized = 0, solo = 0;
       hymnIds.forEach(h => {
-        const before = data.progress[m.id]?.[h] ?? 0, after = hym[m.id][h];
+        const before = data.progress[m.id]?.[h] ?? 0, after = hs(m.id, h);
         if (before < 2 && after >= 2) memorized++;
         if (before < 3 && after === 3) solo++;
       });
@@ -71,14 +74,14 @@ export default function SessionScreen() {
     });
     const session: Session = {
       id: uid(), date: todayISO(), levelId, termId: term.id, hymnIds,
-      attendance: att,
+      attendance: Object.fromEntries(members.map(m => [m.id, att[m.id] ?? 'a'])),
       ratings: Object.fromEntries(present.map(m => [m.id, rate[m.id] ?? [3, 3, 3]])),
       milestones, durationMs: Date.now() - start,
       notes: Object.fromEntries(present.map(m => [m.id, (notes[m.id] ?? '').trim()]).filter(([, n]) => n)),
     };
     update(d => {
       const progress = { ...d.progress };
-      present.forEach(m => { progress[m.id] = { ...(progress[m.id] ?? {}), ...hym[m.id] }; });
+      present.forEach(m => { progress[m.id] = { ...(progress[m.id] ?? {}), ...memberHym(m.id) }; });
       return { ...d, sessions: [...d.sessions, session], progress };
     });
     nav(`/summary/${session.id}`, { replace: true });
@@ -160,7 +163,7 @@ export default function SessionScreen() {
                 <b className="grow">{m.name}</b>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
                   {hymns.map(h => {
-                    const s = hym[m.id][h.id];
+                    const s = hs(m.id, h.id);
                     return (
                       <div key={h.id} className="row" style={{ gap: 6 }}>
                         <span className="muted">{h.nameAr.split(' ')[0]}</span>
@@ -178,7 +181,7 @@ export default function SessionScreen() {
       {toast && <div className={`toast${toast.bad ? ' bad' : ''}`} role="status">{toast.text}</div>}
       <div className="bar gutter"><div>
         <Link to="/" className="btn">إلغاء</Link>
-        <button className="btnp grow" onClick={finish}>خلّص الحصة</button>
+        <button className="btnp grow" onClick={finish} disabled={!members.length}>خلّص الحصة</button>
       </div></div>
     </>
   );

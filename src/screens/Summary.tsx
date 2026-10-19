@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useAllowedLevel, useData } from '../data/store';
 import { absenceStreak, needsFollowUp, sessionAverage } from '../data/logic';
 import FollowUpList from './FollowUpList';
 
@@ -8,7 +8,8 @@ const fmt = (ms = 0) => { const s = Math.round(ms / 1000); return `${Math.floor(
 export default function Summary() {
   const { sessionId } = useParams();
   const [data] = useData();
-  const s = data.sessions.find(x => x.id === sessionId);
+  const allowed = useAllowedLevel();
+  const s = data.sessions.find(x => x.id === sessionId && allowed(x.levelId));
   if (!s) return <main className="main gutter"><div className="card">الحصة دي مش موجودة. <Link to="/">ارجع للرئيسية</Link></div></main>;
 
   const level = data.levels.find(l => l.id === s.levelId);
