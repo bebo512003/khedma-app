@@ -120,7 +120,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!data || !edits.length) return;
     const known = edits.filter(e => data.members.some(m => m.id === e.id));
-    if (known.length) update(d => ({ ...d, members: d.members.map(m => { const e = known.find(x => x.id === m.id); return e ? applyMemberEdit(m, e.edit) : m; }) }));
+    // A malformed edit is dropped rather than applied, and is cleared either way so it can't block the app.
+    if (known.length) update(d => ({ ...d, members: d.members.map(m => { const e = known.find(x => x.id === m.id); try { return e ? applyMemberEdit(m, e.edit) : m; } catch { return m; } }) }));
     Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]).then(([{ servantFb }, { deleteDoc }, paths]) =>
       edits.forEach(e => deleteDoc(paths.ref(servantFb().db, 'memberEdits', e.id)).catch(() => undefined)));
   }, [data, edits, update]);
@@ -186,6 +187,12 @@ export function useStore() {
 export function useData(): [AppData, Store['update']] {
   const { data, update } = useStore();
   return [data as AppData, update];
+}
+
+/** Lead servant, or offline mode (one device, no roles). Only they change levels and terms or delete members. */
+export function useIsLead() {
+  const { servant, cloud } = useStore();
+  return !cloud || servant?.role === 'lead';
 }
 
 /** Levels this servant may run sessions for. Offline mode and leads see every level. */

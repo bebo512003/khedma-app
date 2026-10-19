@@ -21,6 +21,7 @@ import Reports from './screens/Reports';
 import MemberLogin from './member/Login';
 import Install from './screens/Install';
 import ServantProfile from './screens/ServantProfile';
+import Notify from './screens/Notify';
 import MemberLayout from './member/Layout';
 import MemberHome from './member/Home';
 import MemberHymn from './member/Hymn';
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/levels" element={s(<Levels />)} />
           <Route path="/team" element={s(<Team />)} />
           <Route path="/profile" element={s(<ServantProfile />)} />
+          <Route path="/notify" element={s(<Notify />)} />
           <Route path="/cards" element={s(<Cards />)} />
           <Route path="/dictionary" element={s(<Dictionary />)} />
           <Route path="/reports" element={s(<Reports />)} />

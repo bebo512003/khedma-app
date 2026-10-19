@@ -6,8 +6,8 @@ import { deletePages, savePage } from '../firebase/bookPages';
 import { pdfToImages } from '../data/pdfPages';
 import PageImg from './PageImg';
 import type { Book } from '../data/types';
+import { safeUrl } from '../data/logic';
 
-const safeUrl = (u?: string) => (u && /^https?:\/\//i.test(u.trim()) ? u.trim() : undefined);
 
 /** One booklet: its index (hymns with pages) drives the level's curriculum for its term. */
 export default function BookPage() {

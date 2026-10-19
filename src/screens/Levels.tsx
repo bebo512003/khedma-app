@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useData, useIsLead } from '../data/store';
 import { uid } from '../data/logic';
 import type { Level } from '../data/types';
 
@@ -8,6 +8,7 @@ export default function Levels() {
   const [data, update] = useData();
   const levels = [...data.levels].sort((a, b) => a.order - b.order);
   const [editing, setEditing] = useState<Level | null>(null);
+  const lead = useIsLead();
 
   const save = () => {
     if (!editing || !editing.name.trim()) return;
@@ -25,11 +26,12 @@ export default function Levels() {
       <main className="main gutter">
         <div className="card"><div className="list">
           {levels.map(l => (
-            <button key={l.id} className="li" style={{ background: 'none', border: 0, borderBottom: '1px solid var(--line)', textAlign: 'right' }} onClick={() => setEditing(l)}>
-              <div className="grow"><b>{l.name}</b><div className="muted">{l.grades} • {count(l.id)} مخدوم</div></div><span className="muted">تعديل</span>
+            <button key={l.id} className="li" style={{ background: 'none', border: 0, borderBottom: '1px solid var(--line)', textAlign: 'right' }} onClick={() => lead && setEditing(l)}>
+              <div className="grow"><b>{l.name}</b><div className="muted">{l.grades} • {count(l.id)} مخدوم</div></div>{lead && <span className="muted">تعديل</span>}
             </button>
           ))}
         </div></div>
+        {!lead && <div className="note">المستويات بيعدّلها الخادم المسؤول.</div>}
         {editing && (
           <div className="card">
             <h2>{data.levels.some(x => x.id === editing.id) ? 'تعديل المستوى' : 'مستوى جديد'}</h2>
@@ -41,9 +43,9 @@ export default function Levels() {
           </div>
         )}
       </main>
-      <div className="bar gutter"><div>
+      {lead && <div className="bar gutter"><div>
         <button className="btnp grow" onClick={() => setEditing({ id: uid(), name: '', grades: '', order: Math.max(0, ...data.levels.map(l => l.order)) + 1 })}>مستوى جديد</button>
-      </div></div>
+      </div></div>}
     </>
   );
 }

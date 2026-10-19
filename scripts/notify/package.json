@@ -1,0 +1,10 @@
+{
+  "name": "khedma-notify",
+  "private": true,
+  "type": "module",
+  "description": "Sends the scheduled reminders. Run by .github/workflows/notify.yml.",
+  "dependencies": {
+    "firebase-admin": "^13.5.0",
+    "web-push": "^3.6.7"
+  }
+}

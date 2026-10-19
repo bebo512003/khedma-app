@@ -9,6 +9,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: { globPatterns: ['**/*.{js,css,html,png,ttf,svg,woff2}'], maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
+        importScripts: ['push-sw.js'],
         // The dictionary is big, so it's cached the first time it's opened instead of on install.
         runtimeCaching: [
           { urlPattern: /\/dict\/.*\.json/, handler: 'CacheFirst', options: { cacheName: 'dictionary' } },

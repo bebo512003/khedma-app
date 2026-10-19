@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { POINTS } from '../data/logic';
+import { POINTS, safeUrl } from '../data/logic';
 import { STATUS_LABELS } from '../data/types';
 import { useView } from './Layout';
 import HymnText from '../screens/HymnText';
@@ -20,8 +20,8 @@ export default function MemberHymn() {
       </div></header>
       <main className="main gutter">
         <div className="row">
-          {h.audioUrl ? <a className="btnp grow" href={h.audioUrl} target="_blank" rel="noopener noreferrer">شغّل الصوت</a> : <span className="btn grow" aria-disabled>مفيش تسجيل لسه</span>}
-          {h.pdfUrl ? <a className="btn grow" href={h.pdfUrl} target="_blank" rel="noopener noreferrer">افتح الـ PDF</a> : <span className="btn grow" aria-disabled>مفيش PDF لسه</span>}
+          {safeUrl(h.audioUrl) ? <a className="btnp grow" href={safeUrl(h.audioUrl)} target="_blank" rel="noopener noreferrer">شغّل الصوت</a> : <span className="btn grow" aria-disabled>مفيش تسجيل لسه</span>}
+          {safeUrl(h.pdfUrl) ? <a className="btn grow" href={safeUrl(h.pdfUrl)} target="_blank" rel="noopener noreferrer">افتح الـ PDF</a> : <span className="btn grow" aria-disabled>مفيش PDF لسه</span>}
         </div>
 
         <div className="card">

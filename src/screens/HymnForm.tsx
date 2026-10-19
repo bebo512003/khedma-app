@@ -3,14 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../data/store';
 import { bookOf, entryPages, pagesLabel } from '../data/books';
 import BookPages from './BookPages';
-import { currentTerm, uid } from '../data/logic';
+import { currentTerm, safeUrl, uid } from '../data/logic';
 import type { Hymn } from '../data/types';
 import HymnText, { looksLikeLegacyFont } from './HymnText';
 
 const PRAYERS = ['القداس', 'التسبحة', 'رفع البخور', 'الأجبية', 'الدورات', 'المناسبات'];
 
 /** Links must be http(s) so a pasted value can't run script when opened. */
-const safeUrl = (u?: string) => (u && /^https?:\/\//i.test(u.trim()) ? u.trim() : undefined);
 
 export default function HymnForm() {
   const { hymnId } = useParams();

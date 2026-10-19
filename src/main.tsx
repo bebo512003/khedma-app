@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import './index.css';
 import App from './App';
 import { StoreProvider } from './data/store';
+import Crash from './screens/Crash';
 import { applyTheme, loadTheme } from './theme';
 
 applyTheme(loadTheme());
@@ -22,8 +23,10 @@ if (import.meta.env.VITE_FB_EMULATOR === '1') {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <StoreProvider>
-      <App />
-    </StoreProvider>
+    <Crash>
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    </Crash>
   </StrictMode>,
 );

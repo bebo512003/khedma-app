@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useData, useIsLead } from '../data/store';
 import { currentTerm, curriculumKey, uid } from '../data/logic';
 import { booksFor, hasPages, pageUrl } from '../data/books';
 import PageImg from './PageImg';
@@ -9,6 +9,7 @@ import type { Term } from '../data/types';
 
 export default function Curriculum() {
   const [data, update] = useData();
+  const lead = useIsLead();
   const levels = [...data.levels].sort((a, b) => a.order - b.order);
   const terms = [...data.terms].sort((a, b) => b.start.localeCompare(a.start));
   const [termId, setTermId] = useState(currentTerm(data)?.id ?? '');
@@ -46,7 +47,7 @@ export default function Curriculum() {
         </div>
         <div className="chips">
           {terms.map(t => <button key={t.id} className="chip" aria-pressed={termId === t.id} onClick={() => setTermId(t.id)}>{t.name}</button>)}
-          <button className="chip" onClick={() => setNewTerm({ id: uid(), name: '', start: '', end: '' })}>+ ترم جديد</button>
+          {lead && <button className="chip" onClick={() => setNewTerm({ id: uid(), name: '', start: '', end: '' })}>+ ترم جديد</button>}
         </div>
         <div className="seg">{levels.map(l =>
           <button key={l.id} aria-pressed={levelId === l.id} onClick={() => setLevelId(l.id)}>{l.name}</button>)}</div>

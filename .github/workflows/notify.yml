@@ -1,0 +1,37 @@
+name: Send reminders
+
+# Hourly; scripts/notify/send.mjs decides what's due from the schedule the lead servant set in the app.
+on:
+  schedule:
+    - cron: '5 * * * *'
+  push:
+    branches: [main]
+    paths: ['scripts/notify/**', '.github/workflows/notify.yml']
+  workflow_dispatch:
+
+concurrency: notify
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: scripts/notify
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/notify
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: scripts/notify/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Send what's due
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo "::warning::No FIREBASE_SERVICE_ACCOUNT secret."; exit 0; fi
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json" node send.mjs

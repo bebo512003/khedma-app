@@ -4,6 +4,7 @@ import { STATUS_LABELS } from '../data/types';
 import { useView } from './Layout';
 import { memberLogout } from './session';
 import CopticToday from '../screens/CopticToday';
+import PushToggle from '../screens/PushToggle';
 
 export default function MemberHome() {
   const v = useView();
@@ -30,6 +31,8 @@ export default function MemberHome() {
           {v.place > 1 && v.gap > 0 && <div style={{ color: 'var(--gold)' }}>{v.gap} نقط وتبقى الأول</div>}
           {v.place === 1 && v.points > 0 && <div style={{ color: 'var(--gold)' }}>أنت الأول الشهر ده، حافظ عليها</div>}
         </Link>
+
+        <PushToggle who="member" />
 
         <CopticToday plain />
 

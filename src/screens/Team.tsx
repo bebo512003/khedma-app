@@ -53,7 +53,9 @@ export default function Team() {
     await setDoc(paths.ref(db, 'servants', editing.uid), editing);
     setEditing(null);
   };
-  const removeServant = async (s: Servant) => { const { db, deleteDoc, paths } = await fs(); await deleteDoc(paths.ref(db, 'servants', s.uid)); setEditing(null); };
+  const removeServant = async (s: Servant) => { const { db, deleteDoc, paths } = await fs(); await deleteDoc(paths.ref(db, 'servants', s.uid));
+    // A leftover invite would let them join again on their own.
+    await deleteDoc(paths.ref(db, 'invites', s.email)).catch(() => undefined); setEditing(null); };
   const cancelInvite = async (i: Invite) => { const { db, deleteDoc, paths } = await fs(); await deleteDoc(paths.ref(db, 'invites', i.email)); };
 
   const levelPicker = (ids: string[], onChange: (ids: string[]) => void) => (

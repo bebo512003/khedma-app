@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useData, useStore } from '../data/store';
+import { useData, useIsLead, useStore } from '../data/store';
 import { RANKS, type Gender, type Member } from '../data/types';
 import { shrinkPhoto as shrink } from '../data/photo';
 import { GRADES, contact, hashPin, levelForGrade, newPin, todayISO, uid, waLink } from '../data/logic';
@@ -18,6 +18,7 @@ export default function MemberForm() {
   const [shownPin, setShownPin] = useState('');
   const [pinBusy, setPinBusy] = useState(false);
   const { cloud } = useStore();
+  const lead = useIsLead();
   const set = (p: Partial<Member>) => setM(x => ({ ...x, ...p }));
 
   const onPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -126,7 +127,7 @@ export default function MemberForm() {
 
         {error && <div className="alert-t" role="alert">{error}</div>}
 
-        {existing && (confirmDelete
+        {existing && lead && (confirmDelete
           ? <div className="card alert"><b>تمسح {m.name} نهائي؟</b><div className="row"><button className="btn grow" onClick={() => setConfirmDelete(false)}>لا</button><button className="btnp grow" onClick={remove}>امسح</button></div></div>
           : <button className="btn" onClick={() => setConfirmDelete(true)}>امسح المخدوم</button>)}
       </main>

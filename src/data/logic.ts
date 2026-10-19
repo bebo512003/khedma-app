@@ -93,7 +93,11 @@ export async function hashPin(memberId: string, pin: string) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${memberId}:${pin}`));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
-export const newPin = () => String(crypto.getRandomValues(new Uint32Array(1))[0] % 10000).padStart(4, '0');
+/** Six digits: a million guesses per member instead of ten thousand. Older 4-digit PINs keep working. */
+/** Only http(s) links are opened from hymn and book records. */
+export const safeUrl = (u?: string) => (u && /^https?:\/\//i.test(u.trim()) ? u.trim() : undefined);
+
+export const newPin = () => String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
 
 /** Arabic counting: 1 → لحن واحد, 2 → لحنين, 3–10 → 3 ألحان, 11+ → 11 لحن. */
 export function count(n: number, one: string, two: string, few: string) {

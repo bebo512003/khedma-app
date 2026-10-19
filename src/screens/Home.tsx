@@ -1,16 +1,18 @@
 import { Link } from 'react-router-dom';
-import { useAllowedLevel, useData, useStore } from '../data/store';
+import { useAllowedLevel, useData, useIsLead, useStore } from '../data/store';
 import { absenceStreak, needsFollowUp } from '../data/logic';
 import { applyTheme, loadTheme } from '../theme';
 import { useState } from 'react';
 import logo from '../logo.png';
 import Birthdays from './Birthdays';
 import CopticToday from './CopticToday';
+import PushToggle from './PushToggle';
 
 export default function Home() {
   const [data] = useData();
   const { update, cloud, syncError, signOut } = useStore();
   const allowed = useAllowedLevel();
+  const lead = useIsLead();
   const [theme, setTheme] = useState(loadTheme());
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const followUp = data.members.filter(m => needsFollowUp(absenceStreak(data, m)));
@@ -64,6 +66,8 @@ export default function Home() {
           </div>
         )}
 
+        {cloud && <PushToggle who="servant" />}
+
         <Birthdays levelIds={allowed} />
 
         {last && (
@@ -77,10 +81,10 @@ export default function Home() {
         <div className="row mobile-only"><Link to="/members" className="btn grow">المخدومين</Link><Link to="/library" className="btn grow">مكتبة الألحان</Link></div>
         <div className="row mobile-only"><Link to="/reports" className="btn grow">التقارير</Link><Link to="/dictionary" className="btn grow">القاموس القبطي</Link></div>
         {cloud
-          ? <div className="row mobile-only"><Link to="/team" className="btn grow">الفريق</Link><Link to="/profile" className="btn grow">بروفايلي</Link><button className="btn grow" onClick={signOut}>خروج</button></div>
+          ? <div className="row mobile-only"><Link to="/team" className="btn grow">الفريق</Link><Link to="/notify" className="btn grow">التنبيهات</Link><Link to="/profile" className="btn grow">بروفايلي</Link><button className="btn grow" onClick={signOut}>خروج</button></div>
           : <Link to="/me" className="btn">جرّب تطبيق المخدوم</Link>}
 
-        {hasExamples && (
+        {hasExamples && lead && (
           <div className="card">
             <div className="note">الأسماء اللي موجودة دلوقتي أمثلة عشان تجرب. لما تضيف المخدومين الحقيقيين امسح الأمثلة.</div>
             <button className="btn" onClick={clearExamples}>امسح الأمثلة</button>

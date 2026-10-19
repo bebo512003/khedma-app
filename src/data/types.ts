@@ -47,14 +47,20 @@ export interface MemberEdit {
 }
 
 /** Applies a member's own edit, keeping only the fields they're allowed to change. */
-export const applyMemberEdit = (m: Member, e: MemberEdit): Member => ({
-  ...m,
-  ...(e.name?.trim() ? { name: e.name.trim() } : {}),
-  photo: e.photo ?? m.photo,
-  birthdate: e.birthdate || undefined,
-  phone: e.phone?.trim() || undefined,
-  parentPhone: e.parentPhone?.trim() || undefined,
-});
+export const applyMemberEdit = (m: Member, e: MemberEdit): Member => {
+  const str = (x: unknown, max: number) => typeof x === 'string' && x.trim() ? x.trim().slice(0, max) : undefined;
+  const photo = typeof e.photo === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(e.photo) && e.photo.length < 100000 ? e.photo : undefined;
+  const birthdate = str(e.birthdate, 10);
+  const phone = (x: unknown) => { const p = str(x, 20); return p && /^[+\d\s-]+$/.test(p) ? p : undefined; };
+  return {
+    ...m,
+    ...(str(e.name, 80) ? { name: str(e.name, 80)! } : {}),
+    photo: photo ?? m.photo,
+    birthdate: birthdate && /^\d{4}-\d{2}-\d{2}$/.test(birthdate) ? birthdate : undefined,
+    phone: phone(e.phone),
+    parentPhone: phone(e.parentPhone),
+  };
+};
 
 export interface Hymn {
   id: string;
