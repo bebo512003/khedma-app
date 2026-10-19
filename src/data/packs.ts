@@ -22,7 +22,7 @@ export const PACKS = [{ id: 'nativity-shabab', levelId: 'l3' }];
 const cache = new Map<string, Promise<Pack>>();
 export function loadPack(id: string) {
   if (!cache.has(id)) {
-    const p = fetch(`packs/${id}.json?v=3`).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Pack>; });
+    const p = fetch(`packs/${id}.json?v=4`).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Pack>; });
     p.catch(() => cache.delete(id));
     cache.set(id, p);
   }
