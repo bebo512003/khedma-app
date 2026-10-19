@@ -2,6 +2,7 @@ import type { AppData, Book, Hymn } from './types';
 import { uid } from './logic';
 import { norm } from './importSheet';
 import { applyBook } from './books';
+import { mergeDuplicates } from './dedupe';
 
 /** A ready curriculum: the school's booklet with its hymns transcribed, built by scripts/build-pack.py. */
 export interface Pack {
@@ -13,7 +14,7 @@ export interface Pack {
   levelId: string;
   source: string;
   book: { title: string; pagesBase: string; pageCount: number };
-  hymns: (Omit<Hymn, 'id'> & { from?: number; to?: number })[];
+  hymns: (Omit<Hymn, 'id' | 'packKey'> & { key?: string; from?: number; to?: number })[];
 }
 
 /** Packs offered on the curriculum and books screens. */
@@ -22,7 +23,7 @@ export const PACKS = [{ id: 'nativity-shabab', levelId: 'l3' }];
 const cache = new Map<string, Promise<Pack>>();
 export function loadPack(id: string) {
   if (!cache.has(id)) {
-    const p = fetch(`packs/${id}.json?v=4`).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Pack>; });
+    const p = fetch(`packs/${id}.json?v=5`).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Pack>; });
     p.catch(() => cache.delete(id));
     cache.set(id, p);
   }
@@ -52,15 +53,19 @@ export function applyPack(d: AppData, pack: Pack, termId: string, levelId: strin
   const existing = packBook(d, pack);
   const updating = !!existing;
   const byName = new Map(d.hymns.map(h => [norm(h.nameAr), h.id]));
+  const byKey = new Map(d.hymns.filter(h => h.packKey).map(h => [h.packKey!, h.id]));
   const added: Hymn[] = [];
   const changed = new Map<string, Partial<Hymn>>();
-  const entries = pack.hymns.map(({ from, to, ...h }) => {
-    let hymnId = byName.get(norm(h.nameAr));
+  const entries = pack.hymns.map(({ from, to, key, ...hymn }, i) => {
+    const packKey = `${pack.id}/${key ?? i}`;
+    const h = { ...hymn, packKey };
+    // Same hymn as before: by its pack key, else its place in the book from the older edition, else its name.
+    let hymnId = byKey.get(packKey) ?? (updating && existing.entries[i] && d.hymns.find(x => x.id === existing.entries[i].hymnId && norm(x.nameAr) === norm(h.nameAr))?.id) ?? byName.get(norm(h.nameAr));
     if (hymnId) {
       const old = d.hymns.find(x => x.id === hymnId)!;
       changed.set(hymnId, updating
-        ? { ...Object.fromEntries(Object.entries(h).filter(([k]) => !old[k as keyof Hymn])), ...Object.fromEntries(TEXT.filter(k => h[k]).map(k => [k, h[k]])) }
-        : Object.fromEntries(Object.entries(h).filter(([k]) => !old[k as keyof Hymn])));
+        ? { ...Object.fromEntries(Object.entries(h).filter(([k]) => !old[k as keyof Hymn])), ...Object.fromEntries(TEXT.filter(k => h[k]).map(k => [k, h[k]])), packKey }
+        : { ...Object.fromEntries(Object.entries(h).filter(([k]) => !old[k as keyof Hymn])), packKey });
     } else {
       hymnId = uid();
       added.push({ ...h, id: hymnId });
@@ -75,5 +80,7 @@ export function applyPack(d: AppData, pack: Pack, termId: string, levelId: strin
     packId: pack.id, packVersion: pack.version, entries: [...entries, ...extra],
   };
   const hymns = [...d.hymns.map(x => changed.has(x.id) ? { ...x, ...changed.get(x.id) } : x), ...added];
-  return applyBook({ ...d, hymns, books: [...d.books.filter(b => b.id !== book.id), book] }, book);
+  // Any older copy of a booklet hymn (added by hand or twice) is folded into the booklet's one.
+  const merged = mergeDuplicates({ ...d, hymns, books: [...d.books.filter(b => b.id !== book.id), book] });
+  return applyBook(merged, merged.books.find(b => b.id === book.id)!);
 }

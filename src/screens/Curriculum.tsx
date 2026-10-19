@@ -6,6 +6,7 @@ import { booksFor, hasPages, pageUrl } from '../data/books';
 import PageImg from './PageImg';
 import PackCard from './PackCard';
 import type { Term } from '../data/types';
+import Duplicates from './Duplicates';
 
 export default function Curriculum() {
   const [data, update] = useData();
@@ -53,6 +54,7 @@ export default function Curriculum() {
           <button key={l.id} aria-pressed={levelId === l.id} onClick={() => setLevelId(l.id)}>{l.name}</button>)}</div>
       </header>
       <main className="main gutter">
+        <Duplicates />
         {newTerm && (
           <div className="card">
             <h2>ترم جديد</h2>

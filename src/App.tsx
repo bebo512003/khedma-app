@@ -11,6 +11,7 @@ import MemberCard from './screens/MemberProfile';
 import ImportMembers from './screens/ImportMembers';
 import Library from './screens/Library';
 import HymnForm from './screens/HymnForm';
+import HymnView from './screens/HymnView';
 import Curriculum from './screens/Curriculum';
 import Books from './screens/Books';
 import BookPage from './screens/BookPage';
@@ -48,7 +49,8 @@ export default function App() {
           <Route path="/members/:memberId/edit" element={s(<MemberForm />)} />
           <Route path="/library" element={s(<Library />)} />
           <Route path="/hymns/new" element={s(<HymnForm />)} />
-          <Route path="/hymns/:hymnId" element={s(<HymnForm />)} />
+          <Route path="/hymns/:hymnId" element={s(<HymnView />)} />
+          <Route path="/hymns/:hymnId/edit" element={s(<HymnForm />)} />
           <Route path="/curriculum" element={s(<Curriculum />)} />
           <Route path="/books" element={s(<Books />)} />
           <Route path="/books/:bookId" element={s(<BookPage />)} />

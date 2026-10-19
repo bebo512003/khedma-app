@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../data/store';
 import { currentTerm, curriculumKey } from '../data/logic';
+import Duplicates from './Duplicates';
 
 export default function Library() {
   const [data] = useData();
@@ -30,6 +31,7 @@ export default function Library() {
         )}
       </header>
       <main className="main gutter wide">
+        <Duplicates />
         <div className="card"><div className="list cols">
           {list.map(h => {
             const ls = levelsOf(h.id);

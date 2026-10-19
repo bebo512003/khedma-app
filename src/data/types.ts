@@ -79,6 +79,8 @@ export interface Hymn {
   meaning?: string;
   /** Servant notes shown above the text, e.g. order rules. */
   notes?: string;
+  /** Set on hymns that came from a booklet pack ("pack/hymn"), so a new edition updates the same hymn. */
+  packKey?: string;
 }
 
 /** A hymn's place in a book: the pages it spans. */

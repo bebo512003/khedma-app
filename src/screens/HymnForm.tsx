@@ -29,13 +29,14 @@ export default function HymnForm() {
     update(d => existing
       ? { ...d, hymns: d.hymns.map(x => x.id === clean.id ? clean : x) }
       : { ...d, hymns: [...d.hymns, clean] });
-    nav('/library', { replace: true });
+    nav(existing ? `/hymns/${clean.id}` : '/library', { replace: true });
   };
   const remove = () => {
     update(d => ({
       ...d,
       hymns: d.hymns.filter(x => x.id !== h.id),
       curricula: Object.fromEntries(Object.entries(d.curricula).map(([k, ids]) => [k, ids.filter(id => id !== h.id)])),
+      books: d.books.map(b => b.entries.some(e => e.hymnId === h.id) ? { ...b, entries: b.entries.filter(e => e.hymnId !== h.id) } : b),
     }));
     nav('/library', { replace: true });
   };
@@ -61,7 +62,7 @@ export default function HymnForm() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/library" className="icon" aria-label="رجوع">→</Link><h1>{existing ? h.nameAr : 'لحن جديد'}</h1>
+        <Link to={existing ? `/hymns/${h.id}` : '/library'} replace className="icon" aria-label="رجوع">→</Link><h1>{existing ? `تعديل ${h.nameAr}` : 'لحن جديد'}</h1>
       </div></header>
       <main className="main gutter">
         {inBook && <Link to={`/books/${inBook.book.id}`} className="note" style={{ textDecoration: 'none' }}>📖 في كتاب {inBook.book.title}{inBook.entry.from ? ` • ${pagesLabel(inBook.entry)}` : ''}</Link>}
@@ -93,7 +94,7 @@ export default function HymnForm() {
           : <button className="btn" onClick={() => setConfirmDelete(true)}>امسح اللحن</button>)}
       </main>
       <div className="bar gutter"><div>
-        <Link to="/library" className="btn">إلغاء</Link>
+        <Link to={existing ? `/hymns/${h.id}` : '/library'} replace className="btn">إلغاء</Link>
         <button className="btnp grow" onClick={save}>احفظ</button>
       </div></div>
     </>

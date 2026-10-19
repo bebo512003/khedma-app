@@ -36,7 +36,7 @@ PACKS = {
         'title': 'ألحان عيد الميلاد',
         'levelId': 'l3',
         # Bump 'version' when the booklet changes, so books added from an older edition get an update button.
-        'version': 3,
+        'version': 4,
         'book': {'title': 'ألحان عيد الميلاد المجيد (الهزات) - شباب', 'pagesBase': 'books/nativity-shabab-2/', 'pageCount': 41},
         # Booklet pages per hymn, from the booklet's own index (page images are public/<pagesBase>NN.webp, rendered from the PDF).
         'pages': {'nakous': (2, 7), 'seven-ways': (8, 20), 'doxology': (21, 22), 'baker-end': (23, 23), 'abouro': (24, 25),
@@ -82,7 +82,7 @@ def main(name):
     hymns = []
     for file, prayer, when, audio in meta['hymns']:
         h = json.loads((src / f'{file}.json').read_text(encoding='utf-8'))
-        out = {'nameAr': NAMES[file], 'prayer': prayer, 'occasion': 'عيد الميلاد'}
+        out = {'key': file, 'nameAr': NAMES[file], 'prayer': prayer, 'occasion': 'عيد الميلاد'}
         if when:
             out['when'] = when
         if audio:

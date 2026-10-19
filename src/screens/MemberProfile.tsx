@@ -88,7 +88,7 @@ export default function MemberProfile() {
               const s = status(h.id);
               return (
                 <div key={h.id} className="hrow">
-                  <b>{h.nameAr}</b>
+                  <Link to={`/hymns/${h.id}`} style={{ color: "inherit" }}><b>{h.nameAr}</b></Link>
                   <div className="lvl" role="group" aria-label={`مستواه في ${h.nameAr}`}>
                     {STATUS_LABELS.map((l, i) =>
                       <button key={l} className={`st${i}`} aria-pressed={s === i} onClick={() => setStatus(h.id, i as HymnStatus)}>{l}</button>)}
