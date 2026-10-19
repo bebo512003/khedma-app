@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData, useStore } from '../data/store';
 import type { Invite, Servant } from '../data/types';
+import { waLink } from '../data/logic';
 
-/** Lead servant only: invite servants by Google email and choose which levels each one runs. */
+/** The team with their profiles. The lead servant also invites servants by Google email and chooses which levels each one runs. */
 export default function Team() {
   const [data] = useData();
   const { servant: me } = useStore();
@@ -20,13 +21,14 @@ export default function Team() {
       const [{ servantFb }, { onSnapshot }, paths] = await Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]);
       const { db } = servantFb();
       const a = onSnapshot(paths.col(db, 'servants'), s => setServants(s.docs.map(d => d.data() as Servant)));
-      const b = onSnapshot(paths.col(db, 'invites'), s => setInvites(s.docs.map(d => d.data() as Invite)));
+      const b = me?.role === 'lead' ? onSnapshot(paths.col(db, 'invites'), s => setInvites(s.docs.map(d => d.data() as Invite))) : () => {};
       stop = () => { a(); b(); };
     })();
     return () => stop();
-  }, []);
+  }, [me?.role]);
 
-  if (me?.role !== 'lead') return <main className="main gutter"><div className="card">الصفحة دي للخادم المسؤول بس. <Link to="/">ارجع</Link></div></main>;
+  if (!me) return <main className="main gutter"><div className="card">الصفحة دي للخدام. <Link to="/">ارجع</Link></div></main>;
+  const lead = me.role === 'lead';
 
   const fs = async () => {
     const [{ servantFb }, firestore, paths] = await Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]);
@@ -75,14 +77,23 @@ export default function Team() {
       <main className="main gutter">
         <div className="card"><h2>الخدام</h2><div className="list">
           {servants.map(s => (
-            <button key={s.uid} className="li" style={{ background: 'none', border: 0, borderBottom: '1px solid var(--line)', textAlign: 'right' }} onClick={() => setEditing(s)}>
-              <div className="grow"><b>{s.name}{s.uid === me.uid ? ' (أنت)' : ''}</b><div className="muted">{s.role === 'lead' ? 'خادم مسؤول' : 'خادم'} • {levelNames(s.levelIds)}</div></div>
-              <span className="muted">تعديل</span>
-            </button>
+            <div key={s.uid} className="li servant-li">
+              <span className="av">{s.photo ? <img src={s.photo} alt="" /> : s.name[0]}</span>
+              <div className="grow">
+                <b>{s.name}{s.uid === me.uid ? ' (أنت)' : ''}</b>
+                <div className="muted">{[s.role === 'lead' ? 'خادم مسؤول' : 'خادم', s.rank, levelNames(s.levelIds)].filter(Boolean).join(' • ')}</div>
+                {s.about && <div className="muted">{s.about}</div>}
+              </div>
+              <div className="row li-actions">
+              {s.phone && s.uid !== me.uid && <a className="btn" style={{ minHeight: 36 }} href={waLink(s.phone, '')} target="_blank" rel="noopener noreferrer">واتساب</a>}
+              {s.uid === me.uid && <Link className="btn" style={{ minHeight: 36 }} to="/profile">بروفايلي</Link>}
+              {lead && <button className="btn" style={{ minHeight: 36 }} onClick={() => setEditing(s)}>صلاحيات</button>}
+              </div>
+            </div>
           ))}
         </div></div>
 
-        {editing && (
+        {lead && editing && (
           <div className="card">
             <h2>{editing.name}</h2>
             <div className="muted" dir="ltr" style={{ textAlign: 'right' }}>{editing.email}</div>
@@ -93,7 +104,7 @@ export default function Team() {
           </div>
         )}
 
-        {invites.length > 0 && (
+        {lead && invites.length > 0 && (
           <div className="card"><h2>دعوات مستنية</h2><div className="list">
             {invites.map(i => (
               <div key={i.email} className="li">
@@ -105,7 +116,7 @@ export default function Team() {
           <div className="note">الخادم يفتح التطبيق ويدخل بنفس إيميل جوجل ده، وهيلاقي زرار يقبل الدعوة.</div></div>
         )}
 
-        {draft && (
+        {lead && draft && (
           <div className="card">
             <h2>ضيف خادم</h2>
             <label className="field" htmlFor="email"><span>إيميل جوجل بتاعه</span>
@@ -117,7 +128,7 @@ export default function Team() {
           </div>
         )}
       </main>
-      {!draft && <div className="bar gutter"><div>
+      {lead && !draft && <div className="bar gutter"><div>
         <button className="btnp grow" onClick={() => setDraft({ email: '', role: 'servant', levelIds: [], invitedBy: me.uid })}>ضيف خادم</button>
       </div></div>}
     </>

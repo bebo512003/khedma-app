@@ -6,7 +6,7 @@ import DeskNav from './DeskNav';
 
 /** In cloud mode, servant screens open only for signed-in servants of this church. */
 export default function Gate({ children }: { children: ReactNode }) {
-  const { phase, data, user, access, signIn, signOut, startChurch, acceptInvite } = useStore();
+  const { phase, data, user, access, signIn, signOut, startChurch, acceptInvite, syncError } = useStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const run = (fn: () => Promise<void>) => async () => {
@@ -18,7 +18,10 @@ export default function Gate({ children }: { children: ReactNode }) {
   if (phase === 'ready' && data) return <><DeskNav />{children}</>;
 
   const body = (() => {
-    if (phase === 'loading' || phase === 'ready') return <div className="muted">بيحمّل…</div>;
+    if (phase === 'loading' || phase === 'ready') return <>
+      <div className="muted">بيحمّل…</div>
+      {syncError && <div className="note" dir="ltr">{syncError}</div>}
+    </>;
     if (phase === 'signedOut') return (
       <>
         <button className="btnp" style={{ width: '100%' }} disabled={busy} onClick={run(signIn)}>ادخل بحساب جوجل</button>

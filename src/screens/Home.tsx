@@ -9,7 +9,7 @@ import CopticToday from './CopticToday';
 
 export default function Home() {
   const [data] = useData();
-  const { update, cloud, servant, syncError, signOut } = useStore();
+  const { update, cloud, syncError, signOut } = useStore();
   const allowed = useAllowedLevel();
   const [theme, setTheme] = useState(loadTheme());
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
@@ -77,7 +77,7 @@ export default function Home() {
         <div className="row mobile-only"><Link to="/members" className="btn grow">المخدومين</Link><Link to="/library" className="btn grow">مكتبة الألحان</Link></div>
         <div className="row mobile-only"><Link to="/reports" className="btn grow">التقارير</Link><Link to="/dictionary" className="btn grow">القاموس القبطي</Link></div>
         {cloud
-          ? <div className="row mobile-only">{servant?.role === 'lead' && <Link to="/team" className="btn grow">الفريق</Link>}<button className="btn grow" onClick={signOut}>خروج</button></div>
+          ? <div className="row mobile-only"><Link to="/team" className="btn grow">الفريق</Link><Link to="/profile" className="btn grow">بروفايلي</Link><button className="btn grow" onClick={signOut}>خروج</button></div>
           : <Link to="/me" className="btn">جرّب تطبيق المخدوم</Link>}
 
         {hasExamples && (

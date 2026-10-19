@@ -28,7 +28,11 @@ service cloud.firestore {
           || (exists(doc('invites', email()))
               && request.resource.data.role == get(doc('invites', email())).data.role
               && request.resource.data.levelIds == get(doc('invites', email())).data.levelIds)));
-        allow update, delete: if lead();
+        allow update: if lead() || (servant() && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photo', 'phone', 'birthdate', 'rank', 'about'])
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+          && (!('photo' in request.resource.data) || request.resource.data.photo.size() < 100000));
+        allow delete: if lead();
       }
 
       match /invites/{inviteEmail} {

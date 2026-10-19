@@ -154,7 +154,17 @@ export interface Servant {
   email: string;
   role: 'lead' | 'servant';
   levelIds: string[];
+  /** Profile the servant fills in themselves (see SERVANT_PROFILE_KEYS). */
+  photo?: string;
+  phone?: string;
+  birthdate?: string;
+  rank?: string;
+  /** e.g. what they serve or teach, shown on the team page. */
+  about?: string;
 }
+
+/** Fields a servant may change on their own record; everything else is the lead's. Mirrored in firestore.rules. */
+export const SERVANT_PROFILE_KEYS = ['name', 'photo', 'phone', 'birthdate', 'rank', 'about'] as const;
 
 export interface Invite {
   email: string;

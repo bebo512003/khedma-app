@@ -71,7 +71,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!u) { setPhase('signedOut'); return; }
         setPhase('loading');
         let subscribed = false;
-        stopServant = onSnapshot(paths.ref(db, 'servants', u.uid), async snap => {
+        // Metadata changes too, so a servant record still being written (just accepted an invite or started the church)
+        // waits for the server: the rules check that record, and reading church data before it lands is refused for good.
+        stopServant = onSnapshot(paths.ref(db, 'servants', u.uid), { includeMetadataChanges: true }, async snap => {
+          if (snap.exists() && snap.metadata.hasPendingWrites) return;
           if (snap.exists()) {
             setServant(snap.data() as Servant);
             setPhase('ready');

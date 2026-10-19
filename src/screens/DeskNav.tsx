@@ -10,7 +10,7 @@ export default function DeskNav() {
   const [theme, setTheme] = useState(loadTheme());
   const toggle = () => { const t = theme === 'light' ? 'maroon' : 'light'; applyTheme(t); setTheme(t); };
   const links: [string, string][] = [['/', 'الرئيسية'], ['/members', 'المخدومين'], ['/library', 'مكتبة الألحان'], ['/books', 'الكتب'], ['/curriculum', 'المنهج'], ['/reports', 'التقارير'], ['/cards', 'كروت QR'], ['/dictionary', 'القاموس']];
-  if (servant?.role === 'lead') links.push(['/team', 'الفريق']);
+  if (servant) links.push(['/team', 'الفريق']);
   return (
     <nav className="desknav" aria-label="القايمة">
       <div>
@@ -18,6 +18,7 @@ export default function DeskNav() {
         <div className="row" style={{ gap: 4 }}>
           {links.map(([to, label]) => <NavLink key={to} to={to} end={to === '/'}>{label}</NavLink>)}
           <button onClick={toggle} aria-label={theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}>{theme === 'light' ? '☾' : '☀'}</button>
+          {servant && <NavLink to="/profile" className="me" aria-label="بروفايلي">{servant.photo ? <img src={servant.photo} alt="" /> : servant.name[0]}</NavLink>}
           {cloud && <button onClick={signOut}>خروج</button>}
         </div>
       </div>

@@ -25,9 +25,9 @@ export function subscribe(db: Firestore, onData: (d: AppData) => void, onError: 
     onData({ ...empty(), ...meta, ...(lists as Pick<AppData, ListKey>), progress });
   };
   const unsubs = [
-    ...LISTS.map(k => onSnapshot(col(db, k), s => { lists[k] = s.docs.map(d => d.data()); emit(); }, onError)),
-    onSnapshot(col(db, 'progress'), s => { progress = Object.fromEntries(s.docs.map(d => [d.id, d.data()])) as AppData['progress']; emit(); }, onError),
-    onSnapshot(ref(db, 'meta', 'app'), s => { meta = (s.data() ?? {}) as Partial<AppData>; emit(); }, onError),
+    ...LISTS.map(k => onSnapshot(col(db, k), s => { lists[k] = s.docs.map(d => d.data()); emit(); }, e => onError(new Error(`${k}: ${e.message}`)))),
+    onSnapshot(col(db, 'progress'), s => { progress = Object.fromEntries(s.docs.map(d => [d.id, d.data()])) as AppData['progress']; emit(); }, e => onError(new Error(`progress: ${e.message}`))),
+    onSnapshot(ref(db, 'meta', 'app'), s => { meta = (s.data() ?? {}) as Partial<AppData>; emit(); }, e => onError(new Error(`meta: ${e.message}`))),
   ];
   return () => unsubs.forEach(u => u());
 }
