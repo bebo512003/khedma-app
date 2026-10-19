@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../data/store';
-import { shrinkPhoto } from '../data/photo';
+import { cancelled, shrinkPhoto } from '../data/photo';
 import { RANKS, SERVANT_PROFILE_KEYS, type Servant } from '../data/types';
 
 type Profile = Pick<Servant, typeof SERVANT_PROFILE_KEYS[number]>;
@@ -19,7 +19,7 @@ export default function ServantProfile() {
   const onPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    try { set({ photo: await shrinkPhoto(f) }); } catch { setError('الصورة دي مش هتنفع، جرّب صورة تانية.'); }
+    try { set({ photo: await shrinkPhoto(f) }); } catch (e) { if (!cancelled(e)) setError('الصورة دي مش هتنفع، جرّب صورة تانية.'); }
   };
   const save = async () => {
     if (!p.name?.trim()) { setError('اكتب اسمك.'); return; }

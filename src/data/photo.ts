@@ -1,15 +1,10 @@
-/** Shrinks a photo to a 256px square JPEG (~15KB) so it can live inside the member record. */
-export function shrinkPhoto(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const s = 256, c = document.createElement('canvas'); c.width = s; c.height = s;
-      const side = Math.min(img.width, img.height);
-      c.getContext('2d')!.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, s, s);
-      resolve(c.toDataURL('image/jpeg', 0.72));
-      URL.revokeObjectURL(img.src);
-    };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
+import { cropSquare } from '../ui/Cropper';
+
+/**
+ * Lets the person crop the photo to a square, then shrinks it to a 256px JPEG (~15KB) so it can live
+ * inside the member record. Rejects with an AbortError if they cancel.
+ */
+export const shrinkPhoto = (file: File): Promise<string> => cropSquare(file);
+
+/** Cancelling the crop isn't an error worth showing. */
+export const cancelled = (e: unknown) => (e as Error)?.name === 'AbortError';

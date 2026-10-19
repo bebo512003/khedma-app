@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { MemberEdit } from '../data/types';
-import { shrinkPhoto } from '../data/photo';
+import { cancelled, shrinkPhoto } from '../data/photo';
 import { useView } from './Layout';
 import { useSaveProfile } from './session';
 
@@ -18,7 +18,7 @@ export default function MemberProfile() {
   const onPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    try { set({ photo: await shrinkPhoto(f) }); } catch { setError('الصورة دي مش هتنفع، جرّب صورة تانية.'); }
+    try { set({ photo: await shrinkPhoto(f) }); } catch (e) { if (!cancelled(e)) setError('الصورة دي مش هتنفع، جرّب صورة تانية.'); }
   };
   const submit = async () => {
     if (!p.name?.trim()) { setError('اكتب اسمك.'); return; }

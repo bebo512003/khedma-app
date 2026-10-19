@@ -313,3 +313,12 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .vrow { display: flex; flex-direction: column; gap: 6px; }
 .vrow > b { font-size: 13px; }
 .vedit { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+
+/* Square photo crop */
+.cropper { position: fixed; inset: 0; z-index: 50; background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 16px; touch-action: none; }
+.crop-box { position: relative; overflow: hidden; touch-action: none; cursor: grab; background: #111; }
+.crop-box img { position: absolute; left: 50%; top: 50%; max-width: none; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.crop-mask { position: absolute; inset: 0; pointer-events: none; border-radius: 22%; box-shadow: 0 0 0 9999px rgba(0,0,0,.55); outline: 1px solid rgba(255,255,255,.6); }
+.crop-zoom { width: min(100%, 420px); accent-color: var(--gold); }
+.crop-bar { display: flex; gap: 10px; width: min(100%, 420px); }
+.cropper .btn { background: transparent; color: #fff; border-color: rgba(255,255,255,.4); }

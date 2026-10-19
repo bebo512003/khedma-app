@@ -2,7 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData, useIsLead, useStore } from '../data/store';
 import { RANKS, type Gender, type Member } from '../data/types';
-import { shrinkPhoto as shrink } from '../data/photo';
+import { cancelled, shrinkPhoto as shrink } from '../data/photo';
 import { GRADES, contact, hashPin, levelForGrade, newPin, todayISO, uid, waLink } from '../data/logic';
 
 export default function MemberForm() {
@@ -23,7 +23,7 @@ export default function MemberForm() {
 
   const onPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return;
-    try { set({ photo: await shrink(f) }); } catch { setError('الصورة دي مش هتنفع، جرّب صورة تانية.'); }
+    try { set({ photo: await shrink(f) }); } catch (e) { if (!cancelled(e)) setError('الصورة دي مش هتنفع، جرّب صورة تانية.'); }
   };
 
   const save = () => {
