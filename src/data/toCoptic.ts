@@ -1,6 +1,20 @@
 import { copticKey } from './dictionary';
 import { conjugatePast, conjugatePresent, libraryArabic, overlap, pastFromPresent, type Match, type Translator } from './translator';
 
+/** Osama Thabet's Arabic → Coptic word lists (scripts/build-arabic-coptic.py): nouns with gender, verbs with how they take an object, prepositions. */
+export interface ArabicLexicon {
+  source: string;
+  nouns: [string, string, Gender][];
+  verbs: [string, string, 'n' | 'e' | '-'][];
+  words: [string, string][];
+}
+let lexLoading: Promise<ArabicLexicon> | null = null;
+export function loadArabicLexicon() {
+  lexLoading ??= fetch('dict/arabic-coptic.json?v=1').then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<ArabicLexicon>; });
+  lexLoading.catch(() => { lexLoading = null; });
+  return lexLoading;
+}
+
 /**
  * Arabic → Coptic (Bohairic), the other way round from translator.ts, on the same hymn library.
  * 1. A line or half-line of a hymn's Arabic comes back as the hymn's own Coptic.
@@ -48,6 +62,8 @@ const POSS: [string, string, [string, string, string]][] = [
 const OBJ: [string, string, string][] = [
   ['كم', 'ـكم', 'ⲙ̀ⲙⲱⲧⲉⲛ'], ['هم', 'ـهم', 'ⲙ̀ⲙⲱⲟⲩ'], ['ها', 'ـها', 'ⲙ̀ⲙⲟⲥ'], ['نا', 'ـنا', 'ⲙ̀ⲙⲟⲛ'], ['ني', 'ـني', 'ⲙ̀ⲙⲟⲓ'], ['ه', 'ـه', 'ⲙ̀ⲙⲟϥ'], ['ك', 'ـك', 'ⲙ̀ⲙⲟⲕ'],
 ];
+/** The same with ⲉ̀ⲣⲟ-, for verbs that take their object with ⲉ̀. */
+const ERO: Record<string, string> = { 'ⲙ̀ⲙⲱⲧⲉⲛ': 'ⲉ̀ⲣⲱⲧⲉⲛ', 'ⲙ̀ⲙⲱⲟⲩ': 'ⲉ̀ⲣⲱⲟⲩ', 'ⲙ̀ⲙⲟⲥ': 'ⲉ̀ⲣⲟⲥ', 'ⲙ̀ⲙⲟⲛ': 'ⲉ̀ⲣⲟⲛ', 'ⲙ̀ⲙⲟⲓ': 'ⲉ̀ⲣⲟⲓ', 'ⲙ̀ⲙⲟϥ': 'ⲉ̀ⲣⲟϥ', 'ⲙ̀ⲙⲟⲕ': 'ⲉ̀ⲣⲟⲕ' };
 const PERSONS = ['3ms', '3fs', '3p', '1s', '1p', '2ms', '2p', '2fs'] as const;
 const PAST: Record<string, string> = { '1s': 'ⲁⲓ', '2ms': 'ⲁⲕ', '2fs': 'ⲁⲣⲉ', '3ms': 'ⲁϥ', '3fs': 'ⲁⲥ', '1p': 'ⲁⲛ', '2p': 'ⲁⲣⲉⲧⲉⲛ', '3p': 'ⲁⲩ' };
 const PRESENT: Record<string, string> = { '1s': 'ϯ', '2ms': 'ⲭ̀', '2fs': 'ⲧⲉ', '3ms': 'ϥ', '3fs': 'ⲥ', '1p': 'ⲧⲉⲛ', '2p': 'ⲧⲉⲧⲉⲛ', '3p': 'ⲥⲉ' };
@@ -70,6 +86,12 @@ export interface Reverse {
   nouns: Map<string, { stem: string; n: number; gender: Gender }>;
   verbs: Map<string, Verb>;
   dict: Map<string, string>;
+  /** Prepositions, also with their pronoun (معك → ⲛⲉⲙⲁⲕ). */
+  words: Map<string, string>;
+  /** Verbs (by stem key) that take their object with ⲉ̀ⲣⲟ- rather than ⲙ̀ⲙⲟ-. */
+  ero: Set<string>;
+  /** Built with Osama Thabet's word lists. */
+  full: boolean;
   tm: Map<string, number>;
   tmIndex: Map<string, number[]>;
   /** Arabic line key, Coptic as written, Arabic as printed. */
@@ -90,10 +112,10 @@ const APART = new Set(['ϧⲉⲛ', 'ⲛⲉⲙ', 'ϩⲓϫⲉⲛ', 'ⲉⲃⲟⲗ',
 const oneWord = (s: string) => /^[ء-ي]{2,}$/.test(s);
 
 const cache = new WeakMap<Translator, Reverse>();
-export function reverseOf(t: Translator): Reverse {
+export function reverseOf(t: Translator, extra?: ArabicLexicon): Reverse {
   const dict = t.dict;
   const hit = cache.get(t);
-  if (hit) return hit;
+  if (hit && (hit.full || !extra)) return hit;
   const lex = new Map<string, Lex>(), nouns = new Map<string, { stem: string; n: number; gender: Gender }>(), verbs = new Map<string, Verb>();
   const genders = new Map<string, Record<Gender, number>>();
   const pastVerbs = new Map<string, { stem: string; n: number }>(), presentVerbs = new Map<string, { stem: string; n: number }>();
@@ -105,7 +127,9 @@ export function reverseOf(t: Translator): Reverse {
     const pos: Pos = segs.length > 1 && first?.cls === 'art' ? 'noun' : segs.length > 1 && first?.cls === 'conj' ? 'verb' : 'other';
     const past3 = segs.length > 1 && (segs[0] === 'ⲁϥ' || segs[0] === 'ⲁⲥ' || segs[0] === 'ⲁⲩ');
     const coptic = segs.length > 1 && APART.has(segs[0]) ? apart(written, segs[0].length) : written;
-    if (ar && ar.split(' ').length <= 3) better(lex, ar, { coptic, n, pos, gloss, past3 });
+    // ⲛ̀ / ⲙ̀ in front (genitive, object) has no Arabic word: the word on its own goes under that Arabic, below forms seen without it.
+    const linked = segs.length > 1 && (segs[0] === 'ⲛ' || segs[0] === 'ⲙ') && /ربط|إضافة|مفعول/.test(gloss.split(' - ')[0]);
+    if (ar && ar.split(' ').length <= 3) better(lex, ar, linked ? { coptic: dropLetters(written, 1), n: n / 4, pos, gloss, past3 } : { coptic, n, pos, gloss, past3 });
     if (segs.length === 2 && parts.length === 2 && oneWord(parts[1])) {
       const stem = dropLetters(written, segs[0].length);
       const g = ART_GENDER[segs[0]];
@@ -122,6 +146,22 @@ export function reverseOf(t: Translator): Reverse {
   for (const [m, v] of Object.entries(t.morphs)) {
     const g = v.V?.[0];
     if (g && m.length >= 2) { const ar = arKey(g[0].replace(/\s*\(.*\)$/, '')); if (oneWord(ar)) better(pastVerbs, ar, { stem: m, n: g[1] }); }
+  }
+  // Osama Thabet's Arabic → Coptic lists, after the hymns; a Coptic word the hymns use wins over one they don't.
+  const words = new Map<string, string>(), ero = new Set<string>();
+  if (extra) {
+    const inHymns = (c: string) => t.stems.has(copticKey(c)) ? 0.6 : 0.5;
+    // A plural entry is only taken when nothing singular has the same Arabic.
+    for (const [a, c, g] of extra.nouns) { const k = arKey(a); if (oneWord(k)) better(nouns, k, { stem: c, n: inHymns(c) - (g === 'p' ? 0.2 : 0), gender: g }); }
+    for (const [a, c, how] of extra.verbs) {
+      const k = arKey(a);
+      if (!oneWord(k) || c.includes(' ')) continue;
+      better(presentVerbs, k, { stem: c, n: inHymns(c) });
+      const past = pastFromPresent(k);
+      if (past) better(pastVerbs, past, { stem: c, n: inHymns(c) });
+      if (how === 'e') ero.add(copticKey(c));
+    }
+    for (const [a, c] of extra.words) { const k = arKey(a); if (k && !words.has(k)) words.set(k, c); }
   }
   // The dictionary's verbs ("يفتح": the absolute state) and nouns with their gender, below anything the hymns show.
   for (const e of dict) {
@@ -163,7 +203,7 @@ export function reverseOf(t: Translator): Reverse {
     if (!tm.has(k)) tm.set(k, i);
     for (const w of new Set(k.split(' '))) { const l = tmIndex.get(w); if (l) l.push(i); else tmIndex.set(w, [i]); }
   });
-  const r: Reverse = { lex, nouns, verbs, dict: dmap, tm, tmIndex, tmList };
+  const r: Reverse = { lex, nouns, verbs, dict: dmap, words, ero, full: !!extra, tm, tmIndex, tmList };
   cache.set(t, r);
   return r;
 }
@@ -187,6 +227,8 @@ function verb(r: Reverse, w: string, future: boolean, fromDict = false): CWord |
   };
 }
 
+const objectOf = (r: Reverse, v: CWord, mmo: string) => r.ero.has(copticKey(v.pieces[1]?.form ?? '')) ? ERO[mmo] ?? mmo : mmo;
+
 /** One Arabic word (already arKey'd) → Coptic. */
 export function wordToCoptic(r: Reverse, w: string, future = false): CWord {
   const fixed = FIXED[w];
@@ -197,6 +239,8 @@ export function wordToCoptic(r: Reverse, w: string, future = false): CWord {
     const n = l.pos === 'other' && !w.startsWith('ال') && copticKey(l.coptic[0]) === l.coptic[0] ? noun(r, w) : undefined;
     return { text: w, coptic: l.coptic, pieces: [{ form: l.coptic, gloss: l.gloss }], how: 'hymns', pos: n ? 'noun' : l.pos, bare: n, definite: l.pos === 'noun' && !/^(ⲟⲩ|ϩⲁⲛ)/.test(copticKey(l.coptic)), past3: l.past3 };
   }
+  const pw = r.words.get(w);
+  if (pw) return { text: w, coptic: pw, pieces: [{ form: pw, gloss: w }], how: 'dictionary', pos: 'other' };
   // و / ف in front.
   if (/^[وف]/.test(w) && w.length > 2) {
     const rest = wordToCoptic(r, w.slice(1), future);
@@ -212,18 +256,28 @@ export function wordToCoptic(r: Reverse, w: string, future = false): CWord {
       return { ...inner, text: w, coptic: form + inner.coptic, pieces: [{ form: form.trim(), gloss }, ...inner.pieces], how: 'grammar' };
     }
   }
-  const d = definiteNoun(r, w) ?? possessed(r, w);
+  const d = definiteNoun(r, w);
   if (d) return d;
   // Verbs: س for the future, then an object pronoun at the end.
   if (w.startsWith('س') && w.length > 3) { const v = verb(r, w.slice(1), true); if (v && !v.past3 && v.pieces[0].form !== PAST['1s']) return { ...v, text: w }; }
   const v = verb(r, w, future);
   if (v) return v;
-  for (const [end, gloss, obj] of OBJ) {
-    if (!w.endsWith(end) || w.length < end.length + 3) continue;
-    const base = w.slice(0, -end.length);
-    const v2 = verb(r, base, future) ?? verb(r, base + 'ا', future);
-    if (v2) return { ...v2, text: w, coptic: v2.coptic + ' ' + obj, pieces: [...v2.pieces, { form: obj, gloss }] };
-  }
+  // رأيته / كتبتها: a past ending before the pronoun means a verb, not a noun with a possessive.
+  const withObject = (strict: boolean): CWord | null => {
+    for (const [end, gloss, obj] of OBJ) {
+      if (!w.endsWith(end) || w.length < end.length + 3) continue;
+      const base = w.slice(0, -end.length);
+      if (strict && !/(ت|تم|نا|و)$/.test(base)) continue;
+      // دفنوه ← دفنوا، أعطاني ← أعطى
+      const v2 = verb(r, base, future) ?? verb(r, base + 'ا', future) ?? (base.endsWith('ا') ? verb(r, base.slice(0, -1) + 'ي', future) : null);
+      if (v2) { const o = objectOf(r, v2, obj); return { ...v2, text: w, coptic: v2.coptic + ' ' + o, pieces: [...v2.pieces, { form: o, gloss }] }; }
+    }
+    return null;
+  };
+  const vo = withObject(true) ?? possessed(r, w) ?? withObject(false);
+  if (vo) return vo;
+  // Tanween alif: خبزا ← خبز.
+  if (w.endsWith('ا') && w.length > 3 && noun(r, w.slice(0, -1))) return wordToCoptic(r, w.slice(0, -1), future);
   const n = noun(r, w);
   if (n) {
     const art = ART.indef[n.gender];
@@ -236,7 +290,7 @@ export function wordToCoptic(r: Reverse, w: string, future = false): CWord {
   for (const [end, gloss, obj] of OBJ) {
     if (!w.endsWith(end) || w.length < end.length + 3) continue;
     const v2 = verb(r, w.slice(0, -end.length), future, true);
-    if (v2) return { ...v2, text: w, how: 'dictionary', coptic: v2.coptic + ' ' + obj, pieces: [...v2.pieces, { form: obj, gloss }] };
+    if (v2) { const o = objectOf(r, v2, obj); return { ...v2, text: w, how: 'dictionary', coptic: v2.coptic + ' ' + o, pieces: [...v2.pieces, { form: o, gloss }] }; }
   }
   return { text: w, coptic: '', pieces: [], how: 'unknown', pos: 'other' };
 }
@@ -318,8 +372,8 @@ export function phraseToCoptic(r: Reverse, text: string): CWord[] {
 
 export const joinCoptic = (words: CWord[]) => words.map(w => w.coptic || (w.how === 'unknown' ? `(${w.text})` : '')).filter(Boolean).join(' ');
 
-export function toCoptic(t: Translator, text: string): CTranslation {
-  const r = reverseOf(t);
+export function toCoptic(t: Translator, text: string, extra?: ArabicLexicon): CTranslation {
+  const r = reverseOf(t, extra);
   const phrases = text.split(/\s*[:.،,؛;\n]+\s*/).map(s => s.trim()).filter(s => arKey(s));
   const result: CPhrase[] = phrases.map(p => {
     const words = phraseToCoptic(r, p);

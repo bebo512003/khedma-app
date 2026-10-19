@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { COPTIC_KEYS, scriptOf } from '../data/dictionary';
 import { loadTranslator, translate, type Translator, type WordResult } from '../data/translator';
-import { toCoptic, type CWord } from '../data/toCoptic';
+import { loadArabicLexicon, toCoptic, type ArabicLexicon, type CWord } from '../data/toCoptic';
 
 const EXAMPLE = 'Ⲡⲓⲭⲣⲓⲥⲧⲟⲥ ⲁϥⲙⲓⲥⲓ ϧⲉⲛ Ⲃⲏⲑⲗⲉⲉⲙ';
 const EXAMPLE_AR = 'قام المسيح من الأموات';
@@ -25,7 +25,10 @@ export default function Translate({ base = '' }: { base?: string }) {
   useEffect(() => { const id = setTimeout(() => setParams(q ? { q } : {}, { replace: true }), 400); return () => clearTimeout(id); }, [q, setParams]);
   const script = scriptOf(q);
   const result = useMemo(() => t && scriptOf(q) === 'coptic' ? translate(t, q) : null, [t, q]);
-  const back = useMemo(() => t && !result && scriptOf(q) === 'arabic' ? toCoptic(t, q) : null, [t, q, result]);
+  // Osama Thabet's Arabic → Coptic lists load only once someone types Arabic; until then the hymns alone answer.
+  const [lexicon, setLexicon] = useState<ArabicLexicon | null>(null);
+  useEffect(() => { if (script === 'arabic' && !lexicon) loadArabicLexicon().then(setLexicon).catch(() => undefined); }, [script, lexicon]);
+  const back = useMemo(() => t && !result && scriptOf(q) === 'arabic' ? toCoptic(t, q, lexicon ?? undefined) : null, [t, q, result, lexicon]);
   const type = (ch: string) => setQ(x => x + ch);
   const whole = result?.whole?.score === 1 || (result && result.phrases.length > 0 && result.phrases.every(p => p.match?.score === 1));
   const wholeBack = back?.whole?.score === 1 || (back && back.phrases.length > 0 && back.phrases.every(p => p.match?.score === 1));
@@ -86,7 +89,7 @@ export default function Translate({ base = '' }: { base?: string }) {
                 <div className="words">{p.words.filter(w => w.text).map((w, j) => <CopticWord key={j} w={w} base={base} />)}</div>
               </div>
             ))}
-            <div className="note span">المصادر: نصوص وتحليل كلمات مكتبة ألحان كنيسة مارجرجس نزلة السمان، وقاموس أسامة ثابت.</div>
+            <div className="note span">المصادر: نصوص وتحليل كلمات مكتبة ألحان كنيسة مارجرجس نزلة السمان، وقاموس أسامة ثابت وبرنامجه للترجمة المساعدة آليًا من العربي للقبطي (2019).</div>
           </>
         )}
         {result && result.phrases.length > 0 && (
