@@ -63,7 +63,7 @@ export default function Translate({ base = '' }: { base?: string }) {
         {t && !q.trim() && (
           <div className="card">
             <b>اكتب وهو يترجم</b>
-            <div className="muted">قبطي يطلعلك عربي، وعربي يطلعلك قبطي. لو الجملة من الألحان هتلاقي نصها المعروف، ولو لأ هيترجمها كلمة كلمة ويوريك كل كلمة اتعملت إزاي، فراجعها بعينك.</div>
+            <div className="muted">قبطي يطلعلك عربي، وعربي يطلعلك قبطي، حتى لو كتبت بالعامية (عايز، بيصلي، ماشافش) أو كتبت الاسم بطريقة تانية (ماركو = مرقس، جورج = جرجس). لو الجملة من الألحان هتلاقي نصها المعروف، ولو لأ هيترجمها كلمة كلمة ويوريك كل كلمة اتعملت إزاي، فراجعها بعينك.</div>
             <div className="row" style={{ gap: 6 }}>
               <button className="btn" onClick={() => setQ(EXAMPLE)}>مثال قبطي</button>
               <button className="btn" onClick={() => setQ(EXAMPLE_AR)}>مثال عربي</button>
@@ -144,7 +144,7 @@ function CopticWord({ w, base }: { w: CWord; base: string }) {
       )}
       {w.how === 'unknown'
         ? <div className="muted" style={{ fontSize: 12 }}>مش لاقيها، جرّب كلمة بنفس المعنى أو دوّر في القاموس.</div>
-        : <div className="muted" style={{ fontSize: 12 }}>{HOW[w.how]}</div>}
+        : <div className="muted" style={{ fontSize: 12 }}>{w.as && (w.near ? `قصدك «${w.as}»؟ ` : `فهمتها «${w.as}» • `)}{HOW[w.how]}</div>}
     </div>
   );
 }

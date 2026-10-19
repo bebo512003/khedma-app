@@ -359,3 +359,9 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .srcs { color: var(--muted); font-size: 12.5px; line-height: 1.7; }
 .srcs summary { cursor: pointer; font-weight: 600; }
 .try { display: flex; gap: 6px; flex-wrap: wrap; }
+.contact { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 6px; border-top: 1px solid rgba(232,189,126,.2); }
+.contact-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
+.contact-row a { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: 12px; text-decoration: none; font-size: 11.5px; color: var(--muted); background: rgba(250,246,239,.05); }
+.login .contact-row a { color: var(--muted); }
+.contact-row a svg { color: var(--gold); }
+.contact-row a:hover { background: rgba(232,189,126,.14); }

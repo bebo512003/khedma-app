@@ -27,7 +27,7 @@ import Dictionary from './screens/Dictionary';
 import Translate from './screens/Translate';
 import Reports from './screens/Reports';
 import MemberLogin from './member/Login';
-import { OpenHome, OpenHymn, OpenLibrary } from './screens/Open';
+import { OpenBook, OpenBooks, OpenHome, OpenHymn, OpenLibrary } from './screens/Open';
 import Install from './screens/Install';
 import ServantProfile from './screens/ServantProfile';
 import Notify from './screens/Notify';
@@ -87,6 +87,8 @@ export default function App() {
           <Route path="/open/translate" element={<Translate base="/open" />} />
           <Route path="/open/library" element={<OpenLibrary />} />
           <Route path="/open/hymn/:hymnId" element={<OpenHymn />} />
+          <Route path="/open/books" element={<OpenBooks />} />
+          <Route path="/open/books/:bookId" element={<OpenBook />} />
           <Route path="/me" element={<MemberLogin />} />
           <Route path="/me" element={<MemberLayout />}>
             <Route path="home" element={<MemberHome />} />

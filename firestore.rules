@@ -96,14 +96,14 @@ service cloud.firestore {
           && (!('at' in request.resource.data) || request.resource.data.at is number);
       }
 
-      // Pages of uploaded booklets (images only). Members read them under their hymns.
+      // Pages of uploaded booklets (images only). Open to anyone, like the books themselves (the open book library).
       match /bookPages/{id} {
-        allow read: if servant() || member();
+        allow read: if true;
         allow write: if can('curriculum');
       }
 
       // Levels, terms and removing members are the lead's call.
-      match /levels/{id} { allow read: if servant(); allow write: if lead(); }
+      match /levels/{id} { allow read: if true; allow write: if lead(); }
       match /terms/{id} { allow read: if servant(); allow write: if lead(); }
       match /members/{id} { allow read: if servant(); allow create, update: if can('members'); allow delete: if lead(); }
 
@@ -152,7 +152,7 @@ service cloud.firestore {
 
       // The hymn library is open to anyone (#/open/library), signed in or not.
       match /hymns/{id} { allow read: if true; allow write: if can('curriculum'); }
-      match /books/{id} { allow read: if servant(); allow write: if can('curriculum'); }
+      match /books/{id} { allow read: if true; allow write: if can('curriculum'); }
       match /progress/{id} { allow read, write: if servant(); }
       // meta also holds the next member code and message templates, which any servant may change; the curriculum needs the permission.
       match /meta/{id} {

@@ -1,4 +1,5 @@
 import { copticKey } from './dictionary';
+import { nameVariant, standardArabic } from './arabicVariants';
 import { conjugatePast, conjugatePresent, libraryArabic, overlap, pastFromPresent, type Match, type Translator } from './translator';
 
 /** Osama Thabet's Arabic → Coptic word lists (scripts/build-arabic-coptic.py): nouns with gender, verbs with how they take an object, prepositions. */
@@ -47,6 +48,9 @@ export interface CWord {
   past3?: boolean;
   /** و in front, to be ⲛⲉⲙ before a noun and ⲟⲩⲟϩ before anything else. */
   and?: boolean;
+  /** How we read a word we didn't know as typed: colloquial (عايز → يريد), another spelling of a name (ماركو → مرقس), or the closest known word. */
+  as?: string;
+  near?: boolean;
 }
 export interface CPhrase { text: string; words: CWord[]; coptic: string; match?: Match }
 export interface CTranslation { phrases: CPhrase[]; coptic: string; whole?: Match }
@@ -68,6 +72,8 @@ const PERSONS = ['3ms', '3fs', '3p', '1s', '1p', '2ms', '2p', '2fs'] as const;
 const PAST: Record<string, string> = { '1s': 'ⲁⲓ', '2ms': 'ⲁⲕ', '2fs': 'ⲁⲣⲉ', '3ms': 'ⲁϥ', '3fs': 'ⲁⲥ', '1p': 'ⲁⲛ', '2p': 'ⲁⲣⲉⲧⲉⲛ', '3p': 'ⲁⲩ' };
 const PRESENT: Record<string, string> = { '1s': 'ϯ', '2ms': 'ⲭ̀', '2fs': 'ⲧⲉ', '3ms': 'ϥ', '3fs': 'ⲥ', '1p': 'ⲧⲉⲛ', '2p': 'ⲧⲉⲧⲉⲛ', '3p': 'ⲥⲉ' };
 const FUTURE: Record<string, string> = { '1s': 'ϯⲛⲁ', '2ms': 'ⲭ̀ⲛⲁ', '2fs': 'ⲧⲉⲣⲉⲛⲁ', '3ms': 'ϥⲛⲁ', '3fs': 'ⲥⲛⲁ', '1p': 'ⲧⲉⲛⲛⲁ', '2p': 'ⲧⲉⲧⲉⲛⲛⲁ', '3p': 'ⲥⲉⲛⲁ' };
+/** Negative past: ⲙ̀ⲡⲉϥ instead of ⲁϥ. */
+const NEG_PAST: Record<string, string> = { 'ⲁⲓ': 'ⲙ̀ⲡⲓ', 'ⲁⲕ': 'ⲙ̀ⲡⲉⲕ', 'ⲁⲣⲉ': 'ⲙ̀ⲡⲉ', 'ⲁϥ': 'ⲙ̀ⲡⲉϥ', 'ⲁⲥ': 'ⲙ̀ⲡⲉⲥ', 'ⲁⲛ': 'ⲙ̀ⲡⲉⲛ', 'ⲁⲣⲉⲧⲉⲛ': 'ⲙ̀ⲡⲉⲧⲉⲛ', 'ⲁⲩ': 'ⲙ̀ⲡⲟⲩ' };
 const WHO: Record<string, string> = { '1s': 'أنا', '2ms': 'أنت', '2fs': 'أنتِ', '3ms': 'هو', '3fs': 'هي', '1p': 'نحن', '2p': 'أنتم', '3p': 'هم' };
 /** Particles the hymns gloss too many ways to pick by count. */
 const FIXED: Record<string, [string, Pos]> = {
@@ -85,6 +91,8 @@ export interface Reverse {
   lex: Map<string, Lex>;
   nouns: Map<string, { stem: string; n: number; gender: Gender }>;
   verbs: Map<string, Verb>;
+  /** Present forms only: نحب is "we love" after بـ, though alone it reads as the past "he sobbed". */
+  present: Map<string, Verb>;
   dict: Map<string, string>;
   /** Prepositions, also with their pronoun (معك → ⲛⲉⲙⲁⲕ). */
   words: Map<string, string>;
@@ -185,9 +193,12 @@ export function reverseOf(t: Translator, extra?: ArabicLexicon): Reverse {
     const f = conjugatePast(ar, p);
     if (f) better(verbs, arKey(f), { stem: v.stem, n: v.n, person: p, tense: 'past' });
   }
+  const present = new Map<string, Verb>();
   for (const [ar, v] of presentVerbs) for (const p of PERSONS) {
     const f = conjugatePresent(ar, p);
-    if (f && !verbs.has(arKey(f))) verbs.set(arKey(f), { stem: v.stem, n: v.n, person: p, tense: 'present' });
+    if (!f) continue;
+    if (!verbs.has(arKey(f))) verbs.set(arKey(f), { stem: v.stem, n: v.n, person: p, tense: 'present' });
+    better(present, arKey(f), { stem: v.stem, n: v.n, person: p, tense: 'present' });
   }
   // The dictionary: each meaning's first wording → the shortest Coptic word with it.
   const dmap = new Map<string, string>();
@@ -203,7 +214,7 @@ export function reverseOf(t: Translator, extra?: ArabicLexicon): Reverse {
     if (!tm.has(k)) tm.set(k, i);
     for (const w of new Set(k.split(' '))) { const l = tmIndex.get(w); if (l) l.push(i); else tmIndex.set(w, [i]); }
   });
-  const r: Reverse = { lex, nouns, verbs, dict: dmap, words, ero, full: !!extra, tm, tmIndex, tmList };
+  const r: Reverse = { lex, nouns, verbs, present, dict: dmap, words, ero, full: !!extra, tm, tmIndex, tmList };
   cache.set(t, r);
   return r;
 }
@@ -220,6 +231,9 @@ function noun(r: Reverse, w: string): { stem: string; gender: Gender } | undefin
 function verb(r: Reverse, w: string, future: boolean, fromDict = false): CWord | null {
   const v = r.verbs.get(w);
   if (!v || (!v.n && !fromDict)) return null;
+  return verbWord(v, w, future);
+}
+function verbWord(v: Verb, w: string, future: boolean): CWord {
   const pre = v.tense === 'past' ? PAST[v.person] : future ? FUTURE[v.person] : PRESENT[v.person];
   return {
     text: w, coptic: pre + v.stem, pos: 'verb', how: 'grammar', past3: v.tense === 'past' && v.person.startsWith('3'),
@@ -347,7 +361,10 @@ export function phraseToCoptic(r: Reverse, text: string): CWord[] {
       if (l || FIXED[k]) { out.push(FIXED[k] ? { text: k, coptic: FIXED[k][0], pieces: [{ form: FIXED[k][0], gloss: k }], how: 'grammar', pos: FIXED[k][1] } : { text: k, coptic: l!.coptic, pieces: [{ form: l!.coptic, gloss: l!.gloss }], how: 'hymns', pos: l!.pos, definite: l!.pos === 'noun', past3: l!.past3 }); i += n; done = true; }
     }
     if (done) continue;
-    out.push(wordToCoptic(r, toks[i], future));
+    // Names and colloquial words first, unless the hymns themselves use the word (روح is a spirit there).
+    const u = r.lex.has(toks[i]) && !nameVariant(toks[i]) ? undefined : understood(r, toks[i], future);
+    const w = u ?? wordToCoptic(r, toks[i], future);
+    out.push(w.how === 'unknown' ? nearest(r, toks[i], future) ?? w : w);
     future = false;
     i++;
   }
@@ -368,6 +385,61 @@ export function phraseToCoptic(r: Reverse, text: string): CWord[] {
     final.push(w);
   });
   return final;
+}
+
+/** A name spelled another way (ماركو → مرقس) or colloquial Arabic (عايز، بيصلي، ماشافش), read as the Arabic we know. */
+function understood(r: Reverse, w: string, future: boolean): CWord | undefined {
+  const name = nameVariant(w);
+  if (name) return { text: w, coptic: name.coptic, pieces: [{ form: name.coptic, gloss: name.name }], how: 'grammar', pos: 'noun', definite: true, as: name.name !== w ? name.name : undefined };
+  const std = standardArabic(w);
+  if (!std) return undefined;
+  const words = std.text.split(' ');
+  const not = words[0] === 'لا' && words.length > 1;
+  if (not) words.shift();
+  const parts = words.map(x => {
+    // بيصلي / هيصلي: only a present verb will do (بيده is not "his hand" here).
+    if (!std.verb) return wordToCoptic(r, x, future);
+    const fut = x.startsWith('س');
+    const v = r.present.get(fut ? x.slice(1) : x);
+    return v ? verbWord(v, x, fut || future) : null;
+  });
+  if (parts.some(p => !p || p.how === 'unknown')) return undefined;
+  const ps = parts as CWord[];
+  let coptic = ps.map(p => p.coptic).filter(Boolean).join(' ');
+  let pieces = ps.flatMap(p => p.pieces);
+  if (not && ps.length === 1 && ps[0].pos === 'verb') {
+    // ماشافش → ⲙ̀ⲡⲉϥⲛⲁⲩ، مابيصليش → ⲛ̀ϥϣⲗⲏⲗ ⲁⲛ
+    const past = Object.keys(NEG_PAST).sort((x, y) => y.length - x.length).find(p => coptic.startsWith(p));
+    if (past) { coptic = NEG_PAST[past] + coptic.slice(past.length); pieces = [{ form: NEG_PAST[past], gloss: 'لم (نفي الماضي)' }, ...(pieces[0]?.form === past ? pieces.slice(1) : pieces)]; }
+    else { coptic = 'ⲛ̀' + coptic + ' ⲁⲛ'; pieces = [{ form: 'ⲛ̀', gloss: 'نفي' }, ...pieces, { form: 'ⲁⲛ', gloss: 'نفي' }]; }
+  } else if (not) { coptic = 'ⲁⲛ ' + coptic; pieces = [{ form: 'ⲁⲛ', gloss: 'لا' }, ...pieces]; }
+  const last = ps[ps.length - 1];
+  return { ...last, text: w, coptic, pieces, how: ps.some(p => p.how === 'dictionary') ? 'dictionary' : 'grammar', past3: not ? false : last.past3, as: std.text };
+}
+
+/** A word we still don't know: the known word one letter away, if there is one. */
+function nearest(r: Reverse, w: string, future: boolean): CWord | undefined {
+  const near = nearWord(r, w);
+  if (!near) return undefined;
+  const k = wordToCoptic(r, near, future);
+  return k.how === 'unknown' ? undefined : { ...k, text: w, as: near, near: true };
+}
+
+/** Known words one letter away (one added, missing or different), found through their one-letter deletions. */
+const deletions = new WeakMap<Reverse, Map<string, string>>();
+const dels = (w: string) => [...w].map((_, i) => w.slice(0, i) + w.slice(i + 1));
+function nearWord(r: Reverse, w: string): string | undefined {
+  if (w.length < 5) return undefined;
+  let m = deletions.get(r);
+  if (!m) {
+    m = new Map();
+    for (const [k, l] of r.lex) if (k.length >= 4 && !k.includes(' ') && l.n >= 1) {
+      if (!m.has(k)) m.set(k, k);
+      for (const d of dels(k)) if (!m.has(d)) m.set(d, k);
+    }
+    deletions.set(r, m);
+  }
+  return m.get(w) ?? dels(w).map(d => m!.get(d)).find(Boolean);
 }
 
 export const joinCoptic = (words: CWord[]) => words.map(w => w.coptic || (w.how === 'unknown' ? `(${w.text})` : '')).filter(Boolean).join(' ');

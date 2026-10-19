@@ -1,4 +1,5 @@
 import { norm } from './importSheet';
+import { searchVariants } from './arabicVariants';
 
 /**
  * Two dictionaries, searched together:
@@ -102,6 +103,11 @@ export function search(entries: Indexed[], q: string, limit = 60): { hits: Hit[]
         if (s < best) best = s;
       }
       if (best < 9) scored.push({ e, s: best + e.meanings.length / 100 });
+    }
+    // Nothing for ماركو or عايز: look up مرقس or يريد.
+    if (!scored.length) for (const v of searchVariants(q).slice(1)) {
+      const r = search(entries, v, limit);
+      if (r.total) return { hits: r.hits.map(h => ({ ...h, note: h.note ?? `«${q.trim()}» = «${v}»` })), total: r.total };
     }
   } else {
     const k = script === 'coptic' ? copticKey(q) : latinKey(q);

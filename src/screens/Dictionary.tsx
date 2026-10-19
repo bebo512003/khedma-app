@@ -84,7 +84,7 @@ function Row({ hit: { entry: e, note } }: { hit: Hit }) {
       {e.english && <div className="muted" dir="ltr" style={{ fontSize: 13 }}>{e.english}</div>}
       {tags.length > 0 && <div className="muted" style={{ fontSize: 12 }}>{tags.join(' • ')}</div>}
       {e.source && <div className="muted" style={{ fontSize: 12 }}>المصدر: {e.source}</div>}
-      {note && <span className="tag tag-ex">بعد ما شلنا {note}</span>}
+      {note && <span className="tag tag-ex">{note.startsWith('«') ? note : `بعد ما شلنا ${note}`}</span>}
     </div>
   );
 }
