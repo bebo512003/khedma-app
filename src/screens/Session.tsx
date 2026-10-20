@@ -103,7 +103,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
       id: editing?.id ?? uid(), date, levelId, termId: termId!, hymnIds: sessionHymns,
       attendance: Object.fromEntries(members.map(m => [m.id, att[m.id] ?? 'a'])),
       ratings: Object.fromEntries(present.map(m => [m.id, rate[m.id] ?? [3, 3, 3]])),
-      milestones, durationMs: editing ? editing.durationMs : Date.now() - start,
+      milestones, durationMs: editing ? editing.durationMs : Date.now() - start, savedAt: editing?.savedAt ?? Date.now(),
       startedAt, arrivals: Object.fromEntries(present.filter(m => arrivals[m.id]).map(m => [m.id, arrivals[m.id]])),
       notes: Object.fromEntries(present.map(m => [m.id, (notes[m.id] ?? '').trim()]).filter(([, n]) => n)),
     };

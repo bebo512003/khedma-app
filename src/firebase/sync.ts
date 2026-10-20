@@ -67,9 +67,10 @@ export function writeDiff(db: Firestore, prev: AppData, next: AppData) {
  * Publishes each member's view (points, rank, hymns, ratings) for the member app.
  * `published` remembers what this device last wrote, so only views that changed are rewritten.
  */
-export function publishViews(db: Firestore, data: AppData, published: Map<string, string>) {
+export function publishViews(db: Firestore, data: AppData, published: Map<string, string>, mayLevel: (levelId: string) => boolean = () => true) {
   const b = batcher(db);
   for (const m of data.members) {
+    if (!mayLevel(m.levelId)) continue;
     const v = buildMemberView(data, m.id);
     const json = JSON.stringify(v);
     if (published.get(m.id) === json) continue;
@@ -77,8 +78,11 @@ export function publishViews(db: Firestore, data: AppData, published: Map<string
     b.op(w => w.set(ref(db, 'memberViews', m.id), v!));
   }
   for (const id of [...published.keys()]) {
-    if (data.members.some(m => m.id === id)) continue;
+    const m = data.members.find(x => x.id === id);
+    if (m && mayLevel(m.levelId)) continue;
     published.delete(id);
+    // Moved to a level this servant doesn't serve: that level's servants publish it now.
+    if (m) continue;
     b.op(w => w.delete(ref(db, 'memberViews', id)));
   }
   return b.commit();

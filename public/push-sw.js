@@ -10,7 +10,9 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = new URL(e.notification.data && e.notification.data.url || './', self.registration.scope).href;
+  let url = new URL(e.notification.data && e.notification.data.url || './', self.registration.scope).href;
+  // Only pages of this app open from a reminder.
+  if (!url.startsWith(self.registration.scope)) url = self.registration.scope;
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
     const open = list.find(c => c.url.startsWith(self.registration.scope));
     if (open) { open.navigate(url); return open.focus(); }

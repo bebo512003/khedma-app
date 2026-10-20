@@ -24,11 +24,14 @@ export default function DeskNav() {
       <div>
         <div className="row"><img src={logo} alt="" width={36} height={36} /><b>مدرسة الشهيد اسطفانوس</b></div>
         <div className="row" style={{ gap: 4 }}>
-          {shown.map(([to, label]) => <NavLink key={to} to={to} end={to === '/'} className="badged">{label}{to === '/reviews' && pending > 0 && <span className="count">{pending > 9 ? '9+' : pending}</span>}</NavLink>)}
           <button onClick={toggle} aria-label={theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={18} /></button>
           {servant && <NavLink to="/notifications" className="badged" aria-label={unread ? `الإشعارات، ${unread} جديد` : 'الإشعارات'}><Icon name="bell" size={20} />{unread > 0 && <span className="count">{unread > 9 ? '9+' : unread}</span>}</NavLink>}
           {servant && <NavLink to="/profile" className="me" aria-label="بروفايلي">{servant.photo ? <img src={servant.photo} alt="" /> : servant.name[0]}</NavLink>}
           {cloud && <button onClick={signOut}>خروج</button>}
+        </div>
+        {/* The links get their own line and wrap, so a long menu never pushes the page sideways. */}
+        <div className="links">
+          {shown.map(([to, label]) => <NavLink key={to} to={to} end={to === '/'} className="badged">{label}{to === '/reviews' && pending > 0 && <span className="count">{pending > 9 ? '9+' : pending}</span>}</NavLink>)}
         </div>
       </div>
     </nav>

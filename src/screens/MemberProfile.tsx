@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useData, useCan } from '../data/store';
+import { useAllowedLevel, useData, useCan } from '../data/store';
 import { STATUS_LABELS, type HymnStatus } from '../data/types';
 import {
   absenceStreak, contact, formatTime, isLate, lateBy, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, ranking,
@@ -20,12 +20,13 @@ type Tab = 'hymns' | 'ratings' | 'info';
 export default function MemberProfile() {
   const { memberId } = useParams();
   const [data, update] = useData();
-  const edit = useCan('members');
+  const can = useCan('members'), allowed = useAllowedLevel();
   const nav = useNavigate();
   const [tab, setTab] = useState<Tab>('hymns');
   const m = data.members.find(x => x.id === memberId);
   if (!m) return <main className="main gutter"><div className="card">المخدوم ده مش موجود. <Link to="/members">ارجع للمخدومين</Link></div></main>;
 
+  const edit = can && allowed(m.levelId);
   const level = data.levels.find(l => l.id === m.levelId);
   const term = currentTerm(data);
   const hymns = (data.curricula[curriculumKey(term?.id, m.levelId)] ?? []).map(id => data.hymns.find(h => h.id === id)).filter(h => !!h);

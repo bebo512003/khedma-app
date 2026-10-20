@@ -7,5 +7,6 @@ export const col = (db: Firestore, name: string) => collection(db, `${root}/${na
 export const ref = (db: Firestore, name: string, id: string) => doc(db, `${root}/${name}/${id}`);
 
 /** Member logins are Firebase email/password accounts with a synthetic address; members only ever type code + PIN. */
-export const memberEmail = (code: string, n: number) => `m${code}-${n}@${CHURCH_ID}.khedma.app`;
+/** `k` is a random part made with each PIN, so nobody can take the next login's address before the servant does. */
+export const memberEmail = (code: string, n: number, k?: string) => `m${code}-${n}${k ? `-${k}` : ''}@${CHURCH_ID}.khedma.app`;
 export const memberPassword = (pin: string) => `khedma-${pin}`;

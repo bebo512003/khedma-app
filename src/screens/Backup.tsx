@@ -8,12 +8,28 @@ import { download, xlsxBlob } from '../data/xlsx';
 const ATT = { p: 'حضر', e: 'اعتذر', a: 'غاب' } as const;
 const LISTS = ['levels', 'members', 'hymns', 'books', 'terms', 'sessions'] as const;
 
+const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
+const strs = (x: Record<string, unknown>, ...ks: string[]) => ks.every(k => typeof x[k] === 'string');
+/** What each record needs so the app can show it; a record missing these is left out rather than breaking every servant's app. */
+const VALID: Record<typeof LISTS[number], (x: Record<string, unknown>) => boolean> = {
+  levels: x => strs(x, 'id', 'name') && typeof x.order === 'number',
+  members: x => strs(x, 'id', 'code', 'name', 'levelId') && (x.gender === 'm' || x.gender === 'f'),
+  hymns: x => strs(x, 'id', 'nameAr'),
+  books: x => strs(x, 'id', 'title') && Array.isArray(x.entries),
+  terms: x => strs(x, 'id', 'name', 'start', 'end'),
+  sessions: x => strs(x, 'id', 'date', 'levelId') && Array.isArray(x.hymnIds) && isObj(x.attendance) && isObj(x.ratings),
+};
+
 /** A full copy downloaded from this screen, or null when the file isn't one. */
 function readFullCopy(text: string): AppData | null {
   try {
     const d = JSON.parse(text);
-    if (!d || d.version !== 1 || !LISTS.every(k => Array.isArray(d[k])) || typeof d.progress !== 'object') return null;
-    return { curricula: {}, templates: { absence: '' }, nextCode: 1, ...d };
+    if (!isObj(d) || d.version !== 1 || !LISTS.every(k => Array.isArray(d[k])) || !isObj(d.progress)) return null;
+    for (const k of LISTS) d[k] = (d[k] as unknown[]).filter(x => isObj(x) && VALID[k](x));
+    if (!isObj(d.curricula)) d.curricula = {};
+    if (!isObj(d.templates)) delete d.templates;
+    if (typeof d.nextCode !== 'number') delete d.nextCode;
+    return { curricula: {}, templates: { absence: '' }, nextCode: 1, ...d } as unknown as AppData;
   } catch { return null; }
 }
 
@@ -84,6 +100,7 @@ export default function Backup() {
   const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; e.target.value = '';
     if (!f) return;
+    if (f.size > 50_000_000) { setMsg('الملف ده كبير أوي على إنه نسخة من التطبيق.'); setCopy(null); return; }
     const d = readFullCopy(await f.text());
     setMsg(d ? '' : 'الملف ده مش نسخة كاملة من التطبيق. اختار الملف اللي اسمه «نسخة كاملة ...json».');
     setCopy(d ? { name: f.name, data: d } : null);

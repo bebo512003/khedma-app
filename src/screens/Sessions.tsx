@@ -9,7 +9,7 @@ export default function Sessions() {
   const allowed = useAllowedLevel();
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const [levelId, setLevelId] = useState('');
-  const sessions = data.sessions.filter(s => allowed(s.levelId) && (!levelId || s.levelId === levelId)).sort((a, b) => b.date.localeCompare(a.date) || (b.startedAt ?? 0) - (a.startedAt ?? 0));
+  const sessions = data.sessions.filter(s => allowed(s.levelId) && (!levelId || s.levelId === levelId)).sort((a, b) => b.date.localeCompare(a.date) || (b.startedAt ?? 0) - (a.startedAt ?? 0) || (b.savedAt ?? 0) - (a.savedAt ?? 0));
 
   return (
     <>

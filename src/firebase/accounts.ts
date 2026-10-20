@@ -14,10 +14,11 @@ export async function createMemberLogin(member: Member, pin: string): Promise<Me
   const { db } = servantFb();
   const { auth } = provisionFb();
   const n = (member.account?.n ?? 0) + 1;
-  const cred = await createUserWithEmailAndPassword(auth, memberEmail(member.code, n), memberPassword(pin));
+  const k = [...crypto.getRandomValues(new Uint8Array(6))].map(b => b.toString(16).padStart(2, '0')).join('');
+  const cred = await createUserWithEmailAndPassword(auth, memberEmail(member.code, n, k), memberPassword(pin));
   await signOut(auth);
   await setDoc(ref(db, 'accounts', cred.user.uid), { memberId: member.id });
-  await setDoc(ref(db, 'logins', member.code), { n });
+  await setDoc(ref(db, 'logins', member.code), { n, k });
   if (member.account) await deleteDoc(ref(db, 'accounts', member.account.uid)).catch(() => undefined);
   return { uid: cred.user.uid, n };
 }
@@ -26,9 +27,10 @@ export async function memberSignIn(code: string, pin: string): Promise<string | 
   const { auth, db } = memberFb();
   const login = await getDoc(ref(db, 'logins', code));
   const n = login.data()?.n as number | undefined;
+  const k = login.data()?.k as string | undefined;
   if (!n) return null;
   try {
-    const cred = await signInWithEmailAndPassword(auth, memberEmail(code, n), memberPassword(pin));
+    const cred = await signInWithEmailAndPassword(auth, memberEmail(code, n, k), memberPassword(pin));
     const acc = await getDoc(ref(db, 'accounts', cred.user.uid));
     const memberId = acc.data()?.memberId as string | undefined;
     if (!memberId) { await signOut(auth); return null; }

@@ -84,6 +84,8 @@ const FIXED: Record<string, [string, Pos]> = {
   'هذا': ['ⲫⲁⲓ', 'other'], 'هذه': ['ⲑⲁⲓ', 'other'], 'هولاء': ['ⲛⲁⲓ', 'other'], 'الذي': ['ⲫⲏⲉⲧ', 'other'], 'التي': ['ⲑⲏⲉⲧ', 'other'], 'الذين': ['ⲛⲏⲉⲧ', 'other'],
   'انا': ['ⲁ̀ⲛⲟⲕ', 'other'], 'انت': ['ⲛ̀ⲑⲟⲕ', 'other'], 'هو': ['ⲛ̀ⲑⲟϥ', 'other'], 'هي': ['ⲛ̀ⲑⲟⲥ', 'other'], 'نحن': ['ⲁ̀ⲛⲟⲛ', 'other'], 'انتم': ['ⲛ̀ⲑⲱⲧⲉⲛ', 'other'], 'هم': ['ⲛ̀ⲑⲱⲟⲩ', 'other'],
   'كل': ['ⲛⲓⲃⲉⲛ', 'other'], 'جدا': ['ⲉ̀ⲙⲁϣⲱ', 'other'], 'ايضا': ['ⲟⲛ', 'other'], 'الان': ['ϯⲛⲟⲩ', 'other'], 'لا': ['ⲁⲛ', 'other'], 'ليس': ['ⲁⲛ', 'other'],
+  // God: the hymns say ⲑⲉⲟⲥ in their Greek parts, but in Coptic it is ⲫ̀ⲛⲟⲩϯ (ⲑⲉⲟⲥ stays among the other words).
+  'الله': ['ⲫ̀ⲛⲟⲩϯ', 'noun'], 'لله': ['ⲉ̀ⲫ̀ⲛⲟⲩϯ', 'other'],
   'و': ['ⲟⲩⲟϩ', 'other'], 'قد': ['', 'other'], 'كما': ['ⲕⲁⲧⲁ ⲫ̀ⲣⲏϯ', 'other'], 'مثل': ['ⲙ̀ⲫ̀ⲣⲏϯ', 'other'], 'امين': ['ⲁ̀ⲙⲏⲛ', 'other'], 'القدس': ['ⲉⲑⲟⲩⲁⲃ', 'other'], 'القدوس': ['ⲉⲑⲟⲩⲁⲃ', 'other'], 'هللويا': ['ⲁⲗⲗⲏⲗⲟⲩⲓⲁ', 'other'],
 };
 
@@ -475,7 +477,10 @@ export function toCoptic(t: Translator, text: string, extra?: ArabicLexicon): CT
   const r = reverseOf(t, extra);
   const phrases = text.split(/\s*[:.،,؛;\n]+\s*/).map(s => s.trim()).filter(s => arKey(s));
   const result: CPhrase[] = phrases.map(p => {
-    const words = phraseToCoptic(r, p).map(w => {
+    // Words are matched without spelling differences (محبة as محبه); they show as they were typed.
+    const typed = new Map(p.split(/\s+/).map(x => [arKey(x), x]));
+    const words = phraseToCoptic(r, p).map(w0 => {
+      const w = { ...w0, text: w0.text.split(' ').map(x => typed.get(x) ?? x).join(' ') };
       if (arKey(w.text).length < 3 || !w.coptic) return w;
       const k = arKey(w.as ?? w.text).replace(/^و(?=...)/, '').replace(/^ال(?=...)/, '');
       const mine = new Set([copticKey(w.coptic), ...w.pieces.map(x => copticKey(x.form))]);

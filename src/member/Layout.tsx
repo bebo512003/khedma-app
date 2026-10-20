@@ -21,6 +21,8 @@ function useNotesState(view: MemberView | null): Notes {
   const [subs, setSubs] = useState<Submission[]>([]);
   const [seen, setSeen] = useState(0);
   useEffect(() => {
+    // Another member signed in on this phone: nothing of the last one's stays on screen.
+    setSubs([]);
     if (!cloudEnabled || !memberId) return;
     setSeen(loadSeen(memberId));
     let stop = () => {};

@@ -47,6 +47,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [edits, setEdits] = useState<{ id: string; edit: MemberEdit }[]>([]);
   const latest = useRef<AppData | null>(null);
   const published = useRef(new Map<string, string>());
+  /** The levels this servant serves; their app publishes and applies only those members' views and edits. */
+  const levels = useRef<(levelId: string) => boolean>(() => true);
+  levels.current = (levelId: string) => servesLevel(servant, levelId);
 
   // Offline mode
   useEffect(() => {
@@ -117,18 +120,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     Promise.all([import('../firebase/app'), import('../firebase/sync')]).then(([{ servantFb }, sync]) => {
       const { db } = servantFb();
       sync.writeDiff(db, prev, next).then(() => setSyncError('')).catch(e => setSyncError(String(e.message ?? e)));
-      sync.publishViews(db, next, published.current).catch(e => setSyncError(String(e.message ?? e)));
+      sync.publishViews(db, next, published.current, levels.current).catch(e => setSyncError(String(e.message ?? e)));
     });
   }, []);
 
   // A member changed their photo or details from the member app: copy it into their record, then clear it.
   useEffect(() => {
     if (!data || !edits.length || !canDo(servant, 'members')) return;
-    const known = edits.filter(e => data.members.some(m => m.id === e.id));
+    // Only edits of members in this servant's levels: another level's servant applies theirs.
+    const mine = edits.filter(e => { const m = data.members.find(x => x.id === e.id); return !m || servesLevel(servant, m.levelId); });
+    if (!mine.length) return;
+    const known = mine.filter(e => data.members.some(m => m.id === e.id));
     // A malformed edit is dropped rather than applied, and is cleared either way so it can't block the app.
     if (known.length) update(d => ({ ...d, members: d.members.map(m => { const e = known.find(x => x.id === m.id); try { return e ? applyMemberEdit(m, e.edit) : m; } catch { return m; } }) }));
     Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]).then(([{ servantFb }, { deleteDoc }, paths]) =>
-      edits.forEach(e => deleteDoc(paths.ref(servantFb().db, 'memberEdits', e.id)).catch(() => undefined)));
+      mine.forEach(e => deleteDoc(paths.ref(servantFb().db, 'memberEdits', e.id)).catch(() => undefined)));
   }, [data, edits, update, servant]);
 
   const reset = useCallback(() => update(() => seedData()), [update]);
@@ -146,8 +152,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    const [{ servantFb }, auth] = await Promise.all([import('../firebase/app'), import('firebase/auth')]);
+    const [{ servantFb }, auth, fs] = await Promise.all([import('../firebase/app'), import('firebase/auth'), import('firebase/firestore')]);
     await auth.signOut(servantFb().auth);
+    // Members' phones and addresses don't stay on a phone someone else may use next.
+    // (Another open tab of the app keeps the copy; it clears on the next sign-out.)
+    await fs.terminate(servantFb().db).then(() => fs.clearIndexedDbPersistence(servantFb().db)).catch(() => undefined);
+    location.reload();
   }, []);
 
   const profile = (u: User) => ({ uid: u.uid, name: u.displayName ?? u.email ?? '', email: (u.email ?? '').toLowerCase() });
@@ -215,8 +225,10 @@ export function useCan(p: Perm) {
   return !cloud || canDo(servant, p);
 }
 
-/** Levels this servant may run sessions for. Offline mode and leads see every level. */
+const servesLevel = (servant: Servant | null, levelId: string) => !servant || servant.levelIds.includes('*') || servant.levelIds.includes(levelId);
+
+/** Levels this servant serves: they run sessions and change members only there. Offline mode sees every level. */
 export function useAllowedLevel() {
   const { servant } = useStore();
-  return (levelId: string) => !servant || servant.levelIds.includes('*') || servant.levelIds.includes(levelId);
+  return (levelId: string) => servesLevel(servant, levelId);
 }

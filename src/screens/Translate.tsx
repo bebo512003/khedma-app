@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { COPTIC_KEYS, scriptOf } from '../data/dictionary';
@@ -28,12 +28,13 @@ export default function Translate({ base = '' }: { base?: string }) {
   useEffect(() => { const id = setTimeout(() => setParams(q ? { q } : {}, { replace: true }), 400); return () => clearTimeout(id); }, [q, setParams]);
   const script = scriptOf(q);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const result = useMemo(() => t && scriptOf(q) === 'coptic' ? translate(t, q) : null, [t, q, versesIn]);
+  const typed = useDeferredValue(q);
+  const result = useMemo(() => t && scriptOf(typed) === 'coptic' ? translate(t, typed) : null, [t, typed, versesIn]);
   // Osama Thabet's Arabic → Coptic lists load only once someone types Arabic; until then the hymns alone answer.
   const [lexicon, setLexicon] = useState<ArabicLexicon | null>(null);
   useEffect(() => { if (script === 'arabic' && !lexicon) loadArabicLexicon().then(setLexicon).catch(() => undefined); }, [script, lexicon]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const back = useMemo(() => t && !result && scriptOf(q) === 'arabic' ? toCoptic(t, q, lexicon ?? undefined) : null, [t, q, result, lexicon, versesIn]);
+  const back = useMemo(() => t && !result && scriptOf(typed) === 'arabic' ? toCoptic(t, typed, lexicon ?? undefined) : null, [t, typed, result, lexicon, versesIn]);
   const type = (ch: string) => setQ(x => x + ch);
   const whole = result?.whole?.score === 1 || (result && result.phrases.length > 0 && result.phrases.every(p => p.match?.score === 1));
   const wholeBack = back?.whole?.score === 1 || (back && back.phrases.length > 0 && back.phrases.every(p => p.match?.score === 1));

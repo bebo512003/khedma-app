@@ -1,6 +1,6 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useAllowedLevel, useData } from '../data/store';
 import type { Gender, Member } from '../data/types';
 import { count, levelForGrade, uid } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
@@ -13,7 +13,9 @@ const FIELDS = Object.keys(FIELD_LABELS) as Field[];
 /** Adds many members at once from an Excel/CSV sheet: pick file, check columns and rows, import. */
 export default function ImportMembers() {
   const [data, update] = useData();
-  const levels = [...data.levels].sort((a, b) => a.order - b.order);
+  const allowed = useAllowedLevel();
+  // Only into the levels this servant serves.
+  const levels = [...data.levels].filter(l => allowed(l.id)).sort((a, b) => a.order - b.order);
   const [sheet, setSheet] = useState<string[][] | null>(null);
   const [fileName, setFileName] = useState('');
   const [cols, setCols] = useState<Partial<Record<Field, number>>>({});
@@ -48,7 +50,7 @@ export default function ImportMembers() {
       const name = cell(r, 'name').replace(/\s+/g, ' ');
       const grade = parseGrade(cell(r, 'grade'));
       const gender = genders[i] ?? parseGender(cell(r, 'gender'));
-      const levelId = grade && data.levels.some(l => l.id === levelForGrade(grade)) ? levelForGrade(grade) : fallbackLevel;
+      const levelId = grade && levels.some(l => l.id === levelForGrade(grade)) ? levelForGrade(grade) : fallbackLevel;
       const key = norm(name);
       const dup = existing.has(key) ? 'موجود قبل كده' : seen.has(key) ? 'متكرر في الملف' : '';
       seen.add(key);
@@ -65,7 +67,7 @@ export default function ImportMembers() {
         on: !!name && (include[i] ?? !dup),
       };
     }).filter(r => r.name);
-  }, [sheet, cols, hasHeader, genders, include, fallbackLevel, existing, data.levels]);
+  }, [sheet, cols, hasHeader, genders, include, fallbackLevel, existing, levels]);
 
   const chosen = rows.filter(r => r.on);
   const missingGender = chosen.filter(r => !r.gender).length;

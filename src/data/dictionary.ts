@@ -34,10 +34,27 @@ export interface Entry {
   /** Read by machine from a scanned page: a letter may be off. */
   machineRead?: boolean;
 }
-interface Indexed extends Entry { cKey: string; lKey: string; mKeys: string[]; alt?: string[]; aKey?: string; aCons?: string }
+interface Indexed extends Entry { cKey: string; lKey: string; mKeys: string[]; alt?: string[]; aKey?: string; aCons?: string; mWords?: { bare: string; words: string[] }[] }
 export interface Hit { entry: Entry; note?: string }
 
 /** Arabized spelling of every entry, worked out the first time someone searches in Arabic letters. */
+/** Each meaning split into words once, not on every keystroke. */
+function ensureWords(entries: Indexed[]) {
+  if (entries[0]?.mWords !== undefined) return;
+  for (const e of entries) e.mWords = e.mKeys.map(m => ({ bare: stripAl(m), words: m.split(/[\s،,؛;()/]+/).filter(Boolean).map(stripAl) }));
+}
+/** Entries by their Coptic key, built once per dictionary. */
+const byKeyCache = new WeakMap<Indexed[], Map<string, Indexed[]>>();
+function byKeyOf(entries: Indexed[]) {
+  let m = byKeyCache.get(entries);
+  if (!m) {
+    m = new Map();
+    for (const e of entries) { const l = m.get(e.cKey); if (l) l.push(e); else m.set(e.cKey, [e]); }
+    byKeyCache.set(entries, m);
+  }
+  return m;
+}
+
 function ensureArabized(entries: Indexed[]) {
   if (entries[0]?.aKey !== undefined) return;
   for (const e of entries) { const a = arabize(e.word); e.aKey = arabizedKey(a); e.aCons = consonantKey(a); }
@@ -154,11 +171,12 @@ export function search(entries: Indexed[], q: string, limit = 60): { hits: Hit[]
   if (script === 'arabic') {
     const k = norm(q), bare = stripAl(k);
     if (!bare) return { hits: [], total: 0 };
+    ensureWords(entries);
     for (const e of entries) {
       let best = 9;
-      for (const m of e.mKeys) {
-        const words = m.split(/[\s،,؛;()/]+/).filter(Boolean).map(stripAl);
-        const s = m === k || stripAl(m) === bare ? 0 : words.length > 0 && words[0] === bare ? 1 : words.includes(bare) ? 2 : m.includes(bare) ? 3 : 9;
+      for (let i = 0; i < e.mKeys.length && best > 0; i++) {
+        const m = e.mKeys[i], { bare: mb, words } = e.mWords![i];
+        const s = m === k || mb === bare ? 0 : words.length > 0 && words[0] === bare ? 1 : !m.includes(bare) ? 9 : words.includes(bare) ? 2 : 3;
         if (s < best) best = s;
       }
       // Bohairic words before other dialects and lookup-only entries with the same meaning.
@@ -200,8 +218,7 @@ export function search(entries: Indexed[], q: string, limit = 60): { hits: Hit[]
     }
     // Not in the dictionary as typed: try it without a glued article or preposition.
     if (script === 'coptic' && !scored.some(x => x.s < 1)) {
-      const byKey = new Map<string, Indexed[]>();
-      for (const e of entries) byKey.set(e.cKey, [...(byKey.get(e.cKey) ?? []), e]);
+      const byKey = byKeyOf(entries);
       const found = new Set<Indexed>();
       // Up to two glued prefixes, e.g. ϧⲉⲛ + ⲫ + ⲣⲁⲛ.
       const strip = (rest: string, notes: string[]) => {

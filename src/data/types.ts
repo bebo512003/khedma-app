@@ -140,6 +140,8 @@ export interface Session {
   durationMs?: number;
   /** When the session was due to start (epoch ms); arrivals after it plus a grace period count as late. */
   startedAt?: number;
+  /** When it was first saved (epoch ms): orders sessions of the same day. */
+  savedAt?: number;
   /** When each member's card was scanned at the door (epoch ms). */
   arrivals?: Record<string, number>;
   /** Servant's short note to a member, shown in their ratings. */

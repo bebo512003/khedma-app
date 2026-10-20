@@ -166,7 +166,9 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
   .mobile-only { display: none !important; }
 
   .desknav { display: block; background: var(--hero); color: var(--on-hero); }
-  .desknav > div { max-width: 1200px; margin: 0 auto; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .desknav > div { max-width: 1200px; margin: 0 auto; padding: 10px 24px 8px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; }
+  .desknav .links { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 2px; }
+  .desknav .links a { padding: 6px 9px; }
   .desknav b { color: var(--gold); white-space: nowrap; }
   .desknav a, .desknav button { white-space: nowrap; display: inline-flex; align-items: center; color: var(--on-hero); text-decoration: none; padding: 8px 10px; border-radius: 10px; background: none; border: 0; font-weight: 600; }
   .desknav a:hover, .desknav button:hover { background: rgba(250,246,239,.1); }
@@ -199,7 +201,7 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
 
 /* Coptic dictionary */
 .coptic-font { font-family: 'Noto Sans Coptic', var(--font); }
-.cword { font-size: 22px; }
+.cword { font-size: 22px; overflow-wrap: anywhere; }
 .ckeys { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
 .ckeys button { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 20px; font-family: inherit; }
 .ckeys button:active { background: var(--s1); }
@@ -245,7 +247,7 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
 .servant-li { flex-wrap: wrap; }
 .servant-li .li-actions { width: 100%; padding-inline-start: 52px; gap: 8px; }
 .servant-li .li-actions:empty { display: none; }
-.desknav .me { width: 34px; height: 34px; padding: 0; border-radius: 50%; overflow: hidden; display: inline-grid; place-items: center; background: var(--ph); font-weight: 700; }
+.desknav .me { width: 34px; height: 34px; padding: 0; border-radius: 50%; overflow: hidden; display: inline-grid; place-items: center; background: var(--gold); color: #2B0B0D; font-weight: 700; }
 .desknav .me img { width: 100%; height: 100%; object-fit: cover; }
 .progress-bar { height: 8px; border-radius: 4px; background: var(--ph); overflow: hidden; }
 .progress-bar > div { height: 100%; background: var(--act); transition: width .2s; }

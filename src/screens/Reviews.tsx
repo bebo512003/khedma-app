@@ -51,8 +51,8 @@ function Review({ s }: { s: Submission }) {
   return (
     <div className="card">
       <div className="row">
-        <span className="av">{m?.photo ? <img src={m.photo} alt="" /> : s.memberName[0]}</span>
-        <div className="grow"><b>{s.memberName}</b><div className="muted">{s.hymnName} • {formatDay(isoDate(new Date(s.at)))} {formatTime(s.at)}</div></div>
+        <span className="av">{m?.photo ? <img src={m.photo} alt="" /> : (m?.name ?? s.memberName)[0]}</span>
+        <div className="grow"><b>{m?.name ?? s.memberName}</b><div className="muted">{s.hymnName} • {formatDay(isoDate(new Date(s.at)))} {formatTime(s.at)}</div></div>
       </div>
       <VoiceNote id={s.recording.id} ms={s.recording.ms} getBlob={() => loadRecording(s.recording)} />
       <div className="field"><span>وصل لفين في اللحن؟</span>

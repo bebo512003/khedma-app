@@ -61,8 +61,13 @@ async function runChurch(church, publicKey, now) {
   if (log.summaryAt === undefined) await logRef.set({ ...log, summaryAt }, { merge: true });
   // Home recordings sent by members (to servants of that level) and servants' replies (to that member).
   const subAt0 = log.subAt ?? Date.now(), revAt0 = log.revAt ?? Date.now();
-  const sent0 = log.subAt === undefined ? [] : (await c.collection('submissions').where('at', '>', subAt0).get()).docs.map(d => d.data());
-  const reviews = log.revAt === undefined ? [] : (await c.collection('submissions').where('reviewAt', '>', revAt0).get()).docs.map(d => d.data());
+  // A time from the future (a wrong clock or a forged recording) would stop all later pushes, so it doesn't count.
+  const sent0 = log.subAt === undefined ? [] : (await c.collection('submissions').where('at', '>', subAt0).get()).docs.map(d => d.data())
+    .filter(x => typeof x.at === 'number' && x.at <= Date.now());
+  // The member's name from their record, not the one the phone sent.
+  for (const x of sent0) x.memberName = (await c.collection('members').doc(String(x.memberId)).get()).get('name') ?? x.memberName;
+  const reviews = log.revAt === undefined ? [] : (await c.collection('submissions').where('reviewAt', '>', revAt0).get()).docs.map(d => d.data())
+    .filter(x => typeof x.reviewAt === 'number' && x.reviewAt <= Date.now());
   const subAt = Math.max(subAt0, ...sent0.map(x => x.at)), revAt = Math.max(revAt0, ...reviews.map(x => x.reviewAt));
   if (log.subAt === undefined || log.revAt === undefined) await logRef.set({ ...log, summaryAt, subAt, revAt }, { merge: true });
   await cleanSubmissions(c);
@@ -84,37 +89,40 @@ async function runChurch(church, publicKey, now) {
 
   const sent = { month: 0, hymn: 0, session: 0, test: 0, summary: 0, submission: 0, review: 0 };
   for (const sub of subs) {
-    const d = sub.data();
-    const p = await whoIs(d.uid);
-    if (!p) { await sub.ref.delete(); continue; }
-    const msgs = [];
-    for (const k of due) {
-      if (k === 'hymn' && p.kind !== 'member') continue;
-      const r = s[k];
-      msgs.push([k, { title: r.title, body: r.body.replaceAll(HYMNS_TAG, p.kind === 'member' ? hymnList(p.view) : 'ألحان الترم'), tag: k, url: p.kind === 'member' ? './#/me/home' : './#/' }]);
-    }
-    if (p.kind === 'member') for (const x of summaries.filter(x => x.levelId === p.levelId)) {
-      const what = x.summary ? x.summary.split('\n')[0].slice(0, 90) : 'تسجيلات الحصة نزلت، اسمعها وراجع عليها';
-      msgs.push(['summary', { title: 'ملخص الحصة نزل 🎧', body: what, tag: `summary-${x.id}`, url: './#/me/sessions' }]);
-    }
-    if (p.kind === 'member') for (const x of reviews.filter(x => x.memberId === p.memberId)) {
-      msgs.push(['review', { title: `${x.review?.byName ?? 'الخادم'} سمع تسميعك ✓`, body: `${x.hymnName}${x.review?.note ? `: ${x.review.note.slice(0, 80)}` : ''}`, tag: `review-${x.id}`, url: `./#/me/hymn/${x.hymnId}` }]);
-    }
-    const listens = p.kind === 'servant' && (['admin', 'lead'].includes(p.role) || !p.perms || p.perms.includes('sessions'));
-    const mine = listens ? sent0.filter(x => (p.levelIds ?? []).some(l => l === '*' || l === x.levelId)) : [];
-    if (mine.length) msgs.push(['submission', { title: mine.length === 1 ? `${mine[0].memberName} سمّع ${mine[0].hymnName}` : `${mine.length} تسميعات جديدة`, body: 'اسمعه وابعتله رأيك', tag: 'submissions', url: './#/reviews' }]);
-    if (monthly && p.kind === 'servant') msgs.push(['month', { title: 'تقرير الشهر اللي فات جاهز 📊', body: 'الحضور والأوائل ومين مستواه نزل، قبل ما تبدأ الشهر الجديد', tag: `month-${pastMonth}`, url: `./#/month/${pastMonth}` }]);
-    if (test && d.uid === s.testUid) msgs.push(['test', { title: 'تنبيه تجربة', body: 'التنبيهات شغالة على الموبايل ده ✓', tag: 'test', url: './#/notify' }]);
-    for (const [k, payload] of msgs) {
-      try {
-        await webpush.sendNotification({ endpoint: d.endpoint, keys: { p256dh: d.p256dh, auth: d.auth } }, JSON.stringify(payload), { TTL: 6 * 3600 });
-        sent[k]++;
-      } catch (e) {
-        // The phone unsubscribed or the app was removed: forget it.
-        if (e.statusCode === 404 || e.statusCode === 410) { await sub.ref.delete(); break; }
-        console.warn(`${c.id}: push failed (${e.statusCode ?? e.message})`);
+    // One bad phone record never stops the rest.
+    try {
+      const d = sub.data();
+      const p = await whoIs(d.uid);
+      if (!p) { await sub.ref.delete(); continue; }
+      const msgs = [];
+      for (const k of due) {
+        if (k === 'hymn' && p.kind !== 'member') continue;
+        const r = s[k];
+        msgs.push([k, { title: r.title, body: r.body.replaceAll(HYMNS_TAG, p.kind === 'member' ? hymnList(p.view) : 'ألحان الترم'), tag: k, url: p.kind === 'member' ? './#/me/home' : './#/' }]);
       }
-    }
+      if (p.kind === 'member') for (const x of summaries.filter(x => x.levelId === p.levelId)) {
+        const what = x.summary ? x.summary.split('\n')[0].slice(0, 90) : 'تسجيلات الحصة نزلت، اسمعها وراجع عليها';
+        msgs.push(['summary', { title: 'ملخص الحصة نزل 🎧', body: what, tag: `summary-${x.id}`, url: './#/me/sessions' }]);
+      }
+      if (p.kind === 'member') for (const x of reviews.filter(x => x.memberId === p.memberId)) {
+        msgs.push(['review', { title: `${x.review?.byName ?? 'الخادم'} سمع تسميعك ✓`, body: `${x.hymnName}${x.review?.note ? `: ${x.review.note.slice(0, 80)}` : ''}`, tag: `review-${x.id}`, url: `./#/me/hymn/${encodeURIComponent(x.hymnId ?? '')}` }]);
+      }
+      const listens = p.kind === 'servant' && (['admin', 'lead'].includes(p.role) || !p.perms || p.perms.includes('sessions'));
+      const mine = listens ? sent0.filter(x => (p.levelIds ?? []).some(l => l === '*' || l === x.levelId)) : [];
+      if (mine.length) msgs.push(['submission', { title: mine.length === 1 ? `${mine[0].memberName} سمّع ${mine[0].hymnName}` : `${mine.length} تسميعات جديدة`, body: 'اسمعه وابعتله رأيك', tag: 'submissions', url: './#/reviews' }]);
+      if (monthly && p.kind === 'servant') msgs.push(['month', { title: 'تقرير الشهر اللي فات جاهز 📊', body: 'الحضور والأوائل ومين مستواه نزل، قبل ما تبدأ الشهر الجديد', tag: `month-${pastMonth}`, url: `./#/month/${pastMonth}` }]);
+      if (test && d.uid === s.testUid) msgs.push(['test', { title: 'تنبيه تجربة', body: 'التنبيهات شغالة على الموبايل ده ✓', tag: 'test', url: './#/notify' }]);
+      for (const [k, payload] of msgs) {
+        try {
+          await webpush.sendNotification({ endpoint: d.endpoint, keys: { p256dh: d.p256dh, auth: d.auth } }, JSON.stringify(payload), { TTL: 6 * 3600, timeout: 10_000 });
+          sent[k]++;
+        } catch (e) {
+          // The phone unsubscribed or the app was removed: forget it.
+          if (e.statusCode === 404 || e.statusCode === 410) { await sub.ref.delete(); break; }
+          console.warn(`${c.id}: push failed (${e.statusCode ?? e.message})`);
+        }
+      }
+    } catch (e) { console.warn(`${c.id}: skipped a phone (${e.message})`); }
   }
   const next = { ...log };
   for (const k of due) next[k] = now.date;

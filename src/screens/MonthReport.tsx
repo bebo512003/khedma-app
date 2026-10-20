@@ -8,7 +8,9 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 
 /** The month in review for each of the servant's levels: what the bell opens on the 1st and before the ranking resets. */
 export default function MonthReport() {
-  const { month = shiftMonth(thisMonth(), -1) } = useParams();
+  const { month: asked } = useParams();
+  // A mistyped link opens last month instead of breaking.
+  const month = asked && /^\d{4}-(0[1-9]|1[0-2])$/.test(asked) ? asked : shiftMonth(thisMonth(), -1);
   const [data] = useData();
   const allowed = useAllowedLevel();
   const nav = useNavigate();

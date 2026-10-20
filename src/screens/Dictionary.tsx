@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { COPTIC_KEYS, loadDictionary, search, scriptOf, type Hit } from '../data/dictionary';
@@ -18,7 +18,9 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadDictionary().then(setDict).catch(() => setFailed(true)); }, []);
-  const result = useMemo(() => dict && q.trim() ? search(dict.entries, q.trim()) : null, [dict, q]);
+  // Typing stays quick: the search catches up with the latest letters.
+  const typed = useDeferredValue(q);
+  const result = useMemo(() => dict && typed.trim() ? search(dict.entries, typed.trim()) : null, [dict, typed]);
   const type = (ch: string) => setQ(x => x + ch);
 
   return (
@@ -77,9 +79,9 @@ function Row({ hit: { entry: e, note } }: { hit: Hit }) {
   const tags = [e.kind, e.form, ...(e.dialects ?? [])].filter(Boolean);
   return (
     <div className="li" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 4 }}>
-      <div className="row between" style={{ width: '100%' }}>
-        <span className="row" style={{ gap: 8 }}><span className="coptic-font cword" dir="ltr">{e.word}</span>{e.origin && <span className={`tag origin ${e.origin === 'قبطي' ? 'tag-ok' : 'tag-ex'}`}>{e.origin}</span>}</span>
-        <span className="muted" dir="ltr">{e.latin}</span>
+      <div className="row between" style={{ width: '100%', flexWrap: 'wrap', rowGap: 2 }}>
+        <span className="row" style={{ gap: 8, minWidth: 0, flexWrap: 'wrap' }}><span className="coptic-font cword" dir="ltr">{e.word}</span>{e.origin && <span className={`tag origin ${e.origin === 'قبطي' ? 'tag-ok' : 'tag-ex'}`}>{e.origin}</span>}</span>
+        <span className="muted" dir="ltr" style={{ overflowWrap: 'anywhere', minWidth: 0 }}>{e.latin}</span>
       </div>
       <div className="say">النطق: <b>{arabize(e.word)}</b></div>
       {e.meanings.length > 0 && <b>{e.meanings.join('، ')}</b>}

@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useData, useIsLead, useStore } from '../data/store';
+import { useAllowedLevel, useData, useIsLead, useStore } from '../data/store';
 import { RANKS, type Gender, type Member } from '../data/types';
 import { cancelled, shrinkPhoto as shrink } from '../data/photo';
 import { GRADES, contact, hashPin, levelForGrade, newPin, todayISO, uid, waLink } from '../data/logic';
@@ -10,8 +10,11 @@ export default function MemberForm() {
   const [data, update] = useData();
   const nav = useNavigate();
   const existing = data.members.find(m => m.id === memberId);
+  const allowed = useAllowedLevel();
+  // A servant adds and edits members only in the levels they serve.
+  const levels = data.levels.filter(l => allowed(l.id));
   const [m, setM] = useState<Member>(existing ?? {
-    id: uid(), code: String(data.nextCode).padStart(4, '0'), name: '', gender: 'm', levelId: 'l2', grade: 'تالتة ابتدائي',
+    id: uid(), code: String(data.nextCode).padStart(4, '0'), name: '', gender: 'm', levelId: allowed('l2') ? 'l2' : levels[0]?.id ?? 'l2', grade: 'تالتة ابتدائي',
   });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
@@ -25,6 +28,8 @@ export default function MemberForm() {
     const f = e.target.files?.[0]; if (!f) return;
     try { set({ photo: await shrink(f) }); } catch (e) { if (!cancelled(e)) setError('الصورة دي مش هتنفع، جرّب صورة تانية.'); }
   };
+
+  if (existing && !allowed(existing.levelId)) return <main className="main gutter"><div className="card">المخدوم ده في مستوى انت مش بتخدمه، فمتقدرش تعدّل بياناته. <Link to={`/members/${existing.id}`}>ارجع لصفحته</Link></div></main>;
 
   const save = () => {
     if (!m.name.trim()) { setError('اكتب اسم المخدوم.'); return; }
@@ -89,7 +94,7 @@ export default function MemberForm() {
         </div>
 
         <label className="field" htmlFor="grade"><span>السنة الدراسية</span>
-          <select id="grade" className="input" value={m.grade} onChange={e => set({ grade: e.target.value, levelId: levelForGrade(e.target.value) })}>
+          <select id="grade" className="input" value={m.grade} onChange={e => set({ grade: e.target.value, ...(allowed(levelForGrade(e.target.value)) ? { levelId: levelForGrade(e.target.value) } : {}) })}>
             {GRADES.map(g => <option key={g}>{g}</option>)}
           </select></label>
 
@@ -97,7 +102,7 @@ export default function MemberForm() {
           <input id="birth" type="date" className="input" value={m.birthdate ?? ''} max={todayISO()} onChange={e => set({ birthdate: e.target.value || undefined })} /></label>
 
         <div className="field"><span>المستوى</span>
-          <div className="chips">{data.levels.map(l =>
+          <div className="chips">{levels.map(l =>
             <button key={l.id} className="chip" aria-pressed={m.levelId === l.id} onClick={() => set({ levelId: l.id })}>{l.name}</button>)}</div>
         </div>
 

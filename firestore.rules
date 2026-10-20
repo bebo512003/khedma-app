@@ -19,6 +19,8 @@ service cloud.firestore {
       function can(p) { return lead() || (servant() && (!('perms' in me()) || me().perms.hasAny([p]))); }
       function church() { return get(/databases/$(database)/documents/churches/$(c)).data; }
       function canLevel(l) { return me().levelIds.hasAny(['*', l]); }
+      // A member's record and view belong to their level: servants change only the levels they serve.
+      function levelOf(id) { return get(doc('members', id)).data.get('levelId', ''); }
       function member() { return signedIn() && exists(doc('accounts', request.auth.uid)); }
       function myMember(id) { return signedIn() && get(doc('accounts', request.auth.uid)).data.memberId == id; }
       function str(d, k, max) { return !(k in d) || (d[k] is string && d[k].size() <= max); }
@@ -64,14 +66,20 @@ service cloud.firestore {
         allow write: if servant();
       }
 
+      // A login for a member: only a servant of that member's level makes or retires it.
       match /accounts/{uid} {
         allow get: if (signedIn() && request.auth.uid == uid) || servant();
-        allow list, write: if servant();
+        allow list: if servant();
+        allow create, update: if can('members') && request.resource.data.keys().hasOnly(['memberId'])
+          && request.resource.data.memberId is string && canLevel(levelOf(request.resource.data.memberId));
+        allow delete: if can('members') && canLevel(levelOf(resource.data.memberId));
       }
 
       match /memberViews/{memberId} {
         allow get: if servant() || myMember(memberId);
-        allow list, write: if servant();
+        allow list: if servant();
+        allow create, update: if servant() && request.resource.data.memberId == memberId && canLevel(request.resource.data.get('levelId', ''));
+        allow delete: if servant() && canLevel(resource.data.get('levelId', ''));
       }
 
       // A servant can record sessions only for the levels the lead gave them.
@@ -105,7 +113,13 @@ service cloud.firestore {
       // Levels, terms and removing members are the lead's call.
       match /levels/{id} { allow read: if true; allow write: if lead(); }
       match /terms/{id} { allow read: if servant(); allow write: if lead(); }
-      match /members/{id} { allow read: if servant(); allow create, update: if can('members'); allow delete: if lead(); }
+      match /members/{id} {
+        allow read: if servant();
+        allow create: if can('members') && canLevel(request.resource.data.get('levelId', ''));
+        // Moving a member to another level needs both levels.
+        allow update: if can('members') && canLevel(resource.data.get('levelId', '')) && canLevel(request.resource.data.get('levelId', ''));
+        allow delete: if lead();
+      }
 
       // Reminder schedule (lead edits) and what the scheduled job last sent (only it writes).
       match /settings/{id} {
@@ -126,7 +140,9 @@ service cloud.firestore {
       // Voice summaries of sessions, split into pieces under 1 MB. Members play them from their app.
       // Members may add only their own home recordings (named sub_<their code>_…), each piece under 1 MB.
       match /recordings/{id} {
-        allow read: if servant() || member();
+        // Members fetch pieces one by one (no listing), and of the home recordings only their own.
+        allow read: if servant();
+        allow get: if member() && (!id.matches('sub_.*') || id.matches('sub_' + get(doc('accounts', request.auth.uid)).data.memberId + '_.*'));
         allow write: if can('sessions');
         allow create: if member() && id.matches('sub_' + get(doc('accounts', request.auth.uid)).data.memberId + '_[a-z0-9]+-[0-2]')
           && request.resource.data.keys().hasOnly(['data', 'i', 'parts', 'mime'])
@@ -139,14 +155,16 @@ service cloud.firestore {
         function mine() { return get(doc('accounts', request.auth.uid)).data.memberId; }
         allow read: if servant() || (member() && resource.data.memberId == mine());
         allow create: if member() && request.resource.data.memberId == mine()
-          && id.matches(mine() + '_[0-9]+')
+          && id.matches(mine() + '_[0-9]+') && request.resource.data.levelId == levelOf(mine())
           && request.resource.data.keys().hasOnly(['id', 'memberId', 'memberName', 'levelId', 'hymnId', 'hymnName', 'recording', 'at', 'pending'])
           && request.resource.data.pending == true && request.resource.data.id == id
+          && request.resource.data.at is int && request.resource.data.at <= request.time.toMillis() + 600000
           && str(request.resource.data, 'memberName', 80) && str(request.resource.data, 'hymnName', 120)
           && str(request.resource.data, 'levelId', 40) && str(request.resource.data, 'hymnId', 80)
           && request.resource.data.recording.id.matches('sub_' + mine() + '_[a-z0-9]+')
           && request.resource.data.recording.parts is int && request.resource.data.recording.parts <= 3;
-        allow update: if can('sessions');
+        allow update: if can('sessions') && canLevel(resource.data.levelId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pending', 'review', 'reviewAt', 'recording']);
         allow delete: if lead();
       }
 
