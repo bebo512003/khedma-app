@@ -154,6 +154,9 @@ function CopticWord({ w, base }: { w: CWord; base: string }) {
           {w.pieces.map((p, i) => <span key={i} className="piece"><span className="coptic-font">{p.form}</span><small dir="rtl">{p.gloss}</small></span>)}
         </div>
       )}
+      {w.alts && w.alts.length > 0 && (
+        <div className="muted" style={{ fontSize: 12 }}>وبرضه بتتقال: {w.alts.map((c, i) => <span key={c}>{i > 0 && '، '}<Link to={`${base}/dictionary?q=${encodeURIComponent(c)}`} className="coptic-font" dir="ltr">{c}</Link> ({arabize(c)})</span>)}</div>
+      )}
       {w.how === 'unknown'
         ? <div className="muted" style={{ fontSize: 12 }}>مش لاقيها، جرّب كلمة بنفس المعنى أو دوّر في القاموس.</div>
         : <div className="muted" style={{ fontSize: 12 }}>{w.as && (w.near ? `قصدك «${w.as}»؟ ` : `فهمتها «${w.as}» • `)}{HOW[w.how]}</div>}

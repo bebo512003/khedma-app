@@ -158,7 +158,8 @@ export function search(entries: Indexed[], q: string, limit = 60): { hits: Hit[]
         const s = m === k || stripAl(m) === bare ? 0 : words.length > 0 && words[0] === bare ? 1 : words.includes(bare) ? 2 : m.includes(bare) ? 3 : 9;
         if (s < best) best = s;
       }
-      if (best < 9) scored.push({ e, s: best + e.meanings.length / 100 });
+      // Bohairic words before other dialects and lookup-only entries with the same meaning.
+      if (best < 9) scored.push({ e, s: best + e.meanings.length / 100 + (e.lookupOnly || (e.dialects && !e.dialects.includes('بحيري')) ? 0.5 : 0) });
     }
     // Coptic typed in Arabic letters: إفنوتي finds ⲫⲛⲟⲩϯ, and near spellings find it too.
     ensureArabized(entries);

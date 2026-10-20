@@ -51,6 +51,8 @@ export interface CWord {
   /** How we read a word we didn't know as typed: colloquial (عايز → يريد), another spelling of a name (ماركو → مرقس), or the closest known word. */
   as?: string;
   near?: boolean;
+  /** Other Coptic words with this meaning (a Greek and a Coptic word for الله: ⲑⲉⲟⲥ and ⲫ̀ⲛⲟⲩϯ). */
+  alts?: string[];
 }
 export interface CPhrase { text: string; words: CWord[]; coptic: string; match?: Match }
 export interface CTranslation { phrases: CPhrase[]; coptic: string; whole?: Match }
@@ -94,6 +96,8 @@ export interface Reverse {
   /** Present forms only: نحب is "we love" after بـ, though alone it reads as the past "he sobbed". */
   present: Map<string, Verb>;
   dict: Map<string, string>;
+  /** Every Coptic word for one Arabic meaning, the ones the hymns use first. */
+  alts: Map<string, string[]>;
   /** Prepositions, also with their pronoun (معك → ⲛⲉⲙⲁⲕ). */
   words: Map<string, string>;
   /** Verbs (by stem key) that take their object with ⲉ̀ⲣⲟ- rather than ⲙ̀ⲙⲟ-. */
@@ -212,7 +216,21 @@ export function reverseOf(t: Translator, extra?: ArabicLexicon): Reverse {
     const o = dmap.get(k);
     if (!o || copticKey(e.word).length < copticKey(o).length) dmap.set(k, e.word);
   }
-  const r: Reverse = { lex, nouns, verbs, present, dict: dmap, words, ero, full: !!extra, tm: new Map(), tmIndex: new Map(), tmList: [], refs: t.refs };
+  // How many dictionaries give each word for a meaning: the word most of them give comes first.
+  const altCount = new Map<string, Map<string, { word: string; n: number }>>();
+  for (const e of dict) for (const m of e.meanings.slice(0, 4)) {
+    const k = arKey(m.split(/[،,;؛/(]/)[0]).replace(/^ال(?=...)/, '');
+    const ck = copticKey(e.word);
+    if (!k || k.split(' ').length > 2 || ck.length < 2 || ck === 'ⲫϯ') continue;
+    const per = altCount.get(k) ?? new Map();
+    const o = per.get(ck);
+    per.set(ck, { word: o?.word ?? e.word, n: (o?.n ?? 0) + 1 });
+    altCount.set(k, per);
+  }
+  const hymnFirst = (c: string) => t.stems.has(copticKey(c)) ? 0 : 1;
+  const alts = new Map<string, string[]>();
+  for (const [k, per] of altCount) alts.set(k, [...per.values()].sort((a, b) => hymnFirst(a.word) - hymnFirst(b.word) || b.n - a.n || copticKey(a.word).length - copticKey(b.word).length).slice(0, 6).map(x => x.word));
+  const r: Reverse = { lex, nouns, verbs, present, dict: dmap, alts, words, ero, full: !!extra, tm: new Map(), tmIndex: new Map(), tmList: [], refs: t.refs };
   addLines(t, r);
   cache.set(t, r);
   return r;
@@ -457,7 +475,13 @@ export function toCoptic(t: Translator, text: string, extra?: ArabicLexicon): CT
   const r = reverseOf(t, extra);
   const phrases = text.split(/\s*[:.،,؛;\n]+\s*/).map(s => s.trim()).filter(s => arKey(s));
   const result: CPhrase[] = phrases.map(p => {
-    const words = phraseToCoptic(r, p);
+    const words = phraseToCoptic(r, p).map(w => {
+      if (arKey(w.text).length < 3 || !w.coptic) return w;
+      const k = arKey(w.as ?? w.text).replace(/^و(?=...)/, '').replace(/^ال(?=...)/, '');
+      const mine = new Set([copticKey(w.coptic), ...w.pieces.map(x => copticKey(x.form))]);
+      const others = (r.alts.get(k) ?? []).filter(c => !mine.has(copticKey(c)));
+      return others.length ? { ...w, alts: others.slice(0, 4) } : w;
+    });
     const m = nearestArabic(r, arKey(p), 0.75);
     return { text: p, words, coptic: m?.score === 1 ? m.coptic : joinCoptic(words), match: m };
   });

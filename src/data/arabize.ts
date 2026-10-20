@@ -25,6 +25,8 @@ function word(w: string): string {
     const bare = [...w.normalize('NFD')].map(lower).join('').replace(/[^Ⲁ-⳿Ϣ-ϯ]/g, '');
     if (ABBREV[bare]) w = ABBREV[bare];
   }
+  // ⲫϯ is God's name written short, even without the line over it.
+  if (/^ⲫ\u0300?ϯ$/i.test(w.normalize('NFD')) || /^Ⲫϯ$/.test(w)) w = 'ⲫⲛⲟⲩϯ';
   // Lowercase, keeping the jinkim right after its letter.
   const s = [...w.normalize('NFD').replace(MARKS, '')].map(lower);
   const letters: { ch: string; jinkim: boolean }[] = [];
