@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDay, isoDate, nextFriday, pointsCount, POINTS } from '../data/logic';
 import { STATUS_LABELS } from '../data/types';
-import { useView } from './Layout';
+import { Bell, useView } from './Layout';
 import { memberLogout } from './session';
 import CopticToday from '../screens/CopticToday';
 import PushToggle from '../screens/PushToggle';
@@ -20,7 +20,7 @@ export default function MemberHome() {
           <Link to="/me/profile" className="av" style={{ width: 48, height: 48 }} aria-label="بياناتي">{v.photo ? <img src={v.photo} alt="" /> : v.name[0]}</Link>
           <div><h1>أهلاً يا {v.name.split(' ')[0]}</h1><div className="muted">{[v.levelName, v.rank].filter(Boolean).join(' • ')} • <Link to="/me/profile">بياناتي</Link></div></div>
         </div>
-        <button className="btn" style={{ minHeight: 40 }} onClick={logout}>خروج</button>
+        <div className="row" style={{ gap: 8 }}><Bell /><button className="btn" style={{ minHeight: 40 }} onClick={logout}>خروج</button></div>
       </div></header>
       <main className="main gutter wide dash">
         <Link to="/me/rank" className="hero" style={{ textDecoration: 'none' }}>

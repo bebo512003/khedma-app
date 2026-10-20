@@ -1,15 +1,41 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData, useIsLead } from '../data/store';
-import { STATUS_LABELS, CRITERIA } from '../data/types';
+import { STATUS_LABELS, CRITERIA, type AppData } from '../data/types';
 import { formatTime, sessionRecordings, todayISO } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
 
 const ATT = { p: 'حضر', e: 'اعتذر', a: 'غاب' } as const;
+const LISTS = ['levels', 'members', 'hymns', 'books', 'terms', 'sessions'] as const;
+
+/** A full copy downloaded from this screen, or null when the file isn't one. */
+function readFullCopy(text: string): AppData | null {
+  try {
+    const d = JSON.parse(text);
+    if (!d || d.version !== 1 || !LISTS.every(k => Array.isArray(d[k])) || typeof d.progress !== 'object') return null;
+    return { curricula: {}, templates: { absence: '' }, nextCode: 1, ...d };
+  } catch { return null; }
+}
+
+/** Adds back what the copy has and the app lost; changes nothing that's there now. */
+function addMissing(now: AppData, copy: AppData): AppData {
+  const out = { ...now };
+  for (const k of LISTS) {
+    const have = new Set((now[k] as { id: string }[]).map(x => x.id));
+    (out[k] as unknown[]) = [...now[k], ...(copy[k] as { id: string }[]).filter(x => !have.has(x.id))];
+  }
+  out.progress = { ...copy.progress, ...now.progress };
+  out.curricula = { ...copy.curricula, ...now.curricula };
+  out.nextCode = Math.max(now.nextCode, copy.nextCode);
+  return out;
+}
 
 /** Everything the school has entered, as an Excel file people can open, plus a full copy for safekeeping. */
 export default function Backup() {
-  const [data] = useData();
+  const [data, update] = useData();
   const lead = useIsLead();
+  const [copy, setCopy] = useState<{ name: string; data: AppData } | null>(null);
+  const [msg, setMsg] = useState('');
   if (!lead) return <main className="main gutter"><div className="card">النسخة الاحتياطية للخادم المسؤول والأدمن. <Link to="/">ارجع</Link></div></main>;
 
   const level = (id?: string) => data.levels.find(l => l.id === id)?.name ?? '';
@@ -55,6 +81,23 @@ export default function Backup() {
   // Everything, as the app keeps it (recordings and book pages stay online; they're too big for this file).
   const full = () => download(new Blob([JSON.stringify(data)], { type: 'application/json' }), `نسخة كاملة ${todayISO()}.json`);
 
+  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; e.target.value = '';
+    if (!f) return;
+    const d = readFullCopy(await f.text());
+    setMsg(d ? '' : 'الملف ده مش نسخة كاملة من التطبيق. اختار الملف اللي اسمه «نسخة كاملة ...json».');
+    setCopy(d ? { name: f.name, data: d } : null);
+  };
+  const missing = copy ? LISTS.reduce((n, k) => n + (copy.data[k] as { id: string }[]).filter(x => !(data[k] as { id: string }[]).some(y => y.id === x.id)).length, 0) : 0;
+  const restore = (all: boolean) => {
+    if (!copy) return;
+    if (all && !confirm(`هترجع البيانات زي ما كانت في «${copy.name}». أي حاجة اتضافت أو اتعدلت بعدها هتروح. هنزّلك نسخة من الحالي الأول للأمان. نكمل؟`)) return;
+    if (all) full();
+    update(now => all ? copy.data : addMissing(now, copy.data));
+    setMsg(all ? 'رجّعت النسخة كلها.' : `رجّعت ${missing} حاجة كانت ناقصة.`);
+    setCopy(null);
+  };
+
   return (
     <>
       <header className="top gutter"><div className="row">
@@ -71,6 +114,20 @@ export default function Backup() {
           <h2>نسخة كاملة</h2>
           <div className="note">ملف فيه كل حاجة زي ما التطبيق شايلها، عشان لو احتجنا نرجّع البيانات. احفظه في مكان أمين (فيه أرقام موبايلات وعناوين). التسجيلات الصوتية وصفحات الكتب مش فيه لأنها كبيرة، وهي متخزنة أونلاين.</div>
           <button className="btn" onClick={full}>نزّل النسخة الكاملة</button>
+        </div>
+        <div className="card">
+          <h2>استرجاع نسخة</h2>
+          <div className="note">اختار ملف «نسخة كاملة» نزّلته قبل كده. تقدر ترجّع اللي اتمسح بس، أو ترجّع كل حاجة زي ما كانت وقتها.</div>
+          <label className="btn" style={{ cursor: 'pointer' }}>اختار ملف النسخة
+            <input type="file" accept=".json,application/json" onChange={pick} hidden /></label>
+          {copy && (
+            <>
+              <div className="muted">في النسخة: {copy.data.members.length} مخدوم • {copy.data.sessions.length} حصة • {copy.data.hymns.length} لحن. ودلوقتي: {data.members.length} مخدوم • {data.sessions.length} حصة • {data.hymns.length} لحن.</div>
+              <button className="btnp" onClick={() => restore(false)} disabled={!missing}>{missing ? `رجّع الناقص بس (${missing})` : 'مفيش حاجة ناقصة'}</button>
+              <button className="btn" onClick={() => restore(true)}>رجّع النسخة كلها</button>
+            </>
+          )}
+          {msg && <div className="note">{msg}</div>}
         </div>
         <div className="note">نصيحة: نزّل نسخة كل شهر، أو قبل أي تغيير كبير زي بداية ترم جديد.</div>
       </main>

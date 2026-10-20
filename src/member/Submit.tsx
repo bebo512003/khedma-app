@@ -1,27 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { cloudEnabled } from '../firebase/config';
 import { formatDay, isoDate } from '../data/logic';
-import { STATUS_LABELS, type Submission } from '../data/types';
+import { STATUS_LABELS } from '../data/types';
 import { loadRecording } from '../firebase/recordings';
 import { Recorder, VoiceNote } from '../ui/Voice';
-import { useView } from './Layout';
+import { useNotes, useView } from './Layout';
 
 const MAX_MS = 5 * 60_000;
 
 /** «سمّع للخادم»: the member records the hymn at home and a servant listens and replies with a level and a note. */
 export default function Submit({ hymnId, hymnName }: { hymnId: string; hymnName: string }) {
   const v = useView();
-  const [mine, setMine] = useState<Submission[]>([]);
+  const { subs: mine } = useNotes();
   const [take, setTake] = useState<{ blob: Blob; ms: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!cloudEnabled) return;
-    let stop = () => {};
-    import('../firebase/submissions').then(m => { stop = m.watchMySubmissions(v.memberId, setMine); });
-    return () => stop();
-  }, [v.memberId]);
   if (!cloudEnabled) return null;
 
   const here = mine.filter(s => s.hymnId === hymnId);
@@ -59,7 +53,7 @@ export default function Submit({ hymnId, hymnName }: { hymnId: string; hymnName:
         <div key={s.id} className="vrow" style={{ borderTop: '1px solid var(--line)', paddingTop: 8 }}>
           <div className="row between"><b>{formatDay(isoDate(new Date(s.at)))}</b>
             {s.review && <span className={`pill st${s.review.status}`} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 28 }}>{STATUS_LABELS[s.review.status]}</span>}</div>
-          {s.review?.note && <div className="note" style={{ color: 'var(--fg)' }}>{s.review.byName}: {s.review.note}</div>}
+          {s.review?.note && <div className="reply"><div className="muted">رد {s.review.byName}</div>{s.review.note}</div>}
           {!s.audioGone && <VoiceNote id={s.recording.id} ms={s.recording.ms} getBlob={() => loadRecording(s.recording)} />}
         </div>
       ))}

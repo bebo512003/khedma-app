@@ -37,6 +37,7 @@ import MemberHymn from './member/Hymn';
 import MemberProfile from './member/Profile';
 import MemberRatings from './member/Ratings';
 import MemberRank from './member/Rank';
+import MemberNotifications from './member/Notifications';
 import MemberMe from './member/Me';
 import MemberSessions from './member/Sessions';
 import { MemberBook, MemberBooks } from './member/Books';
@@ -100,6 +101,7 @@ export default function App() {
             <Route path="books" element={<MemberBooks />} />
             <Route path="books/:bookId" element={<MemberBook />} />
             <Route path="rank" element={<MemberRank />} />
+            <Route path="notifications" element={<MemberNotifications />} />
             <Route path="dictionary" element={<Dictionary back="/me/home" base="/me" />} />
             <Route path="translate" element={<Translate base="/me" />} />
           </Route>

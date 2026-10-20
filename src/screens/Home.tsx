@@ -2,12 +2,13 @@ import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData, useIsLead, useStore, useCan } from '../data/store';
 import { absenceStreak, watchList, needsFollowUp } from '../data/logic';
 import { applyTheme, loadTheme } from '../theme';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import logo from '../logo.png';
 import Birthdays from './Birthdays';
 import CopticToday from './CopticToday';
 import PushToggle from './PushToggle';
 import Icon from '../ui/Icon';
+import { usePending } from './usePending';
 
 export default function Home() {
   const [data] = useData();
@@ -19,14 +20,7 @@ export default function Home() {
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const followUp = data.members.filter(m => needsFollowUp(absenceStreak(data, m)));
   const watch = watchList(data, allowed);
-  const [pending, setPending] = useState(0);
-  useEffect(() => {
-    if (!cloud || !canSessions) return;
-    let stop = () => {};
-    import('../firebase/submissions').then(m => { stop = m.watchPending(l => setPending(l.filter(s => allowed(s.levelId)).length)); });
-    return () => stop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cloud, canSessions]);
+  const pending = usePending();
   const last = data.sessions.filter(s => allowed(s.levelId)).sort((a, b) => b.date.localeCompare(a.date))[0];
   const hasExamples = data.members.some(m => m.example);
 
@@ -51,6 +45,7 @@ export default function Home() {
           </div>
           <div className="row" style={{ gap: 8 }}>
             {!servant && <button className="icon" onClick={toggle} aria-label={theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={20} /></button>}
+            {servant && canSessions && <Link to="/reviews" className="icon bell" aria-label={pending ? `التسميع، ${pending} مستني` : 'التسميع'}><Icon name="bell" size={20} />{pending > 0 && <span className="count">{pending > 9 ? '9+' : pending}</span>}</Link>}
             {servant && <Link to="/profile" className="av" style={{ width: 44, height: 44 }} aria-label="بروفايلي">{servant.photo ? <img src={servant.photo} alt="" /> : servant.name[0]}</Link>}
           </div>
         </div>

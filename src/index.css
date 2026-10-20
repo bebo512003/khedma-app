@@ -365,3 +365,12 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .login .contact-row a { color: var(--muted); }
 .contact-row a svg { color: var(--gold); }
 .contact-row a:hover { background: rgba(232,189,126,.14); }
+
+/* Notifications: bell counter, unread items, and a servant's reply set apart from the rest. */
+.bell, .badged { position: relative; }
+.count { position: absolute; top: -4px; inset-inline-end: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--alert); color: var(--bg); font-size: 11.5px; font-weight: 700; line-height: 20px; text-align: center; }
+.mtabs .badged .count { top: 2px; inset-inline-end: calc(50% - 22px); }
+.notice.new { border-color: var(--act); box-shadow: inset -4px 0 0 var(--act); }
+.nicon { width: 36px; height: 36px; border-radius: 50%; background: var(--ph); display: flex; align-items: center; justify-content: center; flex: none; color: var(--act); }
+.reply { margin: 6px 0; padding: 10px 12px; border-radius: 10px; background: var(--ph); border-inline-start: 4px solid var(--act); white-space: pre-wrap; font-weight: 600; }
+.reply .muted { font-weight: 400; font-size: 12.5px; }

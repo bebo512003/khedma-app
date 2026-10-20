@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAllowedLevel, useData, useIsLead, useStore, useCan } from '../data/store';
 import { applyTheme, loadTheme } from '../theme';
 import Icon from '../ui/Icon';
+import { usePending } from './usePending';
 
 /** Main sections get a bottom tab bar on phones; forms and the session keep their own action bar instead. */
 const TAB_ROUTES = ['/', '/sessions', '/reviews', '/members', '/library', '/curriculum', '/books', '/reports', '/dictionary', '/translate', '/followup', '/team', '/notify', '/levels', '/backup'];
@@ -17,6 +18,7 @@ export default function MobileNav() {
   const nav = useNavigate();
   const [sheet, setSheet] = useState<'more' | 'start' | null>(null);
   const [theme, setTheme] = useState(loadTheme());
+  const pending = usePending();
   if (!TAB_ROUTES.includes(pathname)) return null;
 
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
@@ -41,7 +43,7 @@ export default function MobileNav() {
             ? <button className="fab" onClick={start} aria-label="ابدأ حصة"><Icon name="play" size={20} />ابدأ حصة</button>
             : <NavLink to="/sessions"><Icon name="clock" />الحصص</NavLink>}
           <NavLink to="/library"><Icon name="book" />المكتبة</NavLink>
-          <button className={inMore ? 'active' : ''} onClick={() => setSheet('more')}><Icon name="more" />المزيد</button>
+          <button className={`badged${inMore ? ' active' : ''}`} onClick={() => setSheet('more')}><Icon name="more" />المزيد{pending > 0 && <span className="count">{pending > 9 ? '9+' : pending}</span>}</button>
         </div>
       </nav>
       {sheet && <div className="backdrop" onClick={() => setSheet(null)} />}
@@ -65,7 +67,7 @@ export default function MobileNav() {
             <button className="icon" onClick={() => setSheet(null)} aria-label="اقفل"><Icon name="close" size={18} /></button>
           </div>
           <div className="tiles">
-            {shown.map(([to, icon, label]) => <Link key={to} to={to} className="tile" onClick={() => setSheet(null)}><Icon name={icon} />{label}</Link>)}
+            {shown.map(([to, icon, label]) => <Link key={to} to={to} className="tile badged" onClick={() => setSheet(null)}><Icon name={icon} />{label}{to === '/reviews' && pending > 0 && <span className="count">{pending > 9 ? '9+' : pending}</span>}</Link>)}
             <button className="tile" onClick={toggleTheme}><Icon name={theme === 'light' ? 'moon' : 'sun'} />{theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}</button>
             {cloud && <button className="tile" onClick={signOut}><Icon name="logout" />خروج</button>}
           </div>

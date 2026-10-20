@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { useData } from '../data/store';
 import type { Gender, Member } from '../data/types';
 import { count, levelForGrade, uid } from '../data/logic';
-import { download } from '../data/xlsx';
+import { download, xlsxBlob } from '../data/xlsx';
 import {
-  FIELD_LABELS, guessColumns, norm, parseDate, parseGender, parseGrade, parsePhone, parseRank, readSheet, templateCsv, type Field,
+  FIELD_LABELS, guessColumns, norm, parseDate, parseGender, parseGrade, parsePhone, parseRank, readSheet, templateRows, type Field,
 } from '../data/importSheet';
 
 const FIELDS = Object.keys(FIELD_LABELS) as Field[];
@@ -87,7 +87,7 @@ export default function ImportMembers() {
     setDone(chosen.length); setSheet(null); setError('');
   };
 
-  const downloadTemplate = () => download(new Blob([templateCsv()], { type: 'text/csv;charset=utf-8' }), 'نموذج المخدومين.csv');
+  const downloadTemplate = () => download(xlsxBlob([{ name: 'المخدومين', widths: [22, 8, 16, 14, 16, 18, 14], rows: templateRows() }]), 'نموذج المخدومين.xlsx');
 
   return (
     <>

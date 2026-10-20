@@ -128,12 +128,11 @@ export function parseRank(raw: string): string | undefined {
   return RANKS.find(r => s && (norm(r) === s || s.includes(norm(r)))) ?? undefined;
 }
 
-/** Template the servant can fill in Excel and upload back. BOM so Excel reads Arabic correctly. */
-export function templateCsv() {
-  const rows = [
+/** Template the servant can fill in Excel and upload back (header row, then two examples). */
+export function templateRows() {
+  return [
     Object.values(FIELD_LABELS),
     ['كيرلس مينا', 'ولد', 'تالتة ابتدائي', '15/3/2017', '01012345678', '', 'أبصالتس'],
     ['مريم جرجس', 'بنت', 'أولى إعدادي', '2/11/2013', '01112345678', '01212345678', ''],
   ];
-  return '﻿' + rows.map(r => r.join(',')).join('\r\n');
 }
