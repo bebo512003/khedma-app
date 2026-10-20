@@ -38,6 +38,7 @@ import MemberProfile from './member/Profile';
 import MemberRatings from './member/Ratings';
 import MemberRank from './member/Rank';
 import MemberNotifications from './member/Notifications';
+import ServantNotifications from './screens/Notifications';
 import MemberMe from './member/Me';
 import MemberSessions from './member/Sessions';
 import { MemberBook, MemberBooks } from './member/Books';
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/sessions" element={s(<Sessions />)} />
           <Route path="/backup" element={s(<Backup />)} />
           <Route path="/reviews" element={n('sessions', <Reviews />)} />
+          <Route path="/notifications" element={s(<ServantNotifications />)} />
           <Route path="/sessions/:sessionId/edit" element={n('sessions', <SessionScreen />)} />
           <Route path="/followup" element={s(<FollowUp />)} />
           <Route path="/members" element={s(<Members />)} />

@@ -6,7 +6,7 @@ import Icon from '../ui/Icon';
 import { usePending } from './usePending';
 
 /** Main sections get a bottom tab bar on phones; forms and the session keep their own action bar instead. */
-const TAB_ROUTES = ['/', '/sessions', '/reviews', '/members', '/library', '/curriculum', '/books', '/reports', '/dictionary', '/translate', '/followup', '/team', '/notify', '/levels', '/backup'];
+const TAB_ROUTES = ['/', '/notifications', '/sessions', '/reviews', '/members', '/library', '/curriculum', '/books', '/reports', '/dictionary', '/translate', '/followup', '/team', '/notify', '/levels', '/backup'];
 
 export default function MobileNav() {
   const { pathname } = useLocation();
@@ -18,7 +18,7 @@ export default function MobileNav() {
   const nav = useNavigate();
   const [sheet, setSheet] = useState<'more' | 'start' | null>(null);
   const [theme, setTheme] = useState(loadTheme());
-  const pending = usePending();
+  const pending = usePending().length;
   if (!TAB_ROUTES.includes(pathname)) return null;
 
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));

@@ -9,6 +9,7 @@ import CopticToday from './CopticToday';
 import PushToggle from './PushToggle';
 import Icon from '../ui/Icon';
 import { usePending } from './usePending';
+import { useServantNotes } from './servantNotes';
 
 export default function Home() {
   const [data] = useData();
@@ -20,7 +21,8 @@ export default function Home() {
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const followUp = data.members.filter(m => needsFollowUp(absenceStreak(data, m)));
   const watch = watchList(data, allowed);
-  const pending = usePending();
+  const pending = usePending().length;
+  const { unread } = useServantNotes();
   const last = data.sessions.filter(s => allowed(s.levelId)).sort((a, b) => b.date.localeCompare(a.date))[0];
   const hasExamples = data.members.some(m => m.example);
 
@@ -45,7 +47,7 @@ export default function Home() {
           </div>
           <div className="row" style={{ gap: 8 }}>
             {!servant && <button className="icon" onClick={toggle} aria-label={theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={20} /></button>}
-            {servant && canSessions && <Link to="/reviews" className="icon bell" aria-label={pending ? `التسميع، ${pending} مستني` : 'التسميع'}><Icon name="bell" size={20} />{pending > 0 && <span className="count">{pending > 9 ? '9+' : pending}</span>}</Link>}
+            {servant && <Link to="/notifications" className="icon bell" aria-label={unread ? `الإشعارات، ${unread} جديد` : 'الإشعارات'}><Icon name="bell" size={20} />{unread > 0 && <span className="count">{unread > 9 ? '9+' : unread}</span>}</Link>}
             {servant && <Link to="/profile" className="av" style={{ width: 44, height: 44 }} aria-label="بروفايلي">{servant.photo ? <img src={servant.photo} alt="" /> : servant.name[0]}</Link>}
           </div>
         </div>
