@@ -13,6 +13,9 @@ const PROJECT: FirebaseOptions | null = {
   appId: '1:442063855286:web:a77ed300278192abac5017',
 };
 
+/** reCAPTCHA Enterprise site key for App Check (public by design, like the config above). */
+export const APP_CHECK_KEY = '6LdCBPktAAAAALB8WQx2dSzxYA6Yik6eRy9ZpqKH';
+
 /** `VITE_FB_EMULATOR=1 npm run dev` runs against local emulators with a demo project. */
 export const useEmulator = import.meta.env.VITE_FB_EMULATOR === '1';
 
