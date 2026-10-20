@@ -24,7 +24,7 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
     <>
       <header className="top gutter">
         <div className="row"><Link to={back} className="icon" aria-label="رجوع">→</Link><div><h1>القاموس القبطي</h1>
-          <div className="muted">{dict ? `${dict.entries.length.toLocaleString('en')} كلمة من 3 قواميس • كل اللهجات` : 'لحظة، بنجهّز القاموس…'}</div></div></div>
+          <div className="muted">{dict ? `${dict.entries.length.toLocaleString('en')} كلمة من 4 قواميس • كل اللهجات` : 'لحظة، بنجهّز القاموس…'}</div></div></div>
         <div className="seg" role="tablist">
           <button role="tab" aria-pressed>كلمة</button>
           <button role="tab" aria-pressed={false} onClick={() => nav(`${base}/translate`)}>جملة</button>
@@ -63,8 +63,8 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
         )}
         {dict && (
           <details className="srcs span">
-            <summary>المصادر: أسامة ثابت، وكنيسة مارجرجس بنزلة السمان، وCoptic Dictionary Online</summary>
-            قاموس قبطي عربي من إعداد أسامة ثابت (archive.org، ملك عام). وقاموس اللغة القبطية لكنيسة الشهيد العظيم مارجرجس بنزلة السمان (stgeorgesaman.com) بمراجعه: قاموس أبونا أندرياس المقاري، مشروع كيليا، قاموس كروم، ومراجع عربية وإنجليزية مجمعة. المعاني اللي عليها نجمة (*) ترجمة آلية زي ما الموقع كاتب. وأشكال الكلمات في كل اللهجات ومعانيها الإنجليزي من Coptic Dictionary Online (coptic-dictionary.org، القاموس القبطي الشامل لأكاديمية برلين ومشروع KELLIA) برخصة CC BY-SA 4.0، والمعنى العربي ليها مأخوذ من الكلمة البحيري في القاموسين اللي فوق.
+            <summary>المصادر: أسامة ثابت، وكنيسة مارجرجس بنزلة السمان، وCoptic Dictionary Online، ومعوض داود عبد النور</summary>
+            قاموس قبطي عربي من إعداد أسامة ثابت (archive.org، ملك عام). وقاموس اللغة القبطية لكنيسة الشهيد العظيم مارجرجس بنزلة السمان (stgeorgesaman.com) بمراجعه: قاموس أبونا أندرياس المقاري، مشروع كيليا، قاموس كروم، ومراجع عربية وإنجليزية مجمعة. المعاني اللي عليها نجمة (*) ترجمة آلية زي ما الموقع كاتب. وأشكال الكلمات في كل اللهجات من Coptic Dictionary Online (coptic-dictionary.org، القاموس القبطي الشامل لأكاديمية برلين ومشروع KELLIA) برخصة CC BY-SA 4.0، والمعنى العربي ليها من الكلمة البحيري في القاموسين اللي فوق، أو مترجم من معناها الإنجليزي (عليه نجمة). وقاموس اللغة القبطية للهجتين البحيرية والصعيدية لمعوض داود عبد النور (المركز الثقافي القبطي، 2013) بإذن، مقروء آليًا من صفحاته المصوّرة.
           </details>
         )}
       </main>
@@ -84,8 +84,12 @@ function Row({ hit: { entry: e, note } }: { hit: Hit }) {
       {e.forms && e.forms.length > 1 && (
         <div className="muted" style={{ fontSize: 12 }}>في اللهجات: {e.forms.slice(0, 8).map(([f, d], i) => <span key={i}><span className="coptic-font" dir="ltr">{f}</span>{d.length ? ` (${d.join('، ')})` : ''}{i < Math.min(8, e.forms!.length) - 1 ? '، ' : ''}</span>)}</div>
       )}
+      {e.examples?.slice(0, 2).map((x, i) => (
+        <div key={i} style={{ fontSize: 13 }}><span className="coptic-font" dir="ltr">{x.coptic}</span> <span className="muted">{x.arabic}{x.ref ? ` [${x.ref}]` : ''}</span></div>
+      ))}
       {tags.length > 0 && <div className="muted" style={{ fontSize: 12 }}>{tags.join(' • ')}</div>}
       {e.source && <div className="muted" style={{ fontSize: 12 }}>المصدر: {e.source}</div>}
+      {e.machineRead && <span className="muted" style={{ fontSize: 12 }}>قراءة آلية من صفحة مصوّرة، ممكن يكون فيها حرف غلط</span>}
       {note && <span className="tag tag-ex">{note.startsWith('«') ? note : `بعد ما شلنا ${note}`}</span>}
     </div>
   );

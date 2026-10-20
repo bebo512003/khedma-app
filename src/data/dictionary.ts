@@ -5,11 +5,13 @@ import { searchVariants } from './arabicVariants';
  * Two dictionaries, searched together:
  * Osama Thabet's Coptic-Arabic dictionary (Bohairic), built by scripts/build-dictionary.py;
  * the Coptic dictionary of St. George church, Nazlet El Seman, with the sources it lists per word (scripts/build-stgeorge-dict.py);
- * Coptic Dictionary Online (KELLIA), for each word's forms in every dialect, with English and the Arabic of its Bohairic form (scripts/build-kellia.py).
+ * Coptic Dictionary Online (KELLIA), for each word's forms in every dialect, with English and the Arabic of its Bohairic form (scripts/build-kellia.py);
+ * Moawad Dawoud Abdel-Nour's dictionary (Bohairic and Sahidic, with examples), read from its scanned pages (scripts/build-moawad.py).
  */
 const URL_ = 'dict/coptic-arabic.json?v=1';
 const URL_SG = 'dict/stgeorge-dict.json?v=1';
 const URL_KELLIA = 'dict/kellia.json?v=2';
+const URL_MOAWAD = 'dict/moawad.json?v=1';
 
 export interface Entry {
   word: string;
@@ -26,6 +28,10 @@ export interface Entry {
   forms?: [string, string[]][];
   /** Only for looking up, not for the translators (its Arabic already comes from the other dictionaries). */
   lookupOnly?: boolean;
+  /** Phrases using the word, with their Arabic and Bible reference. */
+  examples?: { coptic: string; arabic: string; ref: string }[];
+  /** Read by machine from a scanned page: a letter may be off. */
+  machineRead?: boolean;
 }
 interface Indexed extends Entry { cKey: string; lKey: string; mKeys: string[]; alt?: string[] }
 export interface Hit { entry: Entry; note?: string }
@@ -37,6 +43,7 @@ export const bohairic = (dict: Entry[]) => dict
 
 type SgWord = [string, string, number, number, number, string[], string, number[], number[]];
 type KelliaEntry = [[string, string[]][], string, string, string[], string];
+type MoawadEntry = [string[], string[], string, string[], [string, string, string, string][], number, number];
 let loading: Promise<{ source: string; entries: Indexed[] }> | null = null;
 export function loadDictionary() {
   const json = (u: string) => fetch(u).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); });
@@ -45,7 +52,8 @@ export function loadDictionary() {
     // The other dictionaries are extra: without them the first still works.
     json(URL_SG).catch(() => null),
     json(URL_KELLIA).catch(() => null),
-  ]).then(([d, sg, kl]: [{ source: string; labels: string[]; words: [string, string, number, number, number, string[]][] }, { labels: string[]; words: SgWord[] } | null, { entries: KelliaEntry[] } | null]) => ({
+    json(URL_MOAWAD).catch(() => null),
+  ]).then(([d, sg, kl, mw]: [{ source: string; labels: string[]; words: [string, string, number, number, number, string[]][] }, { labels: string[]; words: SgWord[] } | null, { entries: KelliaEntry[] } | null, { entries: MoawadEntry[] } | null]) => ({
     source: d.source,
     entries: [
       ...d.words.map(([word, latin, k, f, o, meanings]) => ({
@@ -63,6 +71,14 @@ export function loadDictionary() {
         dialects: [...new Set(forms.flatMap(f => f[1]))],
         source: 'Coptic Dictionary Online' + (arabic.length ? '، والمعنى العربي من الكلمة البحيري' : ''),
         cKey: copticKey(forms[0][0]), lKey: '', mKeys: arabic.map(m => norm(m)), alt: forms.slice(1).map(f => copticKey(f[0])).filter(Boolean),
+      })),
+      // Only the clearly read Bohairic words go to the translators.
+      ...(mw?.entries ?? []).map(([forms, dialects, pos, arabic, examples, unsure, page]) => ({
+        word: forms[0], latin: '', kind: pos, form: '', origin: '', meanings: arabic, dialects, machineRead: true, lookupOnly: !!unsure,
+        forms: forms.length > 1 ? forms.map(f => [f, []] as [string, string[]]) : undefined,
+        examples: examples.map(([coptic, , arabic, ref]) => ({ coptic, arabic, ref })),
+        source: `معوض داود عبد النور، ص ${page}`,
+        cKey: copticKey(forms[0]), lKey: '', mKeys: arabic.map(m => norm(m)), alt: forms.slice(1).map(copticKey).filter(Boolean),
       })),
     ],
   }));

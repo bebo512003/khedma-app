@@ -93,7 +93,7 @@ export default function Translate({ base = '' }: { base?: string }) {
                 <div className="words">{p.words.filter(w => w.text).map((w, j) => <CopticWord key={j} w={w} base={base} />)}</div>
               </div>
             ))}
-            <details className="srcs span"><summary>المصادر</summary>نصوص وتحليل كلمات مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، وقاموس أسامة ثابت وبرنامجه للترجمة المساعدة آليًا من العربي للقبطي (2019)، والكتاب المقدس: النص البحيري من Coptic SCRIPTORIUM (CC BY 4.0) مربوط آية بآية بترجمة فاندايك (ملك عام).</details>
+            <details className="srcs span"><summary>المصادر</summary>نصوص وتحليل كلمات مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، وقاموس أسامة ثابت وقاموس معوض داود عبد النور، وبرنامج أسامة ثابت للترجمة المساعدة آليًا من العربي للقبطي (2019)، والكتاب المقدس: النص البحيري من Coptic SCRIPTORIUM (CC BY 4.0) مربوط آية بآية بترجمة فاندايك (ملك عام).</details>
           </>
         )}
         {result && result.phrases.length > 0 && (
@@ -112,7 +112,7 @@ export default function Translate({ base = '' }: { base?: string }) {
                 <div className="words">{p.words.map((w, j) => <Word key={j} w={w} base={base} />)}</div>
               </div>
             ))}
-            <details className="srcs span"><summary>المصادر</summary>تحليل كلمات ونصوص مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، قاموس أسامة ثابت، قواعد اللغة القبطية للراهب أندرياس المقاري، والكتاب المقدس: النص البحيري من Coptic SCRIPTORIUM (CC BY 4.0) مربوط آية بآية بترجمة فاندايك (ملك عام).</details>
+            <details className="srcs span"><summary>المصادر</summary>تحليل كلمات ونصوص مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، قاموس أسامة ثابت، قاموس معوض داود عبد النور، قواعد اللغة القبطية للراهب أندرياس المقاري، والكتاب المقدس: النص البحيري من Coptic SCRIPTORIUM (CC BY 4.0) مربوط آية بآية بترجمة فاندايك (ملك عام).</details>
           </>
         )}
       </main>
