@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { COPTIC_KEYS, scriptOf } from '../data/dictionary';
 import { loadTranslator, loadVerses, translate, type Match, type Translator, type WordResult } from '../data/translator';
+import { arabize } from '../data/arabize';
 import { loadArabicLexicon, toCoptic, type ArabicLexicon, type CWord } from '../data/toCoptic';
 
 const EXAMPLE = 'Ⲡⲓⲭⲣⲓⲥⲧⲟⲥ ⲁϥⲙⲓⲥⲓ ϧⲉⲛ Ⲃⲏⲑⲗⲉⲉⲙ';
@@ -80,6 +81,7 @@ export default function Translate({ base = '' }: { base?: string }) {
             <div className="card">
               <div className="row between"><h2>بالقبطي</h2><span className={`tag ${wholeBack ? 'tag-ok' : 'tag-ex'}`}>{wholeBack ? fromWhere(back.whole ?? back.phrases[0]?.match) : 'ترجمة تقريبية'}</span></div>
               <div className="coptic-font" dir="ltr" style={{ fontSize: 22, lineHeight: 1.8, textAlign: 'left' }}>{back.coptic || '…'}</div>
+              {back.coptic && <div className="say">النطق: <b>{arabize(back.coptic)}</b></div>}
               {!wholeBack && <div className="note">اتركّبت كلمة كلمة، فراجعها بالتحليل اللي تحت. الكلمات اللي بين أقواس ما لقيتلهاش مقابل.</div>}
             </div>
             {back.whole && !wholeBack && <Near m={back.whole} />}
@@ -88,6 +90,7 @@ export default function Translate({ base = '' }: { base?: string }) {
                 {back.phrases.length > 1 && <>
                   <b>{p.text}</b>
                   <div className="coptic-font cword" dir="ltr" style={{ textAlign: 'left' }}>{p.coptic}</div>
+                  <div className="say">النطق: <b>{arabize(p.coptic)}</b></div>
                 </>}
                 {p.match && p.match.score < 1 && <Near m={p.match} />}
                 <div className="words">{p.words.filter(w => w.text).map((w, j) => <CopticWord key={j} w={w} base={base} />)}</div>
@@ -107,6 +110,7 @@ export default function Translate({ base = '' }: { base?: string }) {
             {result.phrases.map((p, i) => (
               <div key={i} className="card">
                 <div className="coptic-font cword" dir="ltr" style={{ textAlign: 'left' }}>{p.text}</div>
+                <div className="say">النطق: <b>{arabize(p.text)}</b></div>
                 <b>{p.arabic}</b>
                 {p.match && p.match.score < 1 && <Near m={p.match} />}
                 <div className="words">{p.words.map((w, j) => <Word key={j} w={w} base={base} />)}</div>
@@ -144,6 +148,7 @@ function CopticWord({ w, base }: { w: CWord; base: string }) {
           ? <Link to={`${base}/dictionary?q=${encodeURIComponent(w.pieces[w.pieces.length - 1]?.form.split(' ')[0] || w.coptic)}`} className="coptic-font cword" dir="ltr">{w.coptic}</Link>
           : <b>؟</b>}
       </div>
+      {w.coptic && <div className="say" dir="rtl">{arabize(w.coptic)}</div>}
       {w.pieces.length > 1 && (
         <div className="pieces" dir="ltr">
           {w.pieces.map((p, i) => <span key={i} className="piece"><span className="coptic-font">{p.form}</span><small dir="rtl">{p.gloss}</small></span>)}
@@ -166,6 +171,7 @@ function Word({ w, base }: { w: WordResult; base: string }) {
         <Link to={`${base}/dictionary?q=${encodeURIComponent(stem.form)}`} className="coptic-font cword" dir="ltr">{w.text}</Link>
         <b>{w.arabic || (w.how === 'unknown' ? '؟' : '—')}</b>
       </div>
+      <div className="say">{arabize(w.text)}</div>
       {w.pieces.length > 1 && (
         <div className="pieces" dir="ltr">
           {w.pieces.map((p, i) => (

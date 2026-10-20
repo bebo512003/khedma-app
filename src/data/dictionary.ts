@@ -1,5 +1,6 @@
 import { norm } from './importSheet';
 import { searchVariants } from './arabicVariants';
+import { arabize, arabizedKey, consonantKey, editDistance } from './arabize';
 
 /**
  * Two dictionaries, searched together:
@@ -33,8 +34,33 @@ export interface Entry {
   /** Read by machine from a scanned page: a letter may be off. */
   machineRead?: boolean;
 }
-interface Indexed extends Entry { cKey: string; lKey: string; mKeys: string[]; alt?: string[] }
+interface Indexed extends Entry { cKey: string; lKey: string; mKeys: string[]; alt?: string[]; aKey?: string; aCons?: string }
 export interface Hit { entry: Entry; note?: string }
+
+/** Arabized spelling of every entry, worked out the first time someone searches in Arabic letters. */
+function ensureArabized(entries: Indexed[]) {
+  if (entries[0]?.aKey !== undefined) return;
+  for (const e of entries) { const a = arabize(e.word); e.aKey = arabizedKey(a); e.aCons = consonantKey(a); }
+}
+
+/** The same word from several dictionaries becomes one result: meanings, sources, forms and examples together. */
+function merge(group: Indexed[]): Entry {
+  if (group.length === 1) return group[0];
+  const uniq = <T,>(xs: T[], key: (x: T) => string = String) => { const seen = new Set<string>(); return xs.filter(x => { const k = key(x); if (seen.has(k)) return false; seen.add(k); return true; }); };
+  const first = (f: (e: Indexed) => string | undefined) => group.map(f).find(Boolean) ?? '';
+  const forms = uniq(group.flatMap(e => e.forms ?? []), f => copticKey(f[0]));
+  return {
+    word: group.find(e => !e.machineRead)?.word ?? group[0].word,
+    latin: first(e => e.latin), kind: first(e => e.kind), form: first(e => e.form), origin: first(e => e.origin), english: first(e => e.english),
+    meanings: uniq(group.flatMap(e => e.meanings), m => norm(m.replace(/ \*$/, ''))).slice(0, 12),
+    dialects: uniq(group.flatMap(e => e.dialects ?? [])),
+    forms: forms.length > 1 ? forms : undefined,
+    examples: group.flatMap(e => e.examples ?? []),
+    source: uniq(group.map(e => e.source || 'أسامة ثابت')).join(' • '),
+    machineRead: group.every(e => e.machineRead),
+    lookupOnly: group.every(e => e.lookupOnly),
+  };
+}
 
 /** Entries the translators use: Bohairic ones (the other dictionary's Sahidic, Akhmimic... words are for looking up only), meanings without the machine-translation star. */
 export const bohairic = (dict: Entry[]) => dict
@@ -134,6 +160,24 @@ export function search(entries: Indexed[], q: string, limit = 60): { hits: Hit[]
       }
       if (best < 9) scored.push({ e, s: best + e.meanings.length / 100 });
     }
+    // Coptic typed in Arabic letters: إفنوتي finds ⲫⲛⲟⲩϯ, and near spellings find it too.
+    ensureArabized(entries);
+    const aq = arabizedKey(q), cq = consonantKey(q);
+    // بي نوتي is ⲡⲓ + ⲛⲟⲩϯ: the dictionary has the word without its article.
+    const art = q.trim().match(/^(بي|ني|تي|إب|اب|إف|اف|إن|ان|إم|ام)\s*(.{3,})$/);
+    const aqBare = art ? arabizedKey(art[2]) : '';
+    if (cq.length >= 2) {
+      const meant = new Set(scored.map(x => x.e));
+      for (const e of entries) {
+        if (meant.has(e)) continue;
+        let s = 9;
+        if (e.aKey === aq) s = 0.3;
+        else if (aqBare && e.aKey === aqBare) s = 0.6;
+        else if (e.aCons === cq) s = 3.5 + editDistance(e.aKey!, aq, 9) / 20;
+        else if (cq.length >= 4 && editDistance(e.aCons!, cq, 1) <= 1 && editDistance(e.aKey!, aq, 2) <= 2) s = 4.5;
+        if (s < 9) scored.push({ e, s, note: s < 1 ? 'بالنطق' : 'نطقها قريب من اللي كتبته' });
+      }
+    }
     // Nothing for ماركو or عايز: look up مرقس or يريد.
     if (!scored.length) for (const v of searchVariants(q).slice(1)) {
       const r = search(entries, v, limit);
@@ -166,9 +210,30 @@ export function search(entries: Indexed[], q: string, limit = 60): { hits: Hit[]
       };
       strip(k, []);
     }
+    // Typed a letter off, or a vowel different from the dictionary: show the closest words.
+    if (script === 'coptic' && k.length >= 3 && scored.filter(x => x.s < 3).length < 3) {
+      const max = k.length >= 6 ? 2 : 1, cons = (x: string) => x.replace(/[ⲁⲉⲏⲓⲟⲱⲩ]/g, '');
+      const kc = cons(k), have = new Set(scored.map(x => x.e));
+      ensureArabized(entries);
+      const said = arabizedKey(arabize(q));
+      for (const e of entries) {
+        if (have.has(e)) continue;
+        // Said the same way (ⲛⲟⲩⲧⲓ and ⲛⲟⲩϯ): closest of all.
+        if (e.aKey === said) { scored.push({ e, s: 4.8, note: 'قريبة من اللي كتبته' }); continue; }
+        const d = editDistance(e.cKey, k, max);
+        if (d <= max || (kc.length >= 2 && cons(e.cKey) === kc)) scored.push({ e, s: 5 + Math.min(d, max + 1) / 10, note: 'قريبة من اللي كتبته' });
+      }
+    }
   }
   scored.sort((a, b) => a.s - b.s);
-  return { hits: scored.slice(0, limit).map(x => ({ entry: x.e, note: x.note })), total: scored.length };
+  // One result per word: the same word from four dictionaries shows once, with everything they say.
+  const groups = new Map<string, { list: Indexed[]; note?: string }>();
+  for (const x of scored) {
+    const g = groups.get(x.e.cKey);
+    if (g) g.list.push(x.e); else groups.set(x.e.cKey, { list: [x.e], note: x.note });
+  }
+  const all = [...groups.values()];
+  return { hits: all.slice(0, limit).map(g => ({ entry: merge(g.list), note: g.note })), total: all.length };
 }
 
 /** On-screen Coptic keyboard, in alphabet order. */

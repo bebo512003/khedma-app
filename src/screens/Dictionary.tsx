@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { COPTIC_KEYS, loadDictionary, search, scriptOf, type Hit } from '../data/dictionary';
 import { count } from '../data/logic';
+import { arabize } from '../data/arabize';
 
 type Dict = Awaited<ReturnType<typeof loadDictionary>>;
 
@@ -48,8 +49,8 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
         {!q.trim() && dict && (
           <div className="card">
             <b>دوّر بأي طريقة تريحك</b>
-            <div className="muted">بالقبطي (زرار ⲁⲃⲅ بيفتح كيبورد قبطي)، أو بالعربي عشان تعرف الكلمة بالقبطي، أو بالحروف الإنجليزي. ولو الكلمة ملزوق فيها أداة زي ⲡⲓⲛⲟⲩϯ، القاموس بيفكها لوحده.</div>
-            <div className="try">{['ⲡⲓⲛⲟⲩϯ', 'محبة', 'ⲱⲟⲩ', 'agathos'].map(x => <button key={x} className="chip coptic-font" onClick={() => setQ(x)}>{x}</button>)}</div>
+            <div className="muted">بالقبطي (زرار ⲁⲃⲅ بيفتح كيبورد قبطي)، أو بالعربي عشان تعرف الكلمة بالقبطي، أو بالقبطي المعرّب زي «إفنوتي»، أو بالحروف الإنجليزي. ولو كتبت الكلمة بحرف غلط هيطلعلك أقرب كلمات ليها. ولو الكلمة ملزوق فيها أداة زي ⲡⲓⲛⲟⲩϯ، القاموس بيفكها لوحده.</div>
+            <div className="try">{['ⲡⲓⲛⲟⲩϯ', 'محبة', 'إفنوتي', 'agathos'].map(x => <button key={x} className="chip coptic-font" onClick={() => setQ(x)}>{x}</button>)}</div>
           </div>
         )}
         {result && (
@@ -80,6 +81,7 @@ function Row({ hit: { entry: e, note } }: { hit: Hit }) {
         <span className="coptic-font cword" dir="ltr">{e.word}</span>
         <span className="muted" dir="ltr">{e.latin}</span>
       </div>
+      <div className="say">النطق: <b>{arabize(e.word)}</b></div>
       {e.meanings.length > 0 && <b>{e.meanings.join('، ')}</b>}
       {e.forms && e.forms.length > 1 && (
         <div className="muted" style={{ fontSize: 12 }}>في اللهجات: {e.forms.slice(0, 8).map(([f, d], i) => <span key={i}><span className="coptic-font" dir="ltr">{f}</span>{d.length ? ` (${d.join('، ')})` : ''}{i < Math.min(8, e.forms!.length) - 1 ? '، ' : ''}</span>)}</div>
@@ -90,7 +92,7 @@ function Row({ hit: { entry: e, note } }: { hit: Hit }) {
       {tags.length > 0 && <div className="muted" style={{ fontSize: 12 }}>{tags.join(' • ')}</div>}
       {e.source && <div className="muted" style={{ fontSize: 12 }}>المصدر: {e.source}</div>}
       {e.machineRead && <span className="muted" style={{ fontSize: 12 }}>قراءة آلية من صفحة مصوّرة، ممكن يكون فيها حرف غلط</span>}
-      {note && <span className="tag tag-ex">{note.startsWith('«') ? note : `بعد ما شلنا ${note}`}</span>}
+      {note && <span className="tag tag-ex">{note.startsWith('«') || !note.includes('=') ? note : `بعد ما شلنا ${note}`}</span>}
     </div>
   );
 }
