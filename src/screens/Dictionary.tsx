@@ -74,11 +74,11 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
 }
 
 function Row({ hit: { entry: e, note } }: { hit: Hit }) {
-  const tags = [e.kind, e.form, e.origin, ...(e.dialects ?? [])].filter(Boolean);
+  const tags = [e.kind, e.form, ...(e.dialects ?? [])].filter(Boolean);
   return (
     <div className="li" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 4 }}>
       <div className="row between" style={{ width: '100%' }}>
-        <span className="coptic-font cword" dir="ltr">{e.word}</span>
+        <span className="row" style={{ gap: 8 }}><span className="coptic-font cword" dir="ltr">{e.word}</span>{e.origin && <span className={`tag origin ${e.origin === 'قبطي' ? 'tag-ok' : 'tag-ex'}`}>{e.origin}</span>}</span>
         <span className="muted" dir="ltr">{e.latin}</span>
       </div>
       <div className="say">النطق: <b>{arabize(e.word)}</b></div>

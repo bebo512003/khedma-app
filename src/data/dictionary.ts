@@ -51,7 +51,9 @@ function merge(group: Indexed[]): Entry {
   const forms = uniq(group.flatMap(e => e.forms ?? []), f => copticKey(f[0]));
   return {
     word: group.find(e => !e.machineRead)?.word ?? group[0].word,
-    latin: first(e => e.latin), kind: first(e => e.kind), form: first(e => e.form), origin: first(e => e.origin), english: first(e => e.english),
+    latin: first(e => e.latin), kind: first(e => e.kind), form: first(e => e.form), english: first(e => e.english),
+    // A dictionary that names a borrowing (يوناني) says more than one that just calls the word Coptic.
+    origin: first(e => e.origin === 'قبطي' ? undefined : e.origin) || first(e => e.origin),
     meanings: uniq(group.flatMap(e => e.meanings), m => norm(m.replace(/ \*$/, ''))).slice(0, 12),
     dialects: uniq(group.flatMap(e => e.dialects ?? [])),
     forms: forms.length > 1 ? forms : undefined,
@@ -83,11 +85,12 @@ export function loadDictionary() {
     source: d.source,
     entries: [
       ...d.words.map(([word, latin, k, f, o, meanings]) => ({
-        word: display(word), latin, kind: d.labels[k], form: d.labels[f], origin: d.labels[o], meanings,
+        // Osama Thabet marks every borrowed word (يوناني، عبري...): unmarked ones are Coptic.
+        word: display(word), latin, kind: d.labels[k], form: d.labels[f], origin: d.labels[o] || 'قبطي', meanings,
         cKey: copticKey(word), lKey: latinKey(latin), mKeys: meanings.map(m => norm(m)),
       })),
       ...(sg?.words ?? []).map(([word, greek, k, f, o, meanings, english, dialects, sources]) => ({
-        word, latin: greek, kind: sg!.labels[k], form: sg!.labels[f], origin: sg!.labels[o], meanings, english,
+        word, latin: greek, kind: sg!.labels[k], form: sg!.labels[f], origin: sg!.labels[o] || 'قبطي', meanings, english,
         dialects: dialects.map(i => sg!.labels[i]),
         source: ['نزلة السمان', ...sources.map(i => sg!.labels[i])].join('، '),
         cKey: copticKey(word), lKey: '', mKeys: meanings.map(m => norm(m.replace(/ \*$/, ''))),
@@ -100,7 +103,7 @@ export function loadDictionary() {
       })),
       // Only the clearly read Bohairic words go to the translators.
       ...(mw?.entries ?? []).map(([forms, dialects, pos, arabic, examples, unsure, page]) => ({
-        word: forms[0], latin: '', kind: pos, form: '', origin: '', meanings: arabic, dialects, machineRead: true, lookupOnly: !!unsure,
+        word: forms[0], latin: '', kind: pos.replace(/يوناني( • )?/, '').replace(/ • $/, ''), form: '', origin: pos.includes('يوناني') ? 'يوناني' : '', meanings: arabic, dialects, machineRead: true, lookupOnly: !!unsure,
         forms: forms.length > 1 ? forms.map(f => [f, []] as [string, string[]]) : undefined,
         examples: examples.map(([coptic, , arabic, ref]) => ({ coptic, arabic, ref })),
         source: `معوض داود عبد النور، ص ${page}`,
@@ -167,14 +170,14 @@ export function search(entries: Indexed[], q: string, limit = 60): { hits: Hit[]
     // بي نوتي is ⲡⲓ + ⲛⲟⲩϯ: the dictionary has the word without its article.
     const art = q.trim().match(/^(بي|ني|تي|إب|اب|إف|اف|إن|ان|إم|ام)\s*(.{3,})$/);
     const aqBare = art ? arabizedKey(art[2]) : '';
-    if (cq.length >= 2) {
+    if (aq.length >= 3) {
       const meant = new Set(scored.map(x => x.e));
       for (const e of entries) {
         if (meant.has(e)) continue;
         let s = 9;
         if (e.aKey === aq) s = 0.3;
         else if (aqBare && e.aKey === aqBare) s = 0.6;
-        else if (e.aCons === cq) s = 3.5 + editDistance(e.aKey!, aq, 9) / 20;
+        else if (cq.length >= 2 && e.aCons === cq) s = 3.5 + editDistance(e.aKey!, aq, 9) / 20;
         else if (cq.length >= 4 && editDistance(e.aCons!, cq, 1) <= 1 && editDistance(e.aKey!, aq, 2) <= 2) s = 4.5;
         if (s < 9) scored.push({ e, s, note: s < 1 ? 'بالنطق' : 'نطقها قريب من اللي كتبته' });
       }

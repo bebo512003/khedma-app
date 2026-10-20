@@ -488,3 +488,18 @@ export function toCoptic(t: Translator, text: string, extra?: ArabicLexicon): CT
   const whole = phrases.length > 1 ? nearestArabic(r, arKey(phrases.join(' ')), 0.6) : undefined;
   return { phrases: result, coptic: whole?.score === 1 ? whole.coptic : result.map(x => x.coptic).filter(Boolean).join(' : '), whole };
 }
+
+/** Where a Coptic word comes from (قبطي، يوناني، عبري...), as the dictionaries say. */
+const origins = new WeakMap<Translator, Map<string, string>>();
+export function originOf(t: Translator, coptic: string) {
+  let m = origins.get(t);
+  if (!m) {
+    m = new Map();
+    for (const e of t.dict) {
+      const k = copticKey(e.word), o = m.get(k);
+      if (e.origin && (!o || o === 'قبطي')) m.set(k, e.origin);
+    }
+    origins.set(t, m);
+  }
+  return m.get(copticKey(coptic)) ?? '';
+}

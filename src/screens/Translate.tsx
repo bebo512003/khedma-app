@@ -4,7 +4,7 @@ import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { COPTIC_KEYS, scriptOf } from '../data/dictionary';
 import { loadTranslator, loadVerses, translate, type Match, type Translator, type WordResult } from '../data/translator';
 import { arabize } from '../data/arabize';
-import { loadArabicLexicon, toCoptic, type ArabicLexicon, type CWord } from '../data/toCoptic';
+import { loadArabicLexicon, originOf, toCoptic, type ArabicLexicon, type CWord } from '../data/toCoptic';
 
 const EXAMPLE = 'Ⲡⲓⲭⲣⲓⲥⲧⲟⲥ ⲁϥⲙⲓⲥⲓ ϧⲉⲛ Ⲃⲏⲑⲗⲉⲉⲙ';
 const EXAMPLE_AR = 'قام المسيح من الأموات';
@@ -93,7 +93,7 @@ export default function Translate({ base = '' }: { base?: string }) {
                   <div className="say">النطق: <b>{arabize(p.coptic)}</b></div>
                 </>}
                 {p.match && p.match.score < 1 && <Near m={p.match} />}
-                <div className="words">{p.words.filter(w => w.text).map((w, j) => <CopticWord key={j} w={w} base={base} />)}</div>
+                <div className="words">{p.words.filter(w => w.text).map((w, j) => <CopticWord key={j} w={w} base={base} t={t!} />)}</div>
               </div>
             ))}
             <details className="srcs span"><summary>المصادر</summary>نصوص وتحليل كلمات مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، وقاموس أسامة ثابت وقاموس معوض داود عبد النور، وبرنامج أسامة ثابت للترجمة المساعدة آليًا من العربي للقبطي (2019)، والكتاب المقدس: النص البحيري من Coptic SCRIPTORIUM (CC BY 4.0) مربوط آية بآية بترجمة فاندايك (ملك عام).</details>
@@ -113,7 +113,7 @@ export default function Translate({ base = '' }: { base?: string }) {
                 <div className="say">النطق: <b>{arabize(p.text)}</b></div>
                 <b>{p.arabic}</b>
                 {p.match && p.match.score < 1 && <Near m={p.match} />}
-                <div className="words">{p.words.map((w, j) => <Word key={j} w={w} base={base} />)}</div>
+                <div className="words">{p.words.map((w, j) => <Word key={j} w={w} base={base} t={t!} />)}</div>
               </div>
             ))}
             <details className="srcs span"><summary>المصادر</summary>تحليل كلمات ونصوص مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، قاموس أسامة ثابت، قاموس معوض داود عبد النور، قواعد اللغة القبطية للراهب أندرياس المقاري، جداول التصريف والأفعال من «Grammaire copte» للأب ألكسيس مالون (بيروت، 1907، ملك عام)، والكتاب المقدس: النص البحيري من Coptic SCRIPTORIUM (CC BY 4.0) مربوط آية بآية بترجمة فاندايك (ملك عام).</details>
@@ -139,7 +139,9 @@ function Near({ m }: { m: Match }) {
 
 const HOW: Record<CWord['how'], string> = { hymns: 'من الألحان', grammar: 'متركّبة', dictionary: 'من القاموس', unknown: '' };
 
-function CopticWord({ w, base }: { w: CWord; base: string }) {
+function CopticWord({ w, base, t }: { w: CWord; base: string; t: Translator }) {
+  const stem = w.pieces[w.pieces.length - 1]?.form ?? w.coptic;
+  const origin = originOf(t, stem.split(' ').pop() ?? '');
   return (
     <div className={`wcard ${w.how === 'dictionary' ? 'grammar' : w.how}`}>
       <div className="row between">
@@ -148,14 +150,14 @@ function CopticWord({ w, base }: { w: CWord; base: string }) {
           ? <Link to={`${base}/dictionary?q=${encodeURIComponent(w.pieces[w.pieces.length - 1]?.form.split(' ')[0] || w.coptic)}`} className="coptic-font cword" dir="ltr">{w.coptic}</Link>
           : <b>؟</b>}
       </div>
-      {w.coptic && <div className="say" dir="rtl">{arabize(w.coptic)}</div>}
+      {w.coptic && <div className="say" dir="rtl">{arabize(w.coptic)}{origin && <span className="muted"> • أصلها {origin}</span>}</div>}
       {w.pieces.length > 1 && (
         <div className="pieces" dir="ltr">
           {w.pieces.map((p, i) => <span key={i} className="piece"><span className="coptic-font">{p.form}</span><small dir="rtl">{p.gloss}</small></span>)}
         </div>
       )}
       {w.alts && w.alts.length > 0 && (
-        <div className="muted" style={{ fontSize: 12 }}>وبرضه بتتقال: {w.alts.map((c, i) => <span key={c}>{i > 0 && '، '}<Link to={`${base}/dictionary?q=${encodeURIComponent(c)}`} className="coptic-font" dir="ltr">{c}</Link> ({arabize(c)})</span>)}</div>
+        <div className="muted" style={{ fontSize: 12 }}>وبرضه بتتقال: {w.alts.map((c, i) => <span key={c}>{i > 0 && '، '}<Link to={`${base}/dictionary?q=${encodeURIComponent(c)}`} className="coptic-font" dir="ltr">{c}</Link> ({arabize(c)}{originOf(t, c) && `، ${originOf(t, c)}`})</span>)}</div>
       )}
       {w.how === 'unknown'
         ? <div className="muted" style={{ fontSize: 12 }}>مش لاقيها، جرّب كلمة بنفس المعنى أو دوّر في القاموس.</div>
@@ -166,15 +168,16 @@ function CopticWord({ w, base }: { w: CWord; base: string }) {
 
 const ROLE: Record<string, string> = { prefix: 'أداة', stem: 'الكلمة', suffix: 'ضمير', word: 'كلمة' };
 
-function Word({ w, base }: { w: WordResult; base: string }) {
+function Word({ w, base, t }: { w: WordResult; base: string; t: Translator }) {
   const stem = w.pieces.find(p => p.role === 'stem' || p.role === 'word') ?? w.pieces[w.pieces.length - 1];
+  const origin = stem ? originOf(t, stem.form) : '';
   return (
     <div className={`wcard ${w.how}`}>
       <div className="row between">
         <Link to={`${base}/dictionary?q=${encodeURIComponent(stem.form)}`} className="coptic-font cword" dir="ltr">{w.text}</Link>
         <b>{w.arabic || (w.how === 'unknown' ? '؟' : '—')}</b>
       </div>
-      <div className="say">{arabize(w.text)}</div>
+      <div className="say">{arabize(w.text)}{origin && <span className="muted"> • أصلها {origin}</span>}</div>
       {w.pieces.length > 1 && (
         <div className="pieces" dir="ltr">
           {w.pieces.map((p, i) => (
