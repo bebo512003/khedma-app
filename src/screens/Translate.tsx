@@ -112,7 +112,7 @@ export default function Translate({ base = '' }: { base?: string }) {
                 <div className="words">{p.words.map((w, j) => <Word key={j} w={w} base={base} />)}</div>
               </div>
             ))}
-            <details className="srcs span"><summary>المصادر</summary>تحليل كلمات ونصوص مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، قاموس أسامة ثابت، قاموس معوض داود عبد النور، قواعد اللغة القبطية للراهب أندرياس المقاري، والكتاب المقدس: النص البحيري من Coptic SCRIPTORIUM (CC BY 4.0) مربوط آية بآية بترجمة فاندايك (ملك عام).</details>
+            <details className="srcs span"><summary>المصادر</summary>تحليل كلمات ونصوص مكتبة ألحان كنيسة مارجرجس بنزلة السمان وقاموسها، قاموس أسامة ثابت، قاموس معوض داود عبد النور، قواعد اللغة القبطية للراهب أندرياس المقاري، جداول التصريف والأفعال من «Grammaire copte» للأب ألكسيس مالون (بيروت، 1907، ملك عام)، والكتاب المقدس: النص البحيري من Coptic SCRIPTORIUM (CC BY 4.0) مربوط آية بآية بترجمة فاندايك (ملك عام).</details>
           </>
         )}
       </main>

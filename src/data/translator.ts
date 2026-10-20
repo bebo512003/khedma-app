@@ -7,7 +7,7 @@ import { bohairic, copticKey, loadDictionary, type Entry } from './dictionary';
  *    the grammar pieces glued to it (articles, possessives, tense and person prefixes, prepositions, object pronouns)
  *    and a stem from the library or the dictionary. The Arabic is put together from those pieces.
  */
-const URL_ = 'dict/hymn-corpus.json?v=2';
+const URL_ = 'dict/hymn-corpus.json?v=3';
 /** The Bible, Bohairic and Arabic verse by verse (scripts/build-bible.py): what Coptic words mean there, and the verses themselves. */
 const URL_BIBLE = 'dict/bible-lex.json?v=1';
 const URL_VERSES = 'dict/bible-verses.json?v=1';
