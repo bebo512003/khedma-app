@@ -50,6 +50,9 @@ async function runChurch(church, publicKey, now) {
     const r = s[k];
     return r.on && r.days.includes(now.day) && now.hour >= r.hour && now.hour < r.hour + LATE && log[k] !== now.date;
   });
+  // On the 1st (from 10am), servants hear the past month's report is ready.
+  const pastMonth = (() => { const [y, m] = now.date.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; })();
+  const monthly = now.date.endsWith('-01') && now.hour >= 10 && log.month !== pastMonth;
   const test = s.testAt && s.testAt > (log.testAt ?? 0) && s.testUid;
   // Session summaries saved since the last run go to that level's members. The first run only marks the time.
   const since = log.summaryAt ?? Date.now();
@@ -63,7 +66,7 @@ async function runChurch(church, publicKey, now) {
   const subAt = Math.max(subAt0, ...sent0.map(x => x.at)), revAt = Math.max(revAt0, ...reviews.map(x => x.reviewAt));
   if (log.subAt === undefined || log.revAt === undefined) await logRef.set({ ...log, summaryAt, subAt, revAt }, { merge: true });
   await cleanSubmissions(c);
-  if (!due.length && !test && !summaries.length && !sent0.length && !reviews.length) { console.log(`${c.id}: nothing due at ${now.date} ${now.hour}:00 (day ${now.day}).`); return; }
+  if (!due.length && !monthly && !test && !summaries.length && !sent0.length && !reviews.length) { console.log(`${c.id}: nothing due at ${now.date} ${now.hour}:00 (day ${now.day}).`); return; }
 
   const subs = (await c.collection('pushSubs').get()).docs;
   const who = new Map();
@@ -79,7 +82,7 @@ async function runChurch(church, publicKey, now) {
     return who.get(uid);
   };
 
-  const sent = { hymn: 0, session: 0, test: 0, summary: 0, submission: 0, review: 0 };
+  const sent = { month: 0, hymn: 0, session: 0, test: 0, summary: 0, submission: 0, review: 0 };
   for (const sub of subs) {
     const d = sub.data();
     const p = await whoIs(d.uid);
@@ -100,6 +103,7 @@ async function runChurch(church, publicKey, now) {
     const listens = p.kind === 'servant' && (['admin', 'lead'].includes(p.role) || !p.perms || p.perms.includes('sessions'));
     const mine = listens ? sent0.filter(x => (p.levelIds ?? []).some(l => l === '*' || l === x.levelId)) : [];
     if (mine.length) msgs.push(['submission', { title: mine.length === 1 ? `${mine[0].memberName} سمّع ${mine[0].hymnName}` : `${mine.length} تسميعات جديدة`, body: 'اسمعه وابعتله رأيك', tag: 'submissions', url: './#/reviews' }]);
+    if (monthly && p.kind === 'servant') msgs.push(['month', { title: 'تقرير الشهر اللي فات جاهز 📊', body: 'الحضور والأوائل ومين مستواه نزل، قبل ما تبدأ الشهر الجديد', tag: `month-${pastMonth}`, url: `./#/month/${pastMonth}` }]);
     if (test && d.uid === s.testUid) msgs.push(['test', { title: 'تنبيه تجربة', body: 'التنبيهات شغالة على الموبايل ده ✓', tag: 'test', url: './#/notify' }]);
     for (const [k, payload] of msgs) {
       try {
@@ -115,6 +119,7 @@ async function runChurch(church, publicKey, now) {
   const next = { ...log };
   for (const k of due) next[k] = now.date;
   if (test) next.testAt = s.testAt;
+  if (monthly) next.month = pastMonth;
   next.summaryAt = summaryAt;
   next.subAt = subAt;
   next.revAt = revAt;

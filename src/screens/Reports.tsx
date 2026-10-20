@@ -60,6 +60,9 @@ export default function Reports() {
         </div>
       </header>
       <main className="main gutter wide dash">
+        <Link to="/month" className="card row between" style={{ color: 'inherit', textDecoration: 'none' }}>
+          <div><b>تقرير الشهر</b><div className="muted">الحضور مقارنة بالشهر اللي قبله، الأوائل، ومين مستواه نزل</div></div><span className="btn" style={{ minHeight: 40 }}>افتح</span>
+        </Link>
         <div className="card span"><div className="stats stats4">
           <div className="stat"><b>{report.sessions}</b><span className="muted">{report.sessions === 1 ? 'حصة' : 'حصص'}</span></div>
           <div className="stat"><b>{report.rate === null ? '–' : `${report.rate}%`}</b><span className="muted">نسبة الحضور</span></div>

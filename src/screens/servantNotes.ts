@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { absenceStreak, birthdayWhen, needsFollowUp, upcomingBirthdays, watchList } from '../data/logic';
 import { useAllowedLevel, useCan, useData, useStore } from '../data/store';
 import { usePending } from './usePending';
+import { monthName, shiftMonth, thisMonth } from '../data/monthReport';
 
 /** One line in the servant's notifications: anything waiting on them, newest worries first. */
-export type ServantNote = { key: string; kind: 'mic' | 'heart' | 'cake' | 'eye' | 'clock' | 'alert'; title: string; body?: string; to: string; urgent?: boolean };
+export type ServantNote = { key: string; kind: 'mic' | 'heart' | 'cake' | 'eye' | 'clock' | 'alert' | 'chart'; title: string; body?: string; to: string; urgent?: boolean };
 
 const WEEK = 7 * 86_400_000;
 const SEEN = 'servantSeen';
@@ -34,6 +35,15 @@ export function useServantNotes() {
   if (canSessions) for (const s of data.sessions)
     if (allowed(s.levelId) && !s.summary && !(s.recordings?.length) && Date.now() - new Date(s.date).getTime() < WEEK)
       notes.push({ key: `sum_${s.id}`, kind: 'clock', title: `حصة ${data.levels.find(l => l.id === s.levelId)?.name ?? ''} يوم ${s.date} من غير ملخص`, body: 'المخدومين بيستنوا الملخص والتسجيل عشان يراجعوا', to: `/summary/${s.id}` });
+
+  // Month report: the past month's, for the first week of a new month; and a heads-up in the last three days before the ranking resets.
+  const today = new Date(), last = shiftMonth(thisMonth(), -1);
+  const daysLeft = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate();
+  const had = (month: string) => data.sessions.some(s => allowed(s.levelId) && s.date.startsWith(month));
+  if (today.getDate() <= 7 && had(last))
+    notes.push({ key: `month_${last}`, kind: 'chart', title: `تقرير ${monthName(last)} جاهز`, body: 'الحضور والأوائل ومين مستواه نزل', to: `/month/${last}` });
+  if (daysLeft < 3 && had(thisMonth()))
+    notes.push({ key: `reset_${thisMonth()}`, kind: 'chart', title: daysLeft === 0 ? 'الترتيب بيتصفّر بكرة' : `الترتيب بيتصفّر بعد ${daysLeft === 1 ? 'يومين' : `${daysLeft + 1} أيام`}`, body: 'شوف الأوائل ومين محتاج تشجيع قبل ما الشهر يخلص', to: `/month/${thisMonth()}` });
 
   const unread = notes.filter(n => !seen.includes(n.key)).length;
   const markSeen = () => {
