@@ -10,8 +10,8 @@ const KEY = 'khedma.member';
 const read = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
 const write = (id: string | null) => { try { if (id) localStorage.setItem(KEY, id); else localStorage.removeItem(KEY); } catch { /* private mode */ } };
 
-/** Example members have no PIN yet, so 1234 lets anyone try the member app with them (offline mode only). */
-export const EXAMPLE_PIN = '1234';
+/** Example members have no PIN yet, so 123456 lets anyone try the member app with them (offline mode only). */
+export const EXAMPLE_PIN = '123456';
 
 export async function memberLogin(code: string, pin: string, data: ReturnType<typeof useStore>['data']): Promise<string | null> {
   let id: string | null = null;

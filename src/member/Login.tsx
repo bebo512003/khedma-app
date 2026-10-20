@@ -16,9 +16,9 @@ export default function Login() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // New PINs are 6 digits; older cards have 4, so "ادخل" works from 4 and 6 digits go in on their own.
+  // PINs are 6 digits: the sixth one signs in on its own.
   const submit = async (next: string) => {
-    if (busy || next.length < 4) return;
+    if (busy || next.length < 6) return;
     setBusy(true);
     try {
       const id = await memberLogin(code.trim().padStart(4, '0'), next, data);
@@ -44,16 +44,16 @@ export default function Login() {
       <label className="field" htmlFor="code" style={{ width: '100%' }}><span>كودك</span>
         <input id="code" className="input code" inputMode="numeric" dir="ltr" maxLength={6} placeholder="0042" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} /></label>
       <div className="field" style={{ width: '100%' }}><span>الرقم السري</span>
-        <div className="dots" aria-label={`اتكتب ${pin.length} أرقام`}>{Array.from({ length: Math.max(4, pin.length) }, (_, i) => <i key={i} className={i < pin.length ? 'on' : ''} />)}</div>
+        <div className="dots" aria-label={`اتكتب ${pin.length} أرقام`}>{Array.from({ length: 6 }, (_, i) => <i key={i} className={i < pin.length ? 'on' : ''} />)}</div>
       </div>
       {error && <div className="alert-t" role="alert">{error}</div>}
       <div className="keypad">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0'].map(k =>
           <button key={k} onClick={() => press(k)} disabled={busy || (!code && k !== '⌫')} aria-label={k === '⌫' ? 'امسح' : k}>{k}</button>)}
-        <button className="go" onClick={() => submit(pin)} disabled={busy || !code || pin.length < 4}>ادخل</button>
+        <button className="go" onClick={() => submit(pin)} disabled={busy || !code || pin.length < 6}>ادخل</button>
       </div>
       <div className="muted" style={{ textAlign: 'center' }}>مش فاكره؟ اسأل الخادم بتاعك يعملك واحد جديد.
-        {!cloudEnabled && data?.members.some(m => m.example) && <><br />للتجربة: الكود 0001 والرقم 1234</>}</div>
+        {!cloudEnabled && data?.members.some(m => m.example) && <><br />للتجربة: الكود 0001 والرقم 123456</>}</div>
       <OpenDoor />
       <Link to="/install" className="muted">إزاي أنزّل التطبيق؟</Link>
       <Link to="/" className="muted">رجوع لتطبيق الخادم</Link>
