@@ -159,8 +159,8 @@ export function OpenHymn() {
   );
 }
 
-/** The school's page, phone and the church's Drive folder. */
-const SCHOOL = {
+/** The school's page, WhatsApp and the church's Drive folder. */
+export const SCHOOL = {
   facebook: 'https://www.facebook.com/st.stephan.sch',
   phone: '01212996548',
   drive: 'https://drive.google.com/drive/folders/1RxvEiEVgqWOUNeNF5oLWfmZZ4jNErPnL',
@@ -173,7 +173,6 @@ export function Contact() {
       <div className="contact-row">
         <a href={SCHOOL.facebook} {...ext}><Icon name="facebook" size={20} /><span>صفحتنا</span></a>
         <a href={`https://wa.me/2${SCHOOL.phone}`} {...ext}><Icon name="whatsapp" size={20} /><span>واتساب</span></a>
-        <a href={`tel:${SCHOOL.phone}`}><Icon name="phone" size={20} /><span dir="ltr">{SCHOOL.phone}</span></a>
         <a href={SCHOOL.drive} {...ext}><Icon name="drive" size={20} /><span>درايف الكنيسة</span></a>
       </div>
     </section>

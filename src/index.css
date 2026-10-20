@@ -108,6 +108,7 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
 /* Member app */
 .login { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding-block: 32px; background: var(--hero); color: var(--on-hero); --surface: transparent; --line: rgba(250,246,239,.25); --muted: #D9C3B0; }
 .login .input { color: var(--on-hero); }
+.login button.btn { color: var(--on-hero); border-color: rgba(250,246,239,.5); }
 .login .code { font-size: 22px; letter-spacing: 6px; text-align: center; font-variant-numeric: tabular-nums; }
 .login a:not(.btnp) { color: var(--gold); }
 .dots { display: flex; gap: 14px; justify-content: center; padding-block: 6px; }

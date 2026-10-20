@@ -99,7 +99,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             getDoc(paths.churchRef(db)).catch(() => null),
             getDoc(paths.ref(db, 'invites', email)).catch(() => null),
           ]);
-          setAccess({ churchExists: !!church?.exists(), invite: invite?.exists() ? (invite.data() as Invite) : null });
+          // A read that failed counts as "the church exists": only its real absence offers to start it.
+          setAccess({ churchExists: church === null || church.exists(), invite: invite?.exists() ? (invite.data() as Invite) : null });
           setPhase('noAccess');
         }, e => { setSyncError(e.message); setPhase('noAccess'); });
       });

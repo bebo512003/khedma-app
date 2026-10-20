@@ -4,7 +4,8 @@ import { useStore } from '../data/store';
 import logo from '../logo.png';
 import DeskNav from './DeskNav';
 import MobileNav from './MobileNav';
-import { OpenDoor } from './Open';
+import { OpenDoor, SCHOOL } from './Open';
+import Icon from '../ui/Icon';
 
 /** In cloud mode, servant screens open only for signed-in servants of this church. */
 export default function Gate({ children }: { children: ReactNode }) {
@@ -41,7 +42,11 @@ export default function Gate({ children }: { children: ReactNode }) {
         ) : access.invite ? (
           <button className="btnp" style={{ width: '100%' }} disabled={busy} onClick={run(acceptInvite)}>اقبل الدعوة وادخل</button>
         ) : (
-          <div className="note" style={{ textAlign: 'center' }}>الإيميل ده لسه مش ضمن الخدام. اطلب من الخادم المسؤول يضيفه من صفحة الفريق، وبعدين ادخل تاني.</div>
+          <div className="card" style={{ textAlign: 'center', width: '100%' }}>
+            <b>التطبيق ده داخلي لخدام مدرسة الشهيد اسطفانوس</b>
+            <div className="note">الإيميل ده مش ضمن خدام المدرسة. لو انت خادم معانا، اطلب من الخادم المسؤول يضيفه من صفحة الفريق وادخل تاني. ولأي استفسار كلّمنا على واتساب.</div>
+            <a className="btnp" href={`https://wa.me/2${SCHOOL.phone}`} target="_blank" rel="noopener noreferrer"><Icon name="whatsapp" size={20} /> كلّم المدرسة على واتساب</a>
+          </div>
         )}
         <button className="btn" style={{ width: '100%' }} onClick={run(signOut)}>ادخل بحساب تاني</button>
       </>
