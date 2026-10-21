@@ -4,6 +4,9 @@ import { useData, useStore } from '../data/store';
 import { DEFAULT_PERMS, PERMS, ROLE_LABELS, type Invite, type Perm, type Role, type Servant } from '../data/types';
 import { waLink } from '../data/logic';
 
+/** Alphabetical by the name itself, so تاسوني and أبونا don't all bunch together. */
+const byName = (n: string) => n.trim().replace(/^(تاسوني|أبونا|ابونا|القمص|القس)\s+/, '');
+
 /** The team with their profiles. The admin also invites servants by Google email and chooses each one's role, levels and permissions. */
 export default function Team() {
   const [data] = useData();
@@ -20,7 +23,7 @@ export default function Team() {
     (async () => {
       const [{ servantFb }, { onSnapshot }, paths] = await Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]);
       const { db } = servantFb();
-      const a = onSnapshot(paths.col(db, 'servants'), s => setServants(s.docs.map(d => d.data() as Servant)));
+      const a = onSnapshot(paths.col(db, 'servants'), s => setServants(s.docs.map(d => d.data() as Servant).sort((a, b) => byName(a.name).localeCompare(byName(b.name), 'ar'))));
       const b = me?.role === 'admin' ? onSnapshot(paths.col(db, 'invites'), s => setInvites(s.docs.map(d => d.data() as Invite))) : () => {};
       stop = () => { a(); b(); };
     })();
