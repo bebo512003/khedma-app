@@ -283,7 +283,7 @@ function keep(r: Reverse, m: Map<string, number>, k: string, i: number) {
   if (!byKey) votes.set(m, byKey = new Map());
   let v = byKey.get(k);
   // ⲛ̀ϫⲉ / ⲟⲩⲟϩ / ϫⲉ before a half-line come from where it was cut, not from what it says.
-  const ck = (j: number) => copticKey((r.tmList[j]?.[1] ?? '').split(' ').filter((w, n, a) => n === a.length - 1 || a.slice(0, n + 1).some(x => !LEAD.has(copticKey(x)))).join(' '));
+  const ck = (j: number) => copticKey((r.tmList[j]?.[1] ?? '').split(' ').filter((_, n, a) => n === a.length - 1 || a.slice(0, n + 1).some(x => !LEAD.has(copticKey(x)))).join(' '));
   if (!v) byKey.set(k, v = new Map([[ck(m.get(k)!), 1]]));
   const c = ck(i), n = (v.get(c) ?? 0) + 1;
   v.set(c, n);
