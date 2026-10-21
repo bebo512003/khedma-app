@@ -54,9 +54,9 @@ export const norm = (s: string) => s.trim().toLowerCase()
   .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/[ً-ْ]/g, '')
   .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/\s+/g, ' ');
 
-export type Field = 'name' | 'gender' | 'grade' | 'birthdate' | 'birthMonth' | 'parentPhone' | 'phone' | 'rank';
+export type Field = 'name' | 'gender' | 'level' | 'grade' | 'birthdate' | 'birthMonth' | 'parentPhone' | 'phone' | 'rank';
 export const FIELD_LABELS: Record<Field, string> = {
-  name: 'الاسم', gender: 'النوع', grade: 'السنة الدراسية', birthdate: 'تاريخ الميلاد', birthMonth: 'شهر الميلاد',
+  name: 'الاسم', gender: 'النوع', level: 'المستوى', grade: 'السنة الدراسية', birthdate: 'تاريخ الميلاد', birthMonth: 'شهر الميلاد',
   parentPhone: 'موبايل ولي الأمر', phone: 'موبايل المخدوم', rank: 'الرتبة',
 };
 
@@ -67,14 +67,15 @@ export function guessColumns(header: string[]): Partial<Record<Field, number>> {
     const i = header.findIndex((h, i) => test(norm(h)) && !Object.values(out).includes(i));
     if (i >= 0 && out[f] === undefined) out[f] = i;
   };
-  take('parentPhone', h => /ولي|والد|الاب|الام|parent/.test(h));
+  take('level', h => /مستوي|level/.test(h));
+  take('parentPhone', h => /ولي|والد|الاب|الام|parent/.test(h) && !/اسم|name/.test(h));
   take('phone', h => /موبايل|تليفون|هاتف|رقم|phone|mobile|واتس/.test(h) && !/كود|قومي/.test(h));
   take('birthMonth', h => /شهر/.test(h) && /ميلاد|birth/.test(h));
   take('birthdate', h => /ميلاد|birth/.test(h));
   take('grade', h => /سنه|صف|مرحله|دراس|grade|class/.test(h));
   take('gender', h => /نوع|جنس|gender/.test(h));
   take('rank', h => /رتبه|شماس|rank/.test(h));
-  take('name', h => /اسم|name/.test(h));
+  take('name', h => /اسم|name/.test(h) && !/ولي|والد|parent/.test(h));
   return out;
 }
 
@@ -142,7 +143,7 @@ export function parseRank(raw: string): string | undefined {
 export function templateRows() {
   return [
     Object.values(FIELD_LABELS),
-    ['كيرلس مينا', 'ولد', 'تالتة ابتدائي', '15/3/2017', '01012345678', '', 'أبصالتس'],
-    ['مريم جرجس', 'بنت', 'أولى إعدادي', '2/11/2013', '01112345678', '01212345678', ''],
+    ['كيرلس مينا', 'ولد', 'ابتدائي 2', 'تالتة ابتدائي', '15/3/2017', '', '01012345678', '', 'أبصالتس'],
+    ['مريم جرجس', 'بنت', 'شباب', 'أولى إعدادي', '', 'نوفمبر', '01112345678', '01212345678', ''],
   ];
 }

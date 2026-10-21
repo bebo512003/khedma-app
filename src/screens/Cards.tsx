@@ -51,10 +51,13 @@ export default function Cards() {
     .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
   const levelName = (id: string) => data.levels.find(l => l.id === id)?.name;
   const noPin = members.filter(m => !m.pinHash && !m.account && !pins[m.id]);
+  // A PIN is never kept readable, so printing one for a member who already has a login means giving them a new one.
+  const hasPin = members.filter(m => (m.pinHash || m.account) && !pins[m.id]);
+  const [askReset, setAskReset] = useState(false);
 
   /** Gives every member on the page who has no login yet a PIN, so the whole level can be handed cards in one go. */
-  const makePins = async () => {
-    setPinError('');
+  const makePins = async (noPin: Member[]) => {
+    setPinError(''); setAskReset(false);
     const made: Record<string, string> = {};
     const changes: Record<string, Partial<Member>> = {};
     setBusy({ n: 0, total: noPin.length });
@@ -87,16 +90,22 @@ export default function Cards() {
         </div>
         {!one && <div className="chips">{levels.map(l =>
           <button key={l.id} className="chip" aria-pressed={levelId === l.id} onClick={() => setLevelId(l.id)}>{l.name}</button>)}</div>}
-        {!one && (noPin.length > 0 || withPins > 0) && (
+        {(noPin.length > 0 || hasPin.length > 0 || withPins > 0) && (
           <div className="card">
             <b>كروت دخول التطبيق</b>
             <div className="muted">{noPin.length > 0
               ? `${noPin.length} مخدوم في المستوى ده مالهمش رقم سري. اعملهم أرقام مرة واحدة والرقم يتطبع على كارت كل واحد.`
-              : 'كل المخدومين في المستوى ده ليهم رقم سري.'}</div>
+              : 'كل المخدومين هنا ليهم رقم سري. الرقم مش محفوظ عشان الأمان، فلو عايز تطبعه على الكارت اعمل رقم جديد.'}</div>
             {withPins > 0 && <div className="alert-t">الأرقام السرية دي بتظهر مرة واحدة بس. اطبع الكروت دلوقتي قبل ما تقفل الصفحة.</div>}
             {busy
               ? <><div className="muted">بيعمل الأرقام {busy.n} من {busy.total}</div><div className="progress-bar"><div style={{ width: `${(busy.n / Math.max(1, busy.total)) * 100}%` }} /></div></>
-              : noPin.length > 0 && <button className="btnp" onClick={makePins}>اعمل أرقام سرية لـ {noPin.length} مخدوم</button>}
+              : <>
+                {noPin.length > 0 && <button className="btnp" onClick={() => makePins(noPin)}>اعمل أرقام سرية لـ {noPin.length} مخدوم</button>}
+                {hasPin.length > 0 && (askReset
+                  ? <div className="alert"><b>الرقم السري القديم لـ {hasPin.length} مخدوم هيبطل</b><div className="muted">هيتعمل لكل واحد رقم جديد ويتطبع على كارته، وأي حد داخل بالقديم هيخرج ويدخل بالجديد.</div>
+                    <div className="row"><button className="btn grow" onClick={() => setAskReset(false)}>لا</button><button className="btnp grow" onClick={() => makePins(hasPin)}>اعمل أرقام جديدة</button></div></div>
+                  : <button className="btn" onClick={() => setAskReset(true)}>اطبع رقم سري جديد للي ليهم رقم ({hasPin.length})</button>)}
+              </>}
             {pinError && <div className="alert-t" role="alert">{pinError}</div>}
           </div>
         )}

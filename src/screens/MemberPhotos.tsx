@@ -4,29 +4,11 @@ import { useAllowedLevel, useData } from '../data/store';
 import { count } from '../data/logic';
 
 const photos = (n: number) => n === 1 ? 'صورة واحدة' : count(n, 'صورة', 'صورتين', 'صور');
-import { norm } from '../data/importSheet';
+import { matchName } from '../data/matchName';
 import { cropSquare } from '../ui/Cropper';
 import { cancelled } from '../data/photo';
-import type { Member } from '../data/types';
 
 const OUT = 256;
-
-/** Names as we compare them: spelling, ڤ/ف and چ/ج, and the digits and dashes cameras and phones add. */
-const key = (s: string) => norm(s).replace(/ڤ/g, 'ف').replace(/[چگ]/g, 'ج').replace(/[_\-.()[\]0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
-
-/** The member a photo's file name is: the whole name, else the one member whose name holds all its words (or it all theirs). */
-export function matchName(file: string, members: Member[]): Member | undefined {
-  const f = key(file.replace(/\.[^.]+$/, ''));
-  if (!f) return undefined;
-  const exact = members.filter(m => key(m.name) === f);
-  if (exact.length === 1) return exact[0];
-  const words = f.split(' ');
-  const hits = members.filter(m => {
-    const n = key(m.name).split(' ');
-    return words.every(w => n.includes(w)) || n.every(w => words.includes(w));
-  });
-  return hits.length === 1 ? hits[0] : undefined;
-}
 
 /** A square from the middle, a bit high on a tall photo where the face usually is, as a small JPEG. */
 async function autoSquare(file: File): Promise<string> {

@@ -2,6 +2,7 @@ import { useMemo, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { coder } from '../data/codes';
+import { matchName } from '../data/matchName';
 import type { Gender, Member } from '../data/types';
 import { count, levelForGrade, MONTHS, uid } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
@@ -10,6 +11,7 @@ import {
 } from '../data/importSheet';
 
 const FIELDS = Object.keys(FIELD_LABELS) as Field[];
+const people = (n: number) => count(n, 'مخدوم', 'مخدومين', 'مخدومين');
 
 /** Adds many members at once from an Excel/CSV sheet: pick file, check columns and rows, import. */
 export default function ImportMembers() {
@@ -25,12 +27,12 @@ export default function ImportMembers() {
   const [include, setInclude] = useState<Record<number, boolean>>({});
   const [fallbackLevel, setFallbackLevel] = useState(levels[0]?.id ?? '');
   const [error, setError] = useState('');
-  const [done, setDone] = useState(0);
+  const [done, setDone] = useState<{ added: number; updated: number } | null>(null);
 
   const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; e.target.value = '';
     if (!f) return;
-    setError(''); setDone(0); setGenders({}); setInclude({});
+    setError(''); setDone(null); setGenders({}); setInclude({});
     try {
       const rows = (await readSheet(f)).filter(r => r.some(c => c.trim()));
       if (rows.length === 0) { setError('الملف فاضي.'); return; }
@@ -42,7 +44,8 @@ export default function ImportMembers() {
     } catch { setError('مقدرتش أقرا الملف ده. احفظه من Excel بصيغة xlsx أو CSV وجرّب تاني.'); }
   };
 
-  const existing = useMemo(() => new Set(data.members.map(m => norm(m.name))), [data.members]);
+  // Members already in the app: a row with their name updates them instead of adding them again.
+  const mine = useMemo(() => data.members.filter(m => !m.example && allowed(m.levelId)), [data.members, allowed]);
   const rows = useMemo(() => {
     if (!sheet) return [];
     const cell = (r: string[], f: Field) => cols[f] === undefined ? '' : (r[cols[f]!] ?? '').trim();
@@ -50,17 +53,20 @@ export default function ImportMembers() {
     return sheet.slice(hasHeader ? 1 : 0).map((r, i) => {
       const name = cell(r, 'name').replace(/\s+/g, ' ');
       const grade = parseGrade(cell(r, 'grade'));
-      const gender = genders[i] ?? parseGender(cell(r, 'gender'));
-      const levelId = grade && levels.some(l => l.id === levelForGrade(grade)) ? levelForGrade(grade) : fallbackLevel;
-      const key = norm(name);
-      const dup = existing.has(key) ? 'موجود قبل كده' : seen.has(key) ? 'متكرر في الملف' : '';
+      const match = name ? matchName(name, mine) : undefined;
+      const gender = genders[i] ?? parseGender(cell(r, 'gender')) ?? match?.gender ?? null;
+      const named = levels.find(l => norm(l.name) === norm(cell(r, 'level')))?.id;
+      const levelId = named ?? (grade && levels.some(l => l.id === levelForGrade(grade)) ? levelForGrade(grade) : match?.levelId ?? fallbackLevel);
+      const key = match?.id ?? norm(name);
+      const dup = seen.has(key) ? 'متكرر في الملف' : '';
       seen.add(key);
       const issues = [
-        !grade && cell(r, 'grade') ? `السنة "${cell(r, 'grade')}" مش واضحة` : !grade ? 'من غير سنة دراسية' : '',
+        !grade && cell(r, 'grade') ? `السنة "${cell(r, 'grade')}" مش واضحة` : !grade && !named ? 'من غير سنة دراسية' : '',
+        ...(['phone', 'parentPhone'] as const).map(f => { const p = parsePhone(cell(r, f)); return p && !/^01[0125]\d{8}$/.test(p) ? `${FIELD_LABELS[f]} "${cell(r, f)}" مش 11 رقم` : ''; }),
         cell(r, 'birthdate') && !parseDate(cell(r, 'birthdate')) ? `تاريخ الميلاد "${cell(r, 'birthdate')}" مش واضح` : '',
       ].filter(Boolean);
       return {
-        i, name, gender, grade, levelId, dup, issues,
+        i, name, gender, grade, levelId, dup, issues, match, named,
         birthdate: parseDate(cell(r, 'birthdate')) ?? undefined,
         birthMonth: parseMonth(cell(r, 'birthMonth')),
         parentPhone: parsePhone(cell(r, 'parentPhone')),
@@ -69,16 +75,32 @@ export default function ImportMembers() {
         on: !!name && (include[i] ?? !dup),
       };
     }).filter(r => r.name);
-  }, [sheet, cols, hasHeader, genders, include, fallbackLevel, existing, levels]);
+  }, [sheet, cols, hasHeader, genders, include, fallbackLevel, mine, levels]);
 
   const chosen = rows.filter(r => r.on);
   const missingGender = chosen.filter(r => !r.gender).length;
+  const olds = chosen.filter(r => r.match).length, news = chosen.length - olds;
 
   const run = () => {
     if (missingGender) { setError(`حدد النوع لـ ${count(missingGender, 'مخدوم', 'مخدومين', 'مخدومين')} الأول.`); return; }
     update(d => {
       const code = coder(d);
-      const added: Member[] = chosen.map(r => {
+      // Known members: what the sheet has replaces what they had, the rest stays. A fuller name in the sheet wins.
+      const updates = new Map(chosen.filter(r => r.match).map(r => [r.match!.id, r]));
+      const words = (s: string) => norm(s).split(' ');
+      const members = d.members.map(m => {
+        const r = updates.get(m.id); if (!r) return m;
+        const u: Member = { ...m, gender: r.gender!, levelId: r.levelId };
+        if (words(m.name).every(w => words(r.name).includes(w)) && words(r.name).length > words(m.name).length) u.name = r.name;
+        if (r.grade) u.grade = r.grade;
+        if (r.birthdate) { u.birthdate = r.birthdate; delete u.birthMonth; } else if (r.birthMonth && !m.birthdate) u.birthMonth = r.birthMonth;
+        if (r.parentPhone) u.parentPhone = r.parentPhone;
+        if (r.phone) u.phone = r.phone;
+        if (r.rank) u.rank = r.rank;
+        if (u.gender === 'f') delete u.rank;
+        return u;
+      });
+      const added: Member[] = chosen.filter(r => !r.match).map(r => {
         const m: Member = { id: uid(), code: code(r.levelId), name: r.name, gender: r.gender!, levelId: r.levelId, grade: r.grade ?? '' };
         if (r.birthdate) m.birthdate = r.birthdate;
         else if (r.birthMonth) m.birthMonth = r.birthMonth;
@@ -87,9 +109,9 @@ export default function ImportMembers() {
         if (r.rank) m.rank = r.rank;
         return m;
       });
-      return { ...d, members: [...d.members, ...added], nextCode: d.nextCode + added.length };
+      return { ...d, members: [...members, ...added], nextCode: d.nextCode + added.length };
     });
-    setDone(chosen.length); setSheet(null); setError('');
+    setDone({ added: chosen.filter(r => !r.match).length, updated: chosen.filter(r => r.match).length }); setSheet(null); setError('');
   };
 
   const downloadTemplate = () => download(xlsxBlob([{ name: 'المخدومين', widths: [22, 8, 16, 14, 16, 18, 14], rows: templateRows() }]), 'نموذج المخدومين.xlsx');
@@ -100,9 +122,9 @@ export default function ImportMembers() {
         <Link to="/members" className="icon" aria-label="رجوع">→</Link><h1>إضافة مخدومين من Excel</h1>
       </div></header>
       <main className="main gutter wide">
-        {done > 0 && (
+        {done && (
           <div className="card span">
-            <h2>✓ اتضاف {count(done, 'مخدوم', 'مخدومين', 'مخدومين')}</h2>
+            <h2>✓ {[done.added && `اتضاف ${people(done.added)}`, done.updated && `اتحدّثت بيانات ${people(done.updated)}`].filter(Boolean).join(' و')}</h2>
             <div className="muted">كل واحد خد كود جديد. الخطوة الجاية إنك تطبع كروت الـ QR بتاعتهم، والرقم السري تعمله من صفحة كل مخدوم لما تحتاجه.</div>
             <div className="row"><Link to="/members" className="btn grow">المخدومين</Link><Link to="/cards" className="btnp grow">اطبع الكروت</Link></div>
           </div>
@@ -122,9 +144,9 @@ export default function ImportMembers() {
 
         {sheet && (<>
           <div className="card">
-            <h2>{count(chosen.length, 'مخدوم', 'مخدومين', 'مخدومين')} هيتضافوا</h2>
+            <h2>{[news && `${people(news)} هيتضافوا`, olds && `${people(olds)} موجودين هتتحدّث بياناتهم`].filter(Boolean).join(' و') || 'مفيش حد متختار'}</h2>
             <div className="muted">دوس على النوع تغيّره، وعلى المربع تشيل أو ترجّع حد.</div>
-            {rows.some(r => !r.grade) && (<div className="field"><span>اللي من غير سنة دراسية واضحة يتحطوا في</span>
+            {rows.some(r => !r.grade && !r.named && !r.match) && (<div className="field"><span>اللي من غير سنة دراسية واضحة يتحطوا في</span>
               <div className="chips">{levels.map(l => <button key={l.id} className="chip" aria-pressed={fallbackLevel === l.id} onClick={() => setFallbackLevel(l.id)}>{l.name}</button>)}</div></div>)}
             <div className="list">
               {rows.map(r => (
@@ -133,7 +155,8 @@ export default function ImportMembers() {
                   <div className="grow">
                     <b>{r.name}</b>
                     <div className="muted">{data.levels.find(l => l.id === r.levelId)?.name}{r.grade ? ` • ${r.grade}` : ''}{r.rank ? ` • ${r.rank}` : ''}{r.birthdate ? ` • ${r.birthdate.split('-').reverse().join('/')}` : r.birthMonth ? ` • مولود في ${MONTHS[r.birthMonth - 1]}` : ''}</div>
-                    {(r.dup || r.issues.length > 0) && <div className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
+                    {(r.match || r.dup || r.issues.length > 0) && <div className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
+                      {r.match && <span className="tag tag-ex">موجود{norm(r.match.name) !== norm(r.name) ? ` باسم «${r.match.name}»` : ''}، هتتحدّث بياناته</span>}
                       {r.dup && <span className="tag tag-alert">{r.dup}</span>}
                       {r.issues.map(x => <span key={x} className="tag tag-ex">{x}</span>)}
                     </div>}
@@ -162,7 +185,7 @@ export default function ImportMembers() {
         {error && <div className="alert-t" role="alert">{error}</div>}
         <button className="btn" onClick={() => { setSheet(null); setError(''); }}>ملف تاني</button>
         <button className="btnp grow" aria-disabled={chosen.length === 0 || missingGender > 0} onClick={() => chosen.length && run()}>
-          {missingGender ? `حدد النوع لـ ${missingGender}` : `ضيف ${count(chosen.length, 'مخدوم', 'مخدومين', 'مخدومين')}`}</button>
+          {missingGender ? `حدد النوع لـ ${missingGender}` : news ? `ضيف ${people(news)}${olds ? ` وحدّث ${olds}` : ''}` : `حدّث ${people(olds)}`}</button>
       </div></div>}
     </>
   );
