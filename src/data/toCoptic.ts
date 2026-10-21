@@ -1,5 +1,6 @@
 import { copticKey } from './dictionary';
 import { nameVariant, standardArabic } from './arabicVariants';
+import { arabize, consonantKey } from './arabize';
 import { conjugatePast, conjugatePresent, libraryArabic, overlap, pastFromPresent, type Match, type Translator } from './translator';
 
 /** Osama Thabet's Arabic → Coptic word lists (scripts/build-arabic-coptic.py): nouns with gender, verbs with how they take an object, prepositions. */
@@ -125,9 +126,10 @@ export interface Reverse {
   ero: Set<string>;
   /** Built with Osama Thabet's word lists. */
   full: boolean;
-  tm: Map<string, number>;
+  /** Every line with this Arabic key. */
+  tm: Map<string, number[]>;
   /** The same lines by their words in any order (قام المسيح = المسيح قام). */
-  tmBag: Map<string, number>;
+  tmBag: Map<string, number[]>;
   tmIndex: Map<string, number[]>;
   /** Arabic line key, Coptic as written, Arabic as printed. */
   tmList: [string, string, string][];
@@ -264,30 +266,42 @@ function addLines(t: Translator, r: Reverse) {
   for (let i = r.tmList.length; i < t.tmList.length; i++) {
     const [, ar, cop] = t.tmList[i], k = arKey(ar);
     r.tmList.push([k, cop, ar]);
-    keep(r, r.tm, k, i);
+    push(r.tm, k, i);
     const b = bagKey(k);
-    if (b) keep(r, r.tmBag, b, i);
+    if (b) push(r.tmBag, b, i);
     for (const w of new Set(k.split(' '))) { const l = r.tmIndex.get(w); if (l) l.push(i); else r.tmIndex.set(w, [i]); }
   }
 }
 
-/**
- * One line per Arabic key: the Coptic most lines give it, the first of them on a tie.
- * (كلمة الآب is once a misaligned half-line, twice ⲡⲓⲖⲟⲅⲟⲥ ⲛ̀ⲧⲉ Ⲫ̀ⲓⲱⲧ.)
- */
+const push = (m: Map<string, number[]>, k: string, i: number) => { const l = m.get(k); if (l) l.push(i); else m.set(k, [i]); };
+
+/** ⲛ̀ϫⲉ / ⲟⲩⲟϩ / ϫⲉ before a half-line come from where it was cut, not from what it says. */
 const LEAD = new Set(['ⲛϫⲉ', 'ⲟⲩⲟϩ', 'ϫⲉ', 'ⲁ']);
-const votes = new WeakMap<Map<string, number>, Map<string, Map<string, number>>>();
-function keep(r: Reverse, m: Map<string, number>, k: string, i: number) {
-  if (!m.has(k)) { m.set(k, i); return; }
-  let byKey = votes.get(m);
-  if (!byKey) votes.set(m, byKey = new Map());
-  let v = byKey.get(k);
-  // ⲛ̀ϫⲉ / ⲟⲩⲟϩ / ϫⲉ before a half-line come from where it was cut, not from what it says.
-  const ck = (j: number) => copticKey((r.tmList[j]?.[1] ?? '').split(' ').filter((_, n, a) => n === a.length - 1 || a.slice(0, n + 1).some(x => !LEAD.has(copticKey(x)))).join(' '));
-  if (!v) byKey.set(k, v = new Map([[ck(m.get(k)!), 1]]));
-  const c = ck(i), n = (v.get(c) ?? 0) + 1;
-  v.set(c, n);
-  if (n > (v.get(ck(m.get(k)!)) ?? 0)) m.set(k, i);
+const sameKey = (c: string) => copticKey(c.split(' ').filter((_, n, a) => n === a.length - 1 || a.slice(0, n + 1).some(x => !LEAD.has(copticKey(x)))).join(' '));
+
+/** Spelling aside (Ⲇⲟⲝⲁ / Ⲇⲟⲍⲁ, ⲕⲉ / ⲕⲁⲓ, ⲡ̅ⲛ̅ⲁ̅ / ⲡ̀ⲛⲉⲩⲙⲁ): its consonants. Two wordings with the same ones are one result. */
+const skeleton = (c: string) => consonantKey(arabize(c.replace(/\u00ad/g, '').replace(/^(ⲛ̀ⲧⲉ|ⲛⲧⲉ|ϧⲉⲛ|ⲉ̀ⲃⲟⲗ ϩⲓⲧⲉⲛ)\s+/, '').replace(/^[ⲙⲛⲉ]\u0300(?=\S)/, '').replace(/ⲍ/gi, 'ⲝ').replace(/(?<=\S)⳪/g, 'ϭⲟⲓⲥ').replace(/⳪/g, 'ⲡϭⲟⲓⲥ'))).replace(/\s+/g, '');
+
+/** Does this Coptic hold a word the Arabic asks for (المجد → ⲇⲟⲝⲁ or ⲱⲟⲩ)? A misaligned half-line holds none. */
+function backs(r: Reverse, ar: string, coptic: string) {
+  const ck = copticKey(coptic);
+  return ar.split(' ').some(w => {
+    const k = w.replace(/^و(?=...)/, '').replace(/^(ال|لل|بال|ل)(?=...)/, '');
+    const forms = [...(r.alts.get(k) ?? []), ...(r.alts.get(w) ?? []), r.lex.get(w)?.coptic ?? '', r.lex.get(k)?.coptic ?? ''];
+    return forms.some(f => { const fk = copticKey(f).replace(/^(ⲡⲓ|ⲡⲉ|ⲧⲉ|ⲧⲓ|ⲛⲓ|ⲡ|ⲧ|ⲫ|ⲑ|ⲛ)(?=...)/, ''); return fk.length >= 3 && ck.includes(fk); });
+  });
+}
+
+/**
+ * The lines with one Arabic key, grouped by their Coptic: the one most lines give first (the first of them on a tie),
+ * then every other wording that really says it (a Greek and a Coptic one). كلمة الآب is twice ⲡⲓⲖⲟⲅⲟⲥ ⲛ̀ⲧⲉ Ⲫ̀ⲓⲱⲧ
+ * and once a misaligned half-line, which is dropped.
+ */
+function choose(r: Reverse, ar: string, ids: number[]) {
+  const groups = new Map<string, number[]>();
+  for (const i of ids) push(groups, sameKey(r.tmList[i][1]), i);
+  const order = [...groups.values()].sort((a, b) => b.length - a.length || a[0] - b[0]);
+  return { main: order[0][0], others: order.slice(1).map(g => g[0]).filter(i => backs(r, ar, r.tmList[i][1])) };
 }
 
 /** Words that change nothing in a line's meaning: يا، قد، لقد، أيها، and the و before a word. */
@@ -435,14 +449,21 @@ function lineHit(r: Reverse, k: string): Match | undefined {
     while (w.length > 1 && (/^([^\s]\u0305)+$/.test(w[0]) || (['ⲟⲩⲟϩ', 'ϫⲉ', 'ⲛϫⲉ'].includes(copticKey(w[0])) && !keepLead(copticKey(w[0]))))) w.shift();
     return w.join(' ');
   };
-  const at = (i: number, note?: string): Match => ({ coptic: trim(r.tmList[i][1]), arabic: r.tmList[i][2], score: 1, ref: r.refs.get(i), note });
+  const at = (ids: number[], note?: string): Match => {
+    const { main, others } = choose(r, std === k ? k : k + ' ' + std, ids);
+    const seen = new Set<string>(), alts: string[] = [];
+    const coptic = trim(r.tmList[main][1]);
+    seen.add(skeleton(coptic));
+    for (const i of others) { const c = trim(r.tmList[i][1]); if (!seen.has(skeleton(c))) { seen.add(skeleton(c)); alts.push(c); } }
+    return { coptic, arabic: r.tmList[main][2], score: 1, ref: r.refs.get(main), note, ...(alts.length ? { alts: alts.slice(0, 4) } : {}) };
+  };
   for (const q of std === k ? [k] : [k, std]) {
     const exact = r.tm.get(q);
-    if (exact !== undefined) return at(exact, q === k ? undefined : 'نفس كلام الألحان بالفصحى');
+    if (exact) return at(exact, q === k ? undefined : 'نفس كلام الألحان بالفصحى');
   }
   for (const q of std === k ? [k] : [k, std]) {
     const bag = r.tmBag.get(bagKey(q));
-    if (bag !== undefined) return at(bag, 'نفس كلام الألحان بترتيب تاني');
+    if (bag) return at(bag, 'نفس كلام الألحان بترتيب تاني');
   }
   return undefined;
 }

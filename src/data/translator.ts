@@ -48,7 +48,7 @@ export interface WordResult {
   /** Possessive, demonstrative or other article: the word is already definite. */
   definite?: boolean;
 }
-export interface Match { coptic: string; arabic: string; score: number; /** Book, chapter and verse when the line is a Bible verse. */ ref?: string; /** How the line was found when not word for word (another word order, standard Arabic). */ note?: string }
+export interface Match { coptic: string; arabic: string; score: number; /** Book, chapter and verse when the line is a Bible verse. */ ref?: string; /** How the line was found when not word for word (another word order, standard Arabic). */ note?: string; /** Other wordings of the same line in the hymns (a Greek and a Coptic one). */ alts?: string[] }
 export interface PhraseResult { text: string; words: WordResult[]; arabic: string; match?: Match }
 export interface Translation { phrases: PhraseResult[]; arabic: string; whole?: Match }
 

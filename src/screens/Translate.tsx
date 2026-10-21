@@ -40,6 +40,12 @@ export default function Translate({ base = '' }: { base?: string }) {
   // Whole, or put together from whole hymn lines (قام المسيح من الأموات + وصعد إلى السماوات).
   const linesBack = !!back && back.phrases.length > 0 && back.phrases.every(p => p.match?.score === 1 || (p.words.length > 0 && p.words.every(w => w.line)));
   const wholeBack = back?.whole?.score === 1 || linesBack;
+  // The same line said another way in the hymns (a Greek and a Coptic wording): shown with the answer, not instead of it.
+  const otherWordings: { label?: string; coptic: string }[] = !back ? []
+    : back.whole?.score === 1 ? (back.whole.alts ?? []).map(coptic => ({ coptic }))
+    : back.phrases.flatMap(p => p.match?.score === 1
+      ? (p.match.alts ?? []).map(coptic => ({ label: back.phrases.length > 1 ? p.text : undefined, coptic }))
+      : p.words.flatMap(w => (w.line?.alts ?? []).map(coptic => ({ label: w.text, coptic }))));
   const backNote = back?.whole?.score === 1 ? back.whole.note
     : back?.phrases.some(p => p.match?.score !== 1) ? 'اتجمعت من كذا سطر في الألحان'
     : back?.phrases.map(p => p.match?.note).find(Boolean);
@@ -89,6 +95,18 @@ export default function Translate({ base = '' }: { base?: string }) {
               <div className="coptic-font" dir="ltr" style={{ fontSize: 22, lineHeight: 1.8, textAlign: 'left' }}>{back.coptic || '…'}</div>
               {wholeBack && backNote && <div className="muted" style={{ fontSize: 13 }}>{backNote}</div>}
               {back.coptic && <div className="say">النطق: <b>{arabize(back.coptic)}</b></div>}
+              {otherWordings.length > 0 && (
+                <div className="other-wordings">
+                  <div className="muted" style={{ fontSize: 13 }}>وبتتقال في الألحان كمان كده:</div>
+                  {otherWordings.map((o, i) => (
+                    <div key={i} className="near">
+                      {o.label && <div className="muted" style={{ fontSize: 12 }}>{o.label}</div>}
+                      <div className="coptic-font" dir="ltr" style={{ fontSize: 19, textAlign: 'left' }}>{o.coptic}</div>
+                      <div className="say">النطق: <b>{arabize(o.coptic)}</b>{t && greek(t, o.coptic) && ' • يوناني'}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {!wholeBack && <div className="note">اتركّبت كلمة كلمة، فراجعها بالتحليل اللي تحت. الكلمات اللي بين أقواس ما لقيتلهاش مقابل.</div>}
             </div>
             {back.whole && !wholeBack && <Near m={back.whole} />}
@@ -130,6 +148,9 @@ export default function Translate({ base = '' }: { base?: string }) {
     </>
   );
 }
+
+/** A line most of whose words are Greek (Ⲁ̀ⲅⲓⲟⲥ ⲁ̀ⲅⲓⲟⲥ, Ⲡⲭ̅ⲥ̅ ⲁⲛⲉⲥⲧⲏ ⲉⲕⲛⲉⲕⲣⲱⲛ). */
+const greek = (t: Translator, c: string) => { const w = c.split(' ').filter(x => x.length > 2); return w.length > 0 && w.filter(x => originOf(t, x) === 'يوناني').length * 2 > w.length; };
 
 /** Where a line found whole comes from: the hymns, or a Bible verse with its reference. */
 const fromWhere = (m?: Match) => m?.ref ? `من الكتاب المقدس (${m.ref})` : 'من الألحان';
