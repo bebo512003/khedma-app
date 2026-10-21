@@ -40,8 +40,11 @@ export default function Team() {
 
   const sendInvite = async () => {
     if (!draft) return;
-    const email = draft.email.trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setError('اكتب إيميل جوجل صحيح.'); return; }
+    const raw = draft.email.trim().toLowerCase();
+    // A mobile number invites them to sign in by phone; it's stored as +20… like the sign-in gives it.
+    const phone = /^[+\d\s-]+$/.test(raw) ? (await import('../firebase/servantPhone')).toE164(raw) : null;
+    const email = phone ?? raw;
+    if (!phone && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setError(/^[+\d\s-]+$/.test(raw) ? 'اكتب رقم موبايل مصري صحيح، زي 01012345678.' : 'اكتب إيميل جوجل صحيح.'); return; }
     if (draft.levelIds.length === 0) { setError('اختار مستوى واحد على الأقل.'); return; }
     const { db, setDoc, paths } = await fs();
     await setDoc(paths.ref(db, 'invites', email), JSON.parse(JSON.stringify({ ...draft, email, invitedBy: me.uid, perms: draft.role === 'servant' ? draft.perms ?? [] : undefined })));
@@ -115,7 +118,7 @@ export default function Team() {
         {admin && editing && (
           <div className="card">
             <h2>{editing.name}</h2>
-            <div className="muted" dir="ltr" style={{ textAlign: 'right' }}>{editing.email}</div>
+            <div className="muted" dir="ltr" style={{ textAlign: 'right' }}>{editing.email.replace(/^\+2/, '')}</div>
             {editing.uid !== me.uid && rolePicker(editing.role, role => setEditing({ ...editing, role }))}
             <div className="field"><span>المستويات</span>{levelPicker(editing.levelIds, levelIds => setEditing({ ...editing, levelIds }))}</div>
             {editing.role === 'servant' && permPicker(editing.perms, perms => setEditing({ ...editing, perms }))}
@@ -128,19 +131,19 @@ export default function Team() {
           <div className="card"><h2>دعوات مستنية</h2><div className="list">
             {invites.map(i => (
               <div key={i.email} className="li">
-                <div className="grow"><b dir="ltr">{i.email}</b><div className="muted">{[ROLE_LABELS[i.role], levelNames(i.levelIds), permNames(i)].filter(Boolean).join(' • ')}</div></div>
+                <div className="grow"><b dir="ltr">{i.email.replace(/^\+2/, '')}</b><div className="muted">{[ROLE_LABELS[i.role], levelNames(i.levelIds), permNames(i)].filter(Boolean).join(' • ')}</div></div>
                 <button className="btn" style={{ minHeight: 36 }} onClick={() => cancelInvite(i)}>إلغاء</button>
               </div>
             ))}
           </div>
-          <div className="note">الخادم يفتح التطبيق ويدخل بنفس إيميل جوجل ده، وهيلاقي زرار يقبل الدعوة.</div></div>
+          <div className="note">الخادم يفتح التطبيق ويدخل بنفس إيميل جوجل ده، أو بـ «ادخل برقم الموبايل» لو ضفته برقمه، وهيلاقي زرار يقبل الدعوة.</div></div>
         )}
 
         {admin && draft && (
           <div className="card">
             <h2>ضيف خادم</h2>
-            <label className="field" htmlFor="email"><span>إيميل جوجل بتاعه</span>
-              <input id="email" className="input" dir="ltr" inputMode="email" placeholder="name@gmail.com" value={draft.email} onChange={e => setDraft({ ...draft, email: e.target.value })} /></label>
+            <label className="field" htmlFor="email"><span>إيميل جوجل بتاعه أو رقم موبايله</span>
+              <input id="email" className="input" dir="ltr" inputMode="email" placeholder="name@gmail.com أو 01012345678" value={draft.email} onChange={e => setDraft({ ...draft, email: e.target.value })} /></label>
             {rolePicker(draft.role, role => setDraft({ ...draft, role }))}
             <div className="field"><span>المستويات اللي هيخدمها</span>{levelPicker(draft.levelIds, levelIds => setDraft({ ...draft, levelIds }))}</div>
             {draft.role === 'servant' && permPicker(draft.perms, perms => setDraft({ ...draft, perms }))}
