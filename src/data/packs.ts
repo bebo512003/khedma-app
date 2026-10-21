@@ -21,6 +21,13 @@ export interface Pack {
 
 /** Packs offered on the curriculum and books screens. */
 export const PACKS = [{ id: 'nativity-shabab', levelId: 'l3' }, { id: 'kiahk-nativity-l2', levelId: 'l2' }, { id: 'kiahk-nativity-l1', levelId: 'l1' }];
+/** Packs that are only hymns, no church booklet: they go to the library and the curriculum, never to the books. */
+export const HYMNS_ONLY = new Set(['kiahk-nativity-l2', 'kiahk-nativity-l1']);
+const hymnsOnly = (pack: Pack) => HYMNS_ONLY.has(pack.id) || !pack.book.pageCount;
+const keyOf = (pack: Pack, h: Pack['hymns'][number], i: number) => h.packKey ?? `${pack.id}/${h.key ?? i}`;
+
+/** Books made by an earlier version from a hymns-only pack: the books are the servants' own, so these go (the curriculum stays). */
+export const strayPackBooks = (d: AppData) => d.books.filter(b => b.packId && HYMNS_ONLY.has(b.packId));
 
 const cache = new Map<string, Promise<Pack>>();
 export function loadPack(id: string) {
@@ -38,6 +45,12 @@ const packBook = (d: AppData, pack: Pack) =>
 
 /** 'new': not added yet; 'old': added from an earlier edition of the booklet; 'current': up to date. */
 export function packState(d: AppData, pack: Pack): 'new' | 'old' | 'current' {
+  if (hymnsOnly(pack)) {
+    // Added when every hymn is in the library and in this level's curriculum (any term).
+    const inLevel = new Set(Object.entries(d.curricula).filter(([k]) => k.endsWith(`:${pack.levelId}`)).flatMap(([, ids]) => ids));
+    const ids = new Map(d.hymns.filter(h => h.packKey).map(h => [h.packKey!, h.id]));
+    return pack.hymns.every((h, i) => inLevel.has(ids.get(keyOf(pack, h, i)) ?? '')) ? 'current' : 'new';
+  }
   const b = packBook(d, pack);
   if (!b) return 'new';
   return (b.packVersion ?? 1) < pack.version ? 'old' : 'current';
@@ -46,7 +59,7 @@ export function packState(d: AppData, pack: Pack): 'new' | 'old' | 'current' {
 const TEXT = ['copticText', 'arabicCoptic', 'meaning', 'audioUrl', 'notes', 'when'] as const;
 
 /**
- * Adds the booklet as a book for this term and level, its hymns to the library, and the
+ * Adds the booklet as a book for this term and level (a hymns-only pack: no book, just the curriculum), its hymns to the library, and the
  * book's index to the curriculum. A hymn already in the library under the same name is reused:
  * on first add only its empty fields are filled; when updating to a new edition its text,
  * recording link and notes follow the new booklet.
@@ -84,5 +97,6 @@ export function applyPack(d: AppData, pack: Pack, termId: string, levelId: strin
   const hymns = [...d.hymns.map(x => changed.has(x.id) ? { ...x, ...changed.get(x.id) } : x), ...added];
   // Any older copy of a booklet hymn (added by hand or twice) is folded into the booklet's one.
   const merged = mergeDuplicates({ ...d, hymns, books: [...d.books.filter(b => b.id !== book.id), book] });
-  return applyBook(merged, merged.books.find(b => b.id === book.id)!);
+  const done = applyBook(merged, merged.books.find(b => b.id === book.id)!);
+  return hymnsOnly(pack) ? { ...done, books: done.books.filter(b => b.id !== book.id) } : done;
 }

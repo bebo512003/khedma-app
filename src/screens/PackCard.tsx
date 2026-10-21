@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useData } from '../data/store';
-import { PACKS, applyPack, loadPack, packState, type Pack } from '../data/packs';
+import { HYMNS_ONLY, PACKS, applyPack, loadPack, packState, strayPackBooks, type Pack } from '../data/packs';
+import { useCan, useData } from '../data/store';
 
 /** Offers the ready booklets (hymns with text, audio and page images) not added yet, or a newer edition of one. */
-export default function PackCard({ termId, levelId }: { termId: string; levelId?: string }) {
-  return <>{PACKS.filter(p => !levelId || p.levelId === levelId).map(p => <One key={p.id} id={p.id} termId={termId} />)}</>;
+/** books: the books screen, where only real booklets are offered. */
+export default function PackCard({ termId, levelId, books }: { termId: string; levelId?: string; books?: boolean }) {
+  const [data, update] = useData();
+  const edit = useCan('curriculum');
+  const stray = strayPackBooks(data).map(b => b.id).join();
+  useEffect(() => {
+    if (edit && stray) update(d => ({ ...d, books: d.books.filter(b => !strayPackBooks(d).includes(b)) }));
+  }, [edit, stray, update]);
+  return <>{PACKS.filter(p => (!levelId || p.levelId === levelId) && !(books && HYMNS_ONLY.has(p.id))).map(p => <One key={p.id} id={p.id} termId={termId} />)}</>;
 }
 
 function One({ id, termId }: { id: string; termId: string }) {
@@ -18,7 +25,7 @@ function One({ id, termId }: { id: string; termId: string }) {
   const level = data.levels.find(l => l.id === pack.levelId);
   const add = () => {
     update(d => applyPack(d, pack, termId, pack.levelId));
-    nav('/books');
+    if (pack.book.pageCount) nav('/books');
   };
   return (
     <div className="card">

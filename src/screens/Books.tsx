@@ -38,7 +38,7 @@ export default function Books() {
           </Link>
         ))}
         {data.books.length === 0 && <div className="card"><b>لسه مفيش كتب.</b><div className="muted">ضيف كتاب الميلاد الجاهز تحت، أو اعمل كتاب جديد وحط فيه ألحانه من المكتبة.</div></div>}
-        <PackCard termId={term?.id ?? ''} />
+        <PackCard termId={term?.id ?? ''} books />
       </main>
       {edit && <div className="bar gutter"><div><button className="btnp grow" onClick={add}>كتاب جديد</button></div></div>}
     </>
