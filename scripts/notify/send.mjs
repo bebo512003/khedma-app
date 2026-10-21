@@ -50,6 +50,10 @@ async function runChurch(church, publicKey, now) {
     const r = s[k];
     return r.on && r.days.includes(now.day) && now.hour >= r.hour && now.hour < r.hour + LATE && log[k] !== now.date;
   });
+  // The lead's own reminders: weekly on their days, or once on their date; to members, servants or both, in some levels.
+  const custom = (Array.isArray(s.custom) ? s.custom : []).filter(r => r && r.on && r.id && r.title && r.body
+    && (r.date ? r.date === now.date : (r.days ?? []).includes(now.day))
+    && now.hour >= r.hour && now.hour < r.hour + LATE && log[`c:${r.id}`] !== now.date);
   // On the 1st (from 10am), servants hear the past month's report is ready.
   const pastMonth = (() => { const [y, m] = now.date.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; })();
   const monthly = now.date.endsWith('-01') && now.hour >= 10 && log.month !== pastMonth;
@@ -71,7 +75,7 @@ async function runChurch(church, publicKey, now) {
   const subAt = Math.max(subAt0, ...sent0.map(x => x.at)), revAt = Math.max(revAt0, ...reviews.map(x => x.reviewAt));
   if (log.subAt === undefined || log.revAt === undefined) await logRef.set({ ...log, summaryAt, subAt, revAt }, { merge: true });
   await cleanSubmissions(c);
-  if (!due.length && !monthly && !test && !summaries.length && !sent0.length && !reviews.length) { console.log(`${c.id}: nothing due at ${now.date} ${now.hour}:00 (day ${now.day}).`); return; }
+  if (!due.length && !custom.length && !monthly && !test && !summaries.length && !sent0.length && !reviews.length) { console.log(`${c.id}: nothing due at ${now.date} ${now.hour}:00 (day ${now.day}).`); return; }
 
   const subs = (await c.collection('pushSubs').get()).docs;
   const who = new Map();
@@ -87,7 +91,7 @@ async function runChurch(church, publicKey, now) {
     return who.get(uid);
   };
 
-  const sent = { month: 0, hymn: 0, session: 0, test: 0, summary: 0, submission: 0, review: 0 };
+  const sent = { custom: 0, month: 0, hymn: 0, session: 0, test: 0, summary: 0, submission: 0, review: 0 };
   for (const sub of subs) {
     // One bad phone record never stops the rest.
     try {
@@ -99,6 +103,13 @@ async function runChurch(church, publicKey, now) {
         if (k === 'hymn' && p.kind !== 'member') continue;
         const r = s[k];
         msgs.push([k, { title: r.title, body: r.body.replaceAll(HYMNS_TAG, p.kind === 'member' ? hymnList(p.view) : 'ألحان الترم'), tag: k, url: p.kind === 'member' ? './#/me/home' : './#/' }]);
+      }
+      for (const r of custom) {
+        const levels = r.levelIds ?? [];
+        const to = r.to ?? 'members';
+        if (p.kind === 'member' ? to === 'servants' || (levels.length && !levels.includes(p.levelId))
+          : to === 'members' || (levels.length && !(p.levelIds ?? []).some(l => l === '*' || levels.includes(l)))) continue;
+        msgs.push(['custom', { title: r.title, body: r.body.replaceAll(HYMNS_TAG, p.kind === 'member' ? hymnList(p.view) : 'ألحان الترم'), tag: `c-${r.id}`, url: p.kind === 'member' ? './#/me/home' : './#/' }]);
       }
       if (p.kind === 'member') for (const x of summaries.filter(x => x.levelId === p.levelId)) {
         const what = x.summary ? x.summary.split('\n')[0].slice(0, 90) : 'تسجيلات الحصة نزلت، اسمعها وراجع عليها';
@@ -126,6 +137,7 @@ async function runChurch(church, publicKey, now) {
   }
   const next = { ...log };
   for (const k of due) next[k] = now.date;
+  for (const r of custom) next[`c:${r.id}`] = now.date;
   if (test) next.testAt = s.testAt;
   if (monthly) next.month = pastMonth;
   next.summaryAt = summaryAt;
