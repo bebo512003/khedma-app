@@ -5,7 +5,8 @@ import { bookOf, entryPages, pagesLabel } from '../data/books';
 import BookPages from './BookPages';
 import { currentTerm, safeUrl, uid } from '../data/logic';
 import type { Hymn } from '../data/types';
-import HymnText, { looksLikeLegacyFont } from './HymnText';
+import HymnText from './HymnText';
+import { unifyCoptic } from '../data/unicodeCoptic';
 
 const PRAYERS = ['القداس', 'التسبحة', 'رفع البخور', 'الأجبية', 'الدورات', 'المناسبات'];
 
@@ -25,7 +26,7 @@ export default function HymnForm() {
   const save = () => {
     if (!h.nameAr.trim()) { setError('اكتب اسم اللحن.'); return; }
     for (const u of [h.pdfUrl, h.audioUrl]) if (u?.trim() && !safeUrl(u)) { setError('اللينك لازم يبدأ بـ https://'); return; }
-    const clean: Hymn = { ...h, nameAr: h.nameAr.trim(), pdfUrl: safeUrl(h.pdfUrl), audioUrl: safeUrl(h.audioUrl) };
+    const clean: Hymn = { ...h, copticText: h.copticText && unifyCoptic(h.copticText, true), nameAr: h.nameAr.trim(), pdfUrl: safeUrl(h.pdfUrl), audioUrl: safeUrl(h.audioUrl) };
     update(d => existing
       ? { ...d, hymns: d.hymns.map(x => x.id === clean.id ? clean : x) }
       : { ...d, hymns: [...d.hymns, clean] });
@@ -82,7 +83,7 @@ export default function HymnForm() {
         <h2>نص اللحن (اختياري)</h2>
         <div className="note">الزق كل جزء في خانته، كل ربع أو جملة في سطر لوحده، وبنفس الترتيب في التلات خانات عشان السطور تتقابل. السطر اللي يبدأ بـ § بيبقى عنوان جزء. الضغط على أي كلمة قبطي في النص بيفتح معناها من القاموس.</div>
         {area('copticText', 'النص القبطي', true)}
-        {looksLikeLegacyFont(h.copticText) && <div className="alert-t" role="alert">النص القبطي ده طالع حروف إنجليزي، يعني متكتب بخط قبطي قديم في Word. ابعتلنا ملف Word منه عشان نضيف تحويل تلقائي، أو انسخه من مصدر مكتوب بيونيكود.</div>}
+        {h.copticText && unifyCoptic(h.copticText, true) !== h.copticText && <div className="note row between"><span>فيه حروف قبطية مش يونيكود (خط قديم أو حروف يوناني). هتتحول لوحدها لما تحفظ.</span><button className="btn" onClick={() => set({ copticText: unifyCoptic(h.copticText!, true) })}>حوّلها دلوقتي</button></div>}
         {area('arabicCoptic', 'القبطي معرّب')}
         {area('meaning', 'المعنى بالعربي')}
         {new Set(counts).size > 1 && <div className="note">عدد السطور مش متساوي في الخانات ({counts.join(' / ')}). اتأكد إن كل سطر قصاده سطره.</div>}

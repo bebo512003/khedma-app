@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { unifyCoptic } from './unicodeCoptic';
 import { get, set } from 'idb-keyval';
 import type { User } from 'firebase/auth';
 import { applyMemberEdit, type AppData, type Invite, type MemberEdit, type Perm, type Servant } from './types';
@@ -137,6 +138,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]).then(([{ servantFb }, { deleteDoc }, paths]) =>
       mine.forEach(e => deleteDoc(paths.ref(servantFb().db, 'memberEdits', e.id)).catch(() => undefined)));
   }, [data, edits, update, servant]);
+
+  // Hymns saved before Coptic was unified (old fonts, Greek letters, backtick jinkim): store them as Unicode once.
+  useEffect(() => {
+    if (!data || !canDo(servant, 'curriculum')) return;
+    if (!data.hymns.some(h => h.copticText && unifyCoptic(h.copticText, true) !== h.copticText)) return;
+    update(d => ({ ...d, hymns: d.hymns.map(h => h.copticText ? { ...h, copticText: unifyCoptic(h.copticText, true) } : h) }));
+  }, [data, update, servant]);
 
   const reset = useCallback(() => update(() => seedData()), [update]);
 

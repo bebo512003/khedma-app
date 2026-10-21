@@ -5,8 +5,8 @@ import { display, loadDictionary, scriptOf, search, type Hit } from '../data/dic
 import type { Hymn } from '../data/types';
 
 const lines = (s?: string) => (s ?? '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-/** Text pasted from Word in an old Coptic font comes out as Latin letters. */
-export const looksLikeLegacyFont = (s?: string) => !!s && !/[Ⲁ-⳿Ϣ-ϯ]/.test(s) && /[a-z]{3}/i.test(s);
+import { unifyCoptic } from '../data/unicodeCoptic';
+export { looksLikeLegacyFont } from '../data/unicodeCoptic';
 
 type Col = 'cop' | 'arCop' | 'ar';
 const COLS: [Col, string][] = [['cop', 'قبطي'], ['arCop', 'قبطي معرّب'], ['ar', 'المعنى']];
@@ -36,7 +36,8 @@ const css = (c: Col, st: TextStyle) => {
 
 /** Hymn text verse by verse; tapping a Coptic word looks it up in the dictionary. */
 export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: string }) {
-  const rows = { cop: lines(hymn.copticText), arCop: lines(hymn.arabicCoptic), ar: lines(hymn.meaning) };
+  // Old-font or Greek-lettered Coptic shows as Unicode, so every word can be looked up.
+  const rows = { cop: lines(hymn.copticText && unifyCoptic(hymn.copticText, true)), arCop: lines(hymn.arabicCoptic), ar: lines(hymn.meaning) };
   const present = COLS.filter(([c]) => rows[c].length > 0);
   const [shown, setShown] = useState<Col[]>(present.map(([c]) => c));
   const [style, setStyleState] = useState<TextStyle>(loadStyle);
@@ -51,7 +52,6 @@ export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: str
   const n = Math.max(...present.map(([c]) => rows[c].length));
   /** A line starting with § in any column is a section title (same line number in every column). */
   const section = (i: number) => present.map(([c]) => rows[c][i]).find(l => l?.startsWith('§'))?.slice(1).trim();
-  const legacy = looksLikeLegacyFont(hymn.copticText);
 
   const lookUp = async (w: string) => {
     setWord({ text: w, hits: null });
@@ -89,12 +89,12 @@ export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: str
         </div>
       )}
       {hymn.notes && <div className="note pre">{hymn.notes}</div>}
-      {rows.cop.length > 0 && !legacy && <div className="muted" style={{ fontSize: 12 }}>دوس على أي كلمة قبطي تعرف معناها.</div>}
+      {rows.cop.length > 0 && <div className="muted" style={{ fontSize: 12 }}>دوس على أي كلمة قبطي تعرف معناها.</div>}
       <ol className="verses">
         {Array.from({ length: n }, (_, i) => section(i) !== undefined ? <li key={i} className="sec">{section(i)}</li> : (
           <li key={i}>
             {shown.includes('cop') && rows.cop[i] && <div className="cop coptic-font" dir="ltr" style={css('cop', style)}>
-              {legacy ? rows.cop[i] : display(rows.cop[i]).split(/(\s+)/).map((w, j) => /\s/.test(w) || scriptOf(w) !== 'coptic'
+              {display(rows.cop[i]).split(/(\s+)/).map((w, j) => /\s/.test(w) || scriptOf(w) !== 'coptic'
                 ? <span key={j}>{w}</span>
                 : <button key={j} className="cw" onClick={() => lookUp(w)}>{w}</button>)}
             </div>}
