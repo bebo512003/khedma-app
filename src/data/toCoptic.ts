@@ -53,6 +53,10 @@ export interface CWord {
   near?: boolean;
   /** Other Coptic words with this meaning (a Greek and a Coptic word for الله: ⲑⲉⲟⲥ and ⲫ̀ⲛⲟⲩϯ). */
   alts?: string[];
+  /** A verb: its stem, person and tense, so a subject or a negation before it can change its form. */
+  vb?: { stem: string; person: string; tense: 'past' | 'present' | 'future' };
+  /** Colloquial ما تـ...ش: "don't ..." (ⲙ̀ⲡⲉⲣ) unless a subject comes before it. */
+  prohib?: boolean;
 }
 export interface CPhrase { text: string; words: CWord[]; coptic: string; match?: Match }
 export interface CTranslation { phrases: CPhrase[]; coptic: string; whole?: Match }
@@ -76,6 +80,15 @@ const PRESENT: Record<string, string> = { '1s': 'ϯ', '2ms': 'ⲭ̀', '2fs': '�
 const FUTURE: Record<string, string> = { '1s': 'ϯⲛⲁ', '2ms': 'ⲭ̀ⲛⲁ', '2fs': 'ⲧⲉⲣⲉⲛⲁ', '3ms': 'ϥⲛⲁ', '3fs': 'ⲥⲛⲁ', '1p': 'ⲧⲉⲛⲛⲁ', '2p': 'ⲧⲉⲧⲉⲛⲛⲁ', '3p': 'ⲥⲉⲛⲁ' };
 /** Negative past: ⲙ̀ⲡⲉϥ instead of ⲁϥ. */
 const NEG_PAST: Record<string, string> = { 'ⲁⲓ': 'ⲙ̀ⲡⲓ', 'ⲁⲕ': 'ⲙ̀ⲡⲉⲕ', 'ⲁⲣⲉ': 'ⲙ̀ⲡⲉ', 'ⲁϥ': 'ⲙ̀ⲡⲉϥ', 'ⲁⲥ': 'ⲙ̀ⲡⲉⲥ', 'ⲁⲛ': 'ⲙ̀ⲡⲉⲛ', 'ⲁⲣⲉⲧⲉⲛ': 'ⲙ̀ⲡⲉⲧⲉⲛ', 'ⲁⲩ': 'ⲙ̀ⲡⲟⲩ' };
+/** Negative future: ⲛ̀ⲛⲉϥ instead of ϥⲛⲁ. */
+const NEG_FUT: Record<string, string> = { '1s': 'ⲛ̀ⲛⲁ', '2ms': 'ⲛ̀ⲛⲉⲕ', '2fs': 'ⲛ̀ⲛⲉ', '3ms': 'ⲛ̀ⲛⲉϥ', '3fs': 'ⲛ̀ⲛⲉⲥ', '1p': 'ⲛ̀ⲛⲉⲛ', '2p': 'ⲛ̀ⲛⲉⲧⲉⲛ', '3p': 'ⲛ̀ⲛⲟⲩ' };
+const PREFIX = { past: PAST, present: PRESENT, future: FUTURE };
+/** Subject pronouns, as people type them: the verb after one takes its person (انا عايز → ϯⲟⲩⲱϣ). */
+const PRONOUN: Record<string, string> = {
+  'انا': '1s', 'احنا': '1p', 'نحن': '1p', 'انت': '2ms', 'انتي': '2fs', 'هو': '3ms', 'هي': '3fs', 'انتم': '2p', 'انتو': '2p', 'انتوا': '2p', 'هم': '3p', 'هما': '3p',
+};
+/** Words that negate the verb after them. */
+const NEGATORS = new Set(['مش', 'ما', 'لا', 'ليس', 'لم', 'لن', 'مبقاش']);
 const WHO: Record<string, string> = { '1s': 'أنا', '2ms': 'أنت', '2fs': 'أنتِ', '3ms': 'هو', '3fs': 'هي', '1p': 'نحن', '2p': 'أنتم', '3p': 'هم' };
 /** Particles the hymns gloss too many ways to pick by count. */
 const FIXED: Record<string, [string, Pos]> = {
@@ -86,6 +99,10 @@ const FIXED: Record<string, [string, Pos]> = {
   'كل': ['ⲛⲓⲃⲉⲛ', 'other'], 'جدا': ['ⲉ̀ⲙⲁϣⲱ', 'other'], 'ايضا': ['ⲟⲛ', 'other'], 'الان': ['ϯⲛⲟⲩ', 'other'], 'لا': ['ⲁⲛ', 'other'], 'ليس': ['ⲁⲛ', 'other'],
   // God: the hymns say ⲑⲉⲟⲥ in their Greek parts, but in Coptic it is ⲫ̀ⲛⲟⲩϯ (ⲑⲉⲟⲥ stays among the other words).
   'الله': ['ⲫ̀ⲛⲟⲩϯ', 'noun'], 'لله': ['ⲉ̀ⲫ̀ⲛⲟⲩϯ', 'other'],
+  // Questions and a few everyday words, as Egyptians say them too.
+  'مين': ['ⲛⲓⲙ', 'other'], 'فين': ['ⲑⲱⲛ', 'other'], 'اين': ['ⲑⲱⲛ', 'other'], 'ازاي': ['ⲡⲱⲥ', 'other'], 'كيف': ['ⲡⲱⲥ', 'other'],
+  'ليه': ['ⲉⲑⲃⲉ ⲟⲩ', 'other'], 'لماذا': ['ⲉⲑⲃⲉ ⲟⲩ', 'other'], 'مع بعض': ['ⲉⲩⲥⲟⲡ', 'other'], 'اليوم': ['ⲙ̀ⲫⲟⲟⲩ', 'other'],
+  'ثلاث': ['ϣⲟⲙⲧ', 'other'], 'ثلاثه': ['ϣⲟⲙⲧ', 'other'], 'اثنين': ['ⲥ̀ⲛⲁⲩ', 'other'],
   'و': ['ⲟⲩⲟϩ', 'other'], 'قد': ['', 'other'], 'كما': ['ⲕⲁⲧⲁ ⲫ̀ⲣⲏϯ', 'other'], 'مثل': ['ⲙ̀ⲫ̀ⲣⲏϯ', 'other'], 'امين': ['ⲁ̀ⲙⲏⲛ', 'other'], 'القدس': ['ⲉⲑⲟⲩⲁⲃ', 'other'], 'القدوس': ['ⲉⲑⲟⲩⲁⲃ', 'other'], 'هللويا': ['ⲁⲗⲗⲏⲗⲟⲩⲓⲁ', 'other'],
 };
 
@@ -266,6 +283,7 @@ function verbWord(v: Verb, w: string, future: boolean): CWord {
   const pre = v.tense === 'past' ? PAST[v.person] : future ? FUTURE[v.person] : PRESENT[v.person];
   return {
     text: w, coptic: pre + v.stem, pos: 'verb', how: 'grammar', past3: v.tense === 'past' && v.person.startsWith('3'),
+    vb: { stem: v.stem, person: v.person, tense: v.tense === 'past' ? 'past' : future ? 'future' : 'present' },
     pieces: [{ form: pre, gloss: `${WHO[v.person]} ${v.tense === 'past' ? '(ماضي)' : future ? 'سوف' : '(مضارع)'}` }, { form: v.stem, gloss: w }],
   };
 }
@@ -397,6 +415,24 @@ export function phraseToCoptic(r: Reverse, text: string): CWord[] {
     future = false;
     i++;
   }
+  // Subject pronoun → the verb's person; مش / ما / لا → the verb's negative; ماتخافش with no subject → ⲙ̀ⲡⲉⲣ.
+  let subject: string | undefined;
+  for (let i = 0; i < out.length; i++) {
+    const w = out[i];
+    if (PRONOUN[w.text]) { subject = PRONOUN[w.text]; continue; }
+    if (NEGATORS.has(w.text) && out[i + 1]?.vb) {
+      out.splice(i, 2, { ...negate(subject && out[i + 1].as ? conjugateFor(out[i + 1], subject) : out[i + 1]), text: `${w.text} ${out[i + 1].text}` });
+      subject = undefined;
+      continue;
+    }
+    if (w.vb) {
+      if (w.prohib && !subject && w.vb.tense === 'present') {
+        const pre = 'ⲙ̀ⲡⲉⲣ', stem = w.vb.stem;
+        out[i] = { ...w, coptic: pre + stem, pieces: [{ form: pre, gloss: 'لا تـ (نهي)' }, { form: stem, gloss: w.as?.replace(/^لا /, '') ?? w.text }] };
+      } else if (subject && w.as) out[i] = conjugateFor(w, subject);
+      subject = undefined;
+    } else if (w.pos === 'noun') subject = undefined;
+  }
   // إضافة: a bare noun before a definite one takes the article, and the second is joined with ⲛ̀.
   for (let i = 0; i + 1 < out.length; i++) {
     const a = out[i], b = out[i + 1];
@@ -410,7 +446,9 @@ export function phraseToCoptic(r: Reverse, text: string): CWord[] {
   const final: CWord[] = [];
   out.forEach((w, i) => {
     if (w.and) final.push({ text: 'و', coptic: w.pos === 'noun' ? 'ⲛⲉⲙ' : 'ⲟⲩⲟϩ', pieces: [], how: 'grammar', pos: 'other' });
-    if (w.pos === 'noun' && w.definite && !w.and && out[i - 1]?.past3 && !/^ⲛ̀|^ⲙ̀/.test(w.coptic)) final.push({ text: '', coptic: 'ⲛ̀ϫⲉ', pieces: [], how: 'grammar', pos: 'other' });
+    // ...unless the subject already came before the verb (ربنا خلق السما: السما is what he made).
+    const subjectBefore = out.slice(0, i - 1).some(x => x.pos === 'noun' || PRONOUN[x.text]);
+    if (w.pos === 'noun' && w.definite && !w.and && out[i - 1]?.past3 && !subjectBefore && !/^ⲛ̀|^ⲙ̀/.test(w.coptic)) final.push({ text: '', coptic: 'ⲛ̀ϫⲉ', pieces: [], how: 'grammar', pos: 'other' });
     final.push(w);
   });
   return final;
@@ -418,6 +456,11 @@ export function phraseToCoptic(r: Reverse, text: string): CWord[] {
 
 /** A name spelled another way (ماركو → مرقس) or colloquial Arabic (عايز، بيصلي، ماشافش), read as the Arabic we know. */
 function understood(r: Reverse, w: string, future: boolean): CWord | undefined {
+  // ومتخافش، وبيصلي: و in front of a colloquial word.
+  if (w.startsWith('و') && w.length > 4 && !standardArabic(w)) {
+    const rest = understood(r, w.slice(1), future);
+    if (rest) return { ...rest, text: w, and: true };
+  }
   const name = nameVariant(w);
   if (name) return { text: w, coptic: name.coptic, pieces: [{ form: name.coptic, gloss: name.name }], how: 'grammar', pos: 'noun', definite: true, as: name.name !== w ? name.name : undefined };
   const std = standardArabic(w);
@@ -429,21 +472,56 @@ function understood(r: Reverse, w: string, future: boolean): CWord | undefined {
     // بيصلي / هيصلي: only a present verb will do (بيده is not "his hand" here).
     if (!std.verb) return wordToCoptic(r, x, future);
     const fut = x.startsWith('س');
-    const v = r.present.get(fut ? x.slice(1) : x);
-    return v ? verbWord(v, x, fut || future) : null;
+    const bare = fut ? x.slice(1) : x;
+    const v = r.present.get(bare);
+    if (v) return verbWord(v, x, fut || future);
+    // بحبك، شايفك: the verb with an object pronoun at its end.
+    for (const [end, gloss, obj] of OBJ) {
+      if (!bare.endsWith(end) || bare.length < end.length + 3) continue;
+      const v2 = r.present.get(bare.slice(0, -end.length));
+      if (!v2) continue;
+      const vw = verbWord(v2, x, fut || future), o = objectOf(r, vw, obj);
+      return { ...vw, coptic: vw.coptic + ' ' + o, pieces: [...vw.pieces, { form: o, gloss }] };
+    }
+    return null;
   });
   if (parts.some(p => !p || p.how === 'unknown')) return undefined;
   const ps = parts as CWord[];
   let coptic = ps.map(p => p.coptic).filter(Boolean).join(' ');
   let pieces = ps.flatMap(p => p.pieces);
-  if (not && ps.length === 1 && ps[0].pos === 'verb') {
+  if (not && ps.length === 1 && ps[0].vb) {
     // ماشافش → ⲙ̀ⲡⲉϥⲛⲁⲩ، مابيصليش → ⲛ̀ϥϣⲗⲏⲗ ⲁⲛ
-    const past = Object.keys(NEG_PAST).sort((x, y) => y.length - x.length).find(p => coptic.startsWith(p));
-    if (past) { coptic = NEG_PAST[past] + coptic.slice(past.length); pieces = [{ form: NEG_PAST[past], gloss: 'لم (نفي الماضي)' }, ...(pieces[0]?.form === past ? pieces.slice(1) : pieces)]; }
-    else { coptic = 'ⲛ̀' + coptic + ' ⲁⲛ'; pieces = [{ form: 'ⲛ̀', gloss: 'نفي' }, ...pieces, { form: 'ⲁⲛ', gloss: 'نفي' }]; }
+    const n = negate(ps[0]);
+    coptic = n.coptic; pieces = n.pieces;
   } else if (not) { coptic = 'ⲁⲛ ' + coptic; pieces = [{ form: 'ⲁⲛ', gloss: 'لا' }, ...pieces]; }
   const last = ps[ps.length - 1];
-  return { ...last, text: w, coptic, pieces, how: ps.some(p => p.how === 'dictionary') ? 'dictionary' : 'grammar', past3: not ? false : last.past3, as: std.text };
+  // ماتخافش: "don't be afraid", unless a subject before it makes it "you/she don't".
+  const prohib = not && ps.length === 1 && !!ps[0].vb && ps[0].vb.tense === 'present' && /^لا ت/.test(std.text);
+  return { ...last, text: w, coptic, pieces, how: ps.some(p => p.how === 'dictionary') ? 'dictionary' : 'grammar', past3: not ? false : last.past3, as: std.text, prohib };
+}
+
+/** The negative of a verb: ⲙ̀ⲡⲉϥ for the past, ⲛ̀ⲛⲉϥ for the future, ⲛ̀ ... ⲁⲛ for the present. */
+function negate(w: CWord): CWord {
+  const vb = w.vb;
+  if (!vb) return { ...w, coptic: 'ⲁⲛ ' + w.coptic, pieces: [{ form: 'ⲁⲛ', gloss: 'لا' }, ...w.pieces] };
+  const pre = PREFIX[vb.tense][vb.person] ?? '';
+  const rest = w.coptic.startsWith(pre) ? w.coptic.slice(pre.length) : w.coptic;
+  const tail = w.pieces.slice(w.pieces[0]?.form === pre ? 1 : 0);
+  if (vb.tense === 'past') { const p = NEG_PAST[pre] ?? 'ⲙ̀ⲡⲉϥ'; return { ...w, coptic: p + rest, pieces: [{ form: p, gloss: 'لم (نفي الماضي)' }, ...tail], past3: false }; }
+  if (vb.tense === 'future') { const p = NEG_FUT[vb.person]; return { ...w, coptic: p + rest, pieces: [{ form: p, gloss: 'لن (نفي المستقبل)' }, ...tail] }; }
+  return { ...w, coptic: 'ⲛ̀' + w.coptic + ' ⲁⲛ', pieces: [{ form: 'ⲛ̀', gloss: 'نفي' }, ...w.pieces, { form: 'ⲁⲛ', gloss: 'نفي' }] };
+}
+
+/** The verb in another person: after انا, عايز (ⲉϥⲟⲩⲱϣ) is ϯⲟⲩⲱϣ. */
+function conjugateFor(w: CWord, person: string): CWord {
+  const vb = w.vb;
+  if (!vb || vb.person === person) return w;
+  const old = PREFIX[vb.tense][vb.person], pre = PREFIX[vb.tense][person];
+  if (!old || !pre || !w.coptic.startsWith(old)) return w;
+  return {
+    ...w, coptic: pre + w.coptic.slice(old.length), vb: { ...vb, person }, past3: vb.tense === 'past' && person.startsWith('3'),
+    pieces: [{ form: pre, gloss: `${WHO[person]} ${vb.tense === 'past' ? '(ماضي)' : vb.tense === 'future' ? 'سوف' : '(مضارع)'}` }, ...w.pieces.slice(w.pieces[0]?.form === old ? 1 : 0)],
+  };
 }
 
 /** A word we still don't know: the known word one letter away, if there is one. */

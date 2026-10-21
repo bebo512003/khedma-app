@@ -50,8 +50,7 @@ const NAMES: [string, string, string[]][] = [
 
 /** Egyptian words → the Arabic the translator knows (more than one word is fine: مفيش → لا يوجد). */
 const COLLOQUIAL: Record<string, string> = {
-  'عايز': 'يريد', 'عاوز': 'يريد', 'عايزه': 'تريد', 'عاوزه': 'تريد', 'عايزين': 'نريد', 'عاوزين': 'نريد',
-  'دلوقتي': 'الان', 'دلوقت': 'الان', 'دحين': 'الان', 'ازاي': 'كيف', 'فين': 'اين', 'امتي': 'متي', 'ليه': 'لماذا', 'ايه': 'ماذا',
+  'دلوقتي': 'الان', 'دلوقت': 'الان', 'دحين': 'الان', 'امتي': 'متي', 'ايه': 'ماذا',
   'ده': 'هذا', 'دا': 'هذا', 'دي': 'هذه', 'دول': 'هولاء', 'اللي': 'الذي', 'كده': 'هكذا', 'كدا': 'هكذا',
   'كمان': 'ايضا', 'اوي': 'جدا', 'قوي': 'جدا', 'خالص': 'جدا', 'مش': 'ليس', 'مفيش': 'لا يوجد', 'فيه': 'يوجد', 'معلش': 'عفوا',
   'معانا': 'معنا', 'معاك': 'معك', 'معاكي': 'معك', 'معاه': 'معه', 'معاها': 'معها', 'معاهم': 'معهم', 'معاكم': 'معكم', 'عليا': 'علي', 'ليا': 'لي', 'بيا': 'بي',
@@ -63,6 +62,35 @@ const COLLOQUIAL: Record<string, string> = {
   'بص': 'انظر', 'شوف': 'انظر', 'شاف': 'راي', 'شافه': 'راه', 'شفت': 'رايت', 'روح': 'اذهب', 'راح': 'ذهب', 'جه': 'جاء', 'جا': 'جاء',
   'ييجي': 'ياتي', 'تعالي': 'تعال', 'خد': 'خذ', 'هات': 'اعط', 'ادي': 'اعطي', 'اديني': 'اعطني', 'اداني': 'اعطاني', 'قعد': 'جلس', 'اقعد': 'اجلس',
   'صحي': 'قام', 'نام': 'رقد', 'اتولد': 'ولد', 'اتصلب': 'صلب', 'اتعمد': 'اعتمد', 'اتكلم': 'تكلم', 'لسه': 'بعد',
+  // Time, place, people and things.
+  'امبارح': 'امس', 'بكره': 'غدا', 'بكرا': 'غدا', 'النهارده': 'اليوم', 'النهاردا': 'اليوم', 'دايما': 'دائما', 'علي طول': 'دائما', 'ساعات': 'احيانا',
+  'هنا': 'هنا', 'هناك': 'هناك', 'جوه': 'داخل', 'جوا': 'داخل', 'بره': 'خارج', 'برا': 'خارج', 'قدام': 'امام', 'ورا': 'وراء',
+  'حد': 'احد', 'محدش': 'لا احد', 'حاجه': 'شيء', 'حاجات': 'اشياء', 'كل حاجه': 'كل شيء', 'ولاد': 'اولاد', 'الولاد': 'الاولاد', 'بنت': 'ابنه',
+  'السما': 'السماء', 'الملايكه': 'الملائكه', 'ملاك': 'ملاك', 'تلات': 'ثلاث', 'تلاته': 'ثلاثه', 'تلاتين': 'ثلاثين', 'اتنين': 'اثنين', 'تمانيه': 'ثمانيه',
+  'كتير': 'كثير', 'كتيره': 'كثيره', 'شويه': 'قليلا', 'بس': 'فقط', 'برضه': 'ايضا', 'برضو': 'ايضا', 'لازم': 'يجب', 'ممكن': 'يمكن', 'يمكن': 'ربما',
+  'حلوه': 'حسنه', 'جميل': 'جميل', 'وحشه': 'رديه', 'كبير': 'كبير', 'صغير': 'صغير', 'طيب': 'صالح', 'طيبه': 'صالحه',
+  'معايا': 'معي', 'ليك': 'لك', 'ليكي': 'لك', 'ليكم': 'لكم', 'ليها': 'لها', 'ليهم': 'لهم', 'لينا': 'لنا', 'عليك': 'عليك', 'علينا': 'علينا',
+  'عشانك': 'لاجلك', 'عشانه': 'لاجله', 'عشانها': 'لاجلها', 'عشاننا': 'لاجلنا', 'عشانهم': 'لاجلهم', 'علشانك': 'لاجلك', 'علشانه': 'لاجله', 'علشاننا': 'لاجلنا', 'علشانهم': 'لاجلهم',
+  'بتاعي': 'لي', 'بتاعك': 'لك', 'بتاعنا': 'لنا', 'بتاعه': 'له',
+  // Verbs said differently.
+  'قول': 'قل', 'قولي': 'قل لي', 'قولتلك': 'قلت لك', 'قولت': 'قلت', 'روحت': 'ذهبت', 'رحت': 'ذهبت', 'روحنا': 'ذهبنا', 'راحوا': 'ذهبوا',
+  'جيت': 'جئت', 'جينا': 'جئنا', 'جم': 'جاءوا', 'جات': 'جاءت', 'كلت': 'اكلت', 'خلي': 'اجعل', 'خليك': 'كن', 'خلينا': 'لنكن', 'اوعي': 'احذر', 'يلا': 'هيا',
+  'حبيت': 'احببت', 'حبيتك': 'احببتك', 'بقي': 'صار', 'بقيت': 'صرت', 'اتعلمت': 'تعلمت', 'اتعلم': 'تعلم', 'اتبارك': 'تبارك', 'ازيك': 'كيف حالك', 'ازيكم': 'كيف حالكم',
+};
+
+/**
+ * Egyptian participles (عايز، فاهم، شايف، رايح) as the present verb they mean, he-form: the person comes from
+ * the ending (عايزه she, عايزين they) or from a pronoun before it (انا عايز → اريد).
+ */
+const PARTICIPLES: Record<string, string> = {
+  'عايز': 'يريد', 'عاوز': 'يريد', 'فاهم': 'يفهم', 'عارف': 'يعرف', 'شايف': 'ينظر', 'رايح': 'يذهب', 'جاي': 'ياتي', 'خايف': 'يخاف',
+  'ساكن': 'يسكن', 'قاعد': 'يجلس', 'مستني': 'ينتظر', 'حاسس': 'يشعر', 'مصدق': 'يصدق', 'فاكر': 'يتذكر', 'ناسي': 'ينسي', 'عايش': 'يحيا',
+  'ماشي': 'يمشي', 'نايم': 'ينام', 'شايل': 'يحمل', 'لابس': 'يلبس', 'واقف': 'يقف', 'عامل': 'يعمل', 'بايع': 'يبيع', 'سامع': 'يسمع',
+  'مسامح': 'يسامح', 'فرحان': 'يفرح', 'زعلان': 'يحزن', 'محتاج': 'يحتاج', 'حابب': 'يحب', 'مستاهل': 'يستحق', 'متاكد': 'يتيقن', 'شاكر': 'يشكر',
+};
+/** Present verbs said with another root (يروح = يذهب, يشوف = يري): the stem after the person letter. */
+const VERB_STEMS: Record<string, string> = {
+  'روح': 'ذهب', 'شوف': 'نظر', 'جي': 'اتي', 'يجي': 'اتي', 'عوز': 'ريد', 'دي': 'عطي', 'اخد': 'اخذ', 'خد': 'اخذ', 'زعل': 'حزن', 'كلم': 'كلم', 'افتكر': 'تذكر', 'صحي': 'قوم',
 };
 
 const key = (s: string) => s.replace(/[ً-ْٰـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
@@ -77,6 +105,29 @@ export function nameVariant(w: string) {
   return nameOf.get(k) ?? (k.startsWith('ال') ? undefined : nameOf.get(k.replace(/^(ابو|ابا|الانبا|انبا|مار|ماري)(?=..)/, '')));
 }
 
+const OBJECTS = ['كم', 'هم', 'ها', 'نا', 'ني', 'ه', 'ك'];
+/** A participle in any form → its present verb: عايزه → تريد، شايفينك → يرونك. */
+function participle(k: string): string | undefined {
+  for (const obj of ['', ...OBJECTS]) {
+    if (obj && !k.endsWith(obj)) continue;
+    const base = obj ? k.slice(0, -obj.length) : k;
+    if (PARTICIPLES[base]) return PARTICIPLES[base] + obj;
+    if (base.endsWith('ين') && PARTICIPLES[base.slice(0, -2)]) return PARTICIPLES[base.slice(0, -2)].replace(/ي$/, '') + 'ون' + obj;
+    if (base.endsWith('ه') && PARTICIPLES[base.slice(0, -1)]) return 'ت' + PARTICIPLES[base.slice(0, -1)].slice(1) + obj;
+    if (base.endsWith('ت') && PARTICIPLES[base.slice(0, -1)]) return 'ت' + PARTICIPLES[base.slice(0, -1)].slice(1) + obj;
+  }
+  return undefined;
+}
+/** يروح → يذهب، نشوف → نري: a present verb with a colloquial root. */
+function verbStem(k: string): string | undefined {
+  const m = k.match(/^([ايتن])(.+?)(وا|و|ي)?$/);
+  if (!m) return undefined;
+  const stem = VERB_STEMS[m[2]];
+  if (!stem) return undefined;
+  const end = m[3] === 'وا' || m[3] === 'و' ? 'ون' : m[3] === 'ي' && m[1] === 'ت' ? 'ين' : '';
+  return m[1] + stem + end;
+}
+
 /**
  * The same word in standard Arabic, or nothing when it already is. verb: it must be read as a present verb.
  * بيصلي → يصلي، هيروح → سيروح، ماشافش → لا راي (ما...ش), and the colloquial words above.
@@ -85,11 +136,19 @@ export function standardArabic(w: string): { text: string; verb?: boolean } | un
   const k = key(w);
   const c = colloquial.get(k);
   if (c && c !== k) return { text: c };
-  // ما + word + ش: negation (ماشافش، مابيصليش).
-  if (/^ما.{3,}ش$/.test(k)) { const inner = k.slice(2, -1); const s = standardArabic(inner); return { text: 'لا ' + (s?.text ?? inner), verb: s?.verb }; }
+  const p = participle(k);
+  if (p) return { text: p, verb: true };
+  const vs = verbStem(k);
+  if (vs) return { text: vs, verb: true };
+  // ما + word + ش, or م + word + ش: negation (ماشافش، مابيصليش، متخافش).
+  const neg = k.match(/^ما?(.{3,})ش$/);
+  if (neg && !colloquial.has(k)) { const inner = neg[1]; const s = standardArabic(inner); return { text: 'لا ' + (s?.text ?? inner), verb: s?.verb ?? /^[يتنا]/.test(inner) }; }
   // بـ / هـ before a present verb: habit or now (بيصلي), and the future (هيصلي، هنصلي).
-  if (/^ب[يتنا].{2,}$/.test(k)) return { text: k.slice(1), verb: true };
-  if (/^ه[يتنا].{2,}$/.test(k)) return { text: 'س' + k.slice(1), verb: true };
+  if (/^ب[يتنا].{2,}$/.test(k)) { const v = verbStem(k.slice(1)); return { text: v ?? k.slice(1), verb: true }; }
+  if (/^ه[يتنا].{2,}$/.test(k)) { const v = verbStem(k.slice(1)); return { text: 'س' + (v ?? k.slice(1)), verb: true }; }
+  // بـ / هـ with the "I" form, where the ا drops: بصلي → اصلي، هصلي → سأصلي، بحبك → احبك.
+  if (/^ب[^يتنا].{2,}$/.test(k)) return { text: 'ا' + k.slice(1), verb: true };
+  if (/^ه[^يتنا].{2,}$/.test(k)) return { text: 'سا' + k.slice(1), verb: true };
   // اتـ: the passive (اتعمل → عمل).
   if (/^ات.{3,}$/.test(k)) return { text: k.slice(2) };
   return undefined;
