@@ -2,10 +2,10 @@ import { useMemo, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import type { Gender, Member } from '../data/types';
-import { count, levelForGrade, uid } from '../data/logic';
+import { count, levelForGrade, MONTHS, uid } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
 import {
-  FIELD_LABELS, guessColumns, norm, parseDate, parseGender, parseGrade, parsePhone, parseRank, readSheet, templateRows, type Field,
+  FIELD_LABELS, guessColumns, norm, parseDate, parseGender, parseMonth, parseGrade, parsePhone, parseRank, readSheet, templateRows, type Field,
 } from '../data/importSheet';
 
 const FIELDS = Object.keys(FIELD_LABELS) as Field[];
@@ -61,6 +61,7 @@ export default function ImportMembers() {
       return {
         i, name, gender, grade, levelId, dup, issues,
         birthdate: parseDate(cell(r, 'birthdate')) ?? undefined,
+        birthMonth: parseMonth(cell(r, 'birthMonth')),
         parentPhone: parsePhone(cell(r, 'parentPhone')),
         phone: parsePhone(cell(r, 'phone')),
         rank: gender === 'm' ? parseRank(cell(r, 'rank')) : undefined,
@@ -79,6 +80,7 @@ export default function ImportMembers() {
       const added: Member[] = chosen.map(r => {
         const m: Member = { id: uid(), code: String(next++).padStart(4, '0'), name: r.name, gender: r.gender!, levelId: r.levelId, grade: r.grade ?? '' };
         if (r.birthdate) m.birthdate = r.birthdate;
+        else if (r.birthMonth) m.birthMonth = r.birthMonth;
         if (r.parentPhone) m.parentPhone = r.parentPhone;
         if (r.phone) m.phone = r.phone;
         if (r.rank) m.rank = r.rank;
@@ -129,7 +131,7 @@ export default function ImportMembers() {
                   <input type="checkbox" aria-label={`ضيف ${r.name}`} checked={r.on} onChange={e => setInclude({ ...include, [r.i]: e.target.checked })} style={{ marginTop: 6 }} />
                   <div className="grow">
                     <b>{r.name}</b>
-                    <div className="muted">{data.levels.find(l => l.id === r.levelId)?.name}{r.grade ? ` • ${r.grade}` : ''}{r.rank ? ` • ${r.rank}` : ''}{r.birthdate ? ` • ${r.birthdate.split('-').reverse().join('/')}` : ''}</div>
+                    <div className="muted">{data.levels.find(l => l.id === r.levelId)?.name}{r.grade ? ` • ${r.grade}` : ''}{r.rank ? ` • ${r.rank}` : ''}{r.birthdate ? ` • ${r.birthdate.split('-').reverse().join('/')}` : r.birthMonth ? ` • مولود في ${MONTHS[r.birthMonth - 1]}` : ''}</div>
                     {(r.dup || r.issues.length > 0) && <div className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
                       {r.dup && <span className="tag tag-alert">{r.dup}</span>}
                       {r.issues.map(x => <span key={x} className="tag tag-ex">{x}</span>)}

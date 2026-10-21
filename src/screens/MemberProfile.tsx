@@ -4,7 +4,7 @@ import { useAllowedLevel, useData, useCan } from '../data/store';
 import { STATUS_LABELS, type HymnStatus } from '../data/types';
 import {
   absenceStreak, contact, formatTime, isLate, lateBy, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, ranking,
-  sessionAverage, todayISO, waLink, yearsCount,
+  sessionAverage, todayISO, waLink, yearsCount, MONTHS,
 } from '../data/logic';
 import Icon from '../ui/Icon';
 
@@ -118,6 +118,7 @@ export default function MemberProfile() {
 
         {tab === 'info' && <div className="card">
           {m.birthdate && row('تاريخ الميلاد', `${formatDay(m.birthdate)} (${yearsCount(age(m.birthdate))})`)}
+          {!m.birthdate && m.birthMonth && row('شهر الميلاد', MONTHS[m.birthMonth - 1])}
           {row('السنة الدراسية', m.grade)}
           {row('موبايله', m.phone)}
           {row('موبايل ولي الأمر', m.parentPhone)}

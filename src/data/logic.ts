@@ -177,6 +177,12 @@ export function upcomingBirthdays(members: Member[], days = 7, from = new Date()
   }).sort((a, b) => a.daysAway - b.daysAway);
 }
 
+export const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+/** Members with only a birth month, whose month this is. */
+export const monthBirthdays = (members: Member[], from = new Date()) =>
+  members.filter(m => !m.birthdate && m.birthMonth === from.getMonth() + 1);
+
 export const birthdayWhen = (daysAway: number) =>
   daysAway === 0 ? 'النهارده' : daysAway === 1 ? 'بكرة' : daysAway === 2 ? 'بعد يومين' : `بعد ${count(daysAway, 'يوم', 'يومين', 'أيام')}`;
 export const yearsCount = (n: number) => n === 1 ? 'سنة واحدة' : n === 2 ? 'سنتين' : n >= 3 && n <= 10 ? `${n} سنين` : `${n} سنة`;

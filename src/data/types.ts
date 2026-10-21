@@ -26,6 +26,8 @@ export interface Member {
   grade: string;
   /** YYYY-MM-DD */
   birthdate?: string;
+  /** 1–12: the birth month when the day isn't known (from a photo folder per month, say). */
+  birthMonth?: number;
   rank?: string;
   parentPhone?: string;
   /** The member's own mobile, for older members. Messages go here first when it's set. */

@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useIsLead, useStore } from '../data/store';
 import { RANKS, type Gender, type Member } from '../data/types';
 import { cancelled, shrinkPhoto as shrink } from '../data/photo';
-import { GRADES, contact, hashPin, levelForGrade, newPin, todayISO, uid, waLink } from '../data/logic';
+import { GRADES, MONTHS, contact, hashPin, levelForGrade, newPin, todayISO, uid, waLink } from '../data/logic';
 
 export default function MemberForm() {
   const { memberId } = useParams();
@@ -99,7 +99,12 @@ export default function MemberForm() {
           </select></label>
 
         <label className="field" htmlFor="birth"><span>تاريخ الميلاد</span>
-          <input id="birth" type="date" className="input" value={m.birthdate ?? ''} max={todayISO()} onChange={e => set({ birthdate: e.target.value || undefined })} /></label>
+          <input id="birth" type="date" className="input" value={m.birthdate ?? ''} max={todayISO()} onChange={e => set({ birthdate: e.target.value || undefined, ...(e.target.value ? { birthMonth: undefined } : {}) })} /></label>
+        {!m.birthdate && <label className="field" htmlFor="bmonth"><span>أو شهر الميلاد بس</span>
+          <select id="bmonth" className="input" value={m.birthMonth ?? ''} onChange={e => set({ birthMonth: e.target.value ? Number(e.target.value) : undefined })}>
+            <option value="">مش معروف</option>
+            {MONTHS.map((x, i) => <option key={x} value={i + 1}>{x}</option>)}
+          </select></label>}
 
         <div className="field"><span>المستوى</span>
           <div className="chips">{levels.map(l =>

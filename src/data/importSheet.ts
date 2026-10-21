@@ -54,9 +54,9 @@ export const norm = (s: string) => s.trim().toLowerCase()
   .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/[ً-ْ]/g, '')
   .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/\s+/g, ' ');
 
-export type Field = 'name' | 'gender' | 'grade' | 'birthdate' | 'parentPhone' | 'phone' | 'rank';
+export type Field = 'name' | 'gender' | 'grade' | 'birthdate' | 'birthMonth' | 'parentPhone' | 'phone' | 'rank';
 export const FIELD_LABELS: Record<Field, string> = {
-  name: 'الاسم', gender: 'النوع', grade: 'السنة الدراسية', birthdate: 'تاريخ الميلاد',
+  name: 'الاسم', gender: 'النوع', grade: 'السنة الدراسية', birthdate: 'تاريخ الميلاد', birthMonth: 'شهر الميلاد',
   parentPhone: 'موبايل ولي الأمر', phone: 'موبايل المخدوم', rank: 'الرتبة',
 };
 
@@ -69,12 +69,22 @@ export function guessColumns(header: string[]): Partial<Record<Field, number>> {
   };
   take('parentPhone', h => /ولي|والد|الاب|الام|parent/.test(h));
   take('phone', h => /موبايل|تليفون|هاتف|رقم|phone|mobile|واتس/.test(h) && !/كود|قومي/.test(h));
+  take('birthMonth', h => /شهر/.test(h) && /ميلاد|birth/.test(h));
   take('birthdate', h => /ميلاد|birth/.test(h));
   take('grade', h => /سنه|صف|مرحله|دراس|grade|class/.test(h));
   take('gender', h => /نوع|جنس|gender/.test(h));
   take('rank', h => /رتبه|شماس|rank/.test(h));
   take('name', h => /اسم|name/.test(h));
   return out;
+}
+
+/** A birth month as a number (1–12) or its name (أكتوبر، اكتوبر، 10). */
+export function parseMonth(raw: string): number | undefined {
+  const s = norm(raw);
+  if (/^\d{1,2}$/.test(s) && +s >= 1 && +s <= 12) return +s;
+  const names = ['يناير', 'فبراير', 'مارس', 'ابريل', 'مايو', 'يونيو', 'يوليو', 'اغسطس', 'سبتمبر', 'اكتوبر', 'نوفمبر', 'ديسمبر'];
+  const i = names.indexOf(s);
+  return i >= 0 ? i + 1 : undefined;
 }
 
 const ORD: Record<string, number> = { اول: 1, اولي: 1, اولى: 1, تاني: 2, ثاني: 2, تانيه: 2, ثانيه: 2, تالت: 3, ثالث: 3, تالته: 3, ثالثه: 3, رابع: 4, رابعه: 4, خامس: 5, خامسه: 5, سادس: 6, سادسه: 6 };
