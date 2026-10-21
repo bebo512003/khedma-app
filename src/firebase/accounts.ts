@@ -63,6 +63,17 @@ export async function memberSignIn(code: string, pin: string): Promise<string | 
   }
 }
 
+/** Sign-in with a mobile number: tries the PIN on each member with a login on that number (siblings share a parent's). */
+export async function memberSignInByPhone(phone: string, pin: string): Promise<string | null> {
+  const { phoneKey } = await import('./paths');
+  const s = await getDoc(ref(memberFb().db, 'phones', await phoneKey(phone)));
+  for (const code of (s.data()?.codes as string[] | undefined) ?? []) {
+    const id = await memberSignIn(code, pin);
+    if (id) return id;
+  }
+  return null;
+}
+
 export const memberSignOut = () => signOut(memberFb().auth);
 
 export function watchMemberView(memberId: string, cb: (v: MemberView | null) => void, onError: (e: Error) => void) {

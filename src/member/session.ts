@@ -13,15 +13,19 @@ const write = (id: string | null) => { try { if (id) localStorage.setItem(KEY, i
 /** Example members have no PIN yet, so 123456 lets anyone try the member app with them (offline mode only). */
 export const EXAMPLE_PIN = '123456';
 
+/** A mobile number typed at login instead of a code. */
+export const isPhone = (s: string) => /^01\d{9}$/.test(s);
+
+/** `code` may also be a mobile number: the member's own or a parent's. */
 export async function memberLogin(code: string, pin: string, data: ReturnType<typeof useStore>['data']): Promise<string | null> {
   let id: string | null = null;
   if (cloudEnabled) {
-    const { memberSignIn } = await import('../firebase/accounts');
-    id = await memberSignIn(code, pin);
+    const { memberSignIn, memberSignInByPhone } = await import('../firebase/accounts');
+    id = isPhone(code) ? await memberSignInByPhone(code, pin) : await memberSignIn(code, pin);
   } else {
-    const m = data?.members.find(x => x.code === code);
-    const ok = m && (m.pinHash ? (await hashPin(m.id, pin)) === m.pinHash : m.example && pin === EXAMPLE_PIN);
-    id = ok ? m.id : null;
+    for (const m of data?.members.filter(x => isPhone(code) ? x.phone === code || x.parentPhone === code : x.code === code) ?? []) {
+      if (m.pinHash ? (await hashPin(m.id, pin)) === m.pinHash : m.example && pin === EXAMPLE_PIN) { id = m.id; break; }
+    }
   }
   if (id) write(id);
   return id;

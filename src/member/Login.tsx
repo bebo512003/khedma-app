@@ -11,7 +11,7 @@ export default function Login() {
   const nav = useNavigate();
   const [params] = useSearchParams();
   // Scanning a member card opens this page with the code filled in.
-  const [code, setCode] = useState((params.get('code') ?? '').replace(/\D/g, '').slice(0, 6));
+  const [code, setCode] = useState((params.get('code') ?? '').replace(/\D/g, '').slice(0, 11));
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -21,9 +21,9 @@ export default function Login() {
     if (busy || next.length < 6) return;
     setBusy(true);
     try {
-      const id = await memberLogin(code.trim().padStart(4, '0'), next, data);
+      const id = await memberLogin(code.length > 6 ? code : code.padStart(4, '0'), next, data);
       if (id) { nav('/me/home', { replace: true }); return; }
-      setError('الكود أو الرقم السري مش مظبوط.');
+      setError(code.length > 6 ? 'الرقم ده أو الرقم السري مش مظبوط. لو الموبايل مش متسجل عند الخادم ادخل بالكود.' : 'الكود أو الرقم السري مش مظبوط.');
     } catch {
       setError(navigator.onLine ? 'حصلت مشكلة، جرّب تاني.' : 'أول مرة تدخل لازم يكون معاك نت.');
     }
@@ -41,8 +41,8 @@ export default function Login() {
     <main className="login gutter">
       <img src={logo} alt="" width={84} height={84} />
       <div style={{ textAlign: 'center' }}><h1>مدرسة الشهيد اسطفانوس للشمامسة</h1><div className="muted">إتعلم … رتل … افرح</div></div>
-      <label className="field" htmlFor="code" style={{ width: '100%' }}><span>كودك</span>
-        <input id="code" className="input code" inputMode="numeric" dir="ltr" maxLength={6} placeholder="3001" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} /></label>
+      <label className="field" htmlFor="code" style={{ width: '100%' }}><span>كودك أو رقم الموبايل</span>
+        <input id="code" className="input code" inputMode="numeric" dir="ltr" maxLength={11} placeholder="3001" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} /></label>
       <div className="field" style={{ width: '100%' }}><span>الرقم السري</span>
         <div className="dots" aria-label={`اتكتب ${pin.length} أرقام`}>{Array.from({ length: 6 }, (_, i) => <i key={i} className={i < pin.length ? 'on' : ''} />)}</div>
       </div>

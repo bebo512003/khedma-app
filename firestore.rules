@@ -66,6 +66,12 @@ service cloud.firestore {
         allow write: if servant();
       }
 
+      // hashed mobile number → codes of the members with a login on it; lets members sign in by phone.
+      match /phones/{h} {
+        allow get: if true;
+        allow write: if servant() && (request.resource == null || (request.resource.data.keys().hasOnly(['codes']) && request.resource.data.codes is list && request.resource.data.codes.size() <= 20));
+      }
+
       // A login for a member: only a servant of that member's level makes or retires it.
       match /accounts/{uid} {
         allow get: if (signedIn() && request.auth.uid == uid) || servant();

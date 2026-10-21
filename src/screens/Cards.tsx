@@ -53,6 +53,7 @@ export default function Cards() {
   const noPin = members.filter(m => !m.pinHash && !m.account && !pins[m.id]);
   // A PIN is never kept readable, so printing one for a member who already has a login means giving them a new one.
   const hasPin = members.filter(m => (m.pinHash || m.account) && !pins[m.id]);
+  const everyone = members.filter(m => !pins[m.id]);
   const [askReset, setAskReset] = useState(false);
 
   /** Gives every member on the page who has no login yet a PIN, so the whole level can be handed cards in one go. */
@@ -102,9 +103,9 @@ export default function Cards() {
               : <>
                 {noPin.length > 0 && <button className="btnp" onClick={() => makePins(noPin)}>اعمل أرقام سرية لـ {noPin.length} مخدوم</button>}
                 {hasPin.length > 0 && (askReset
-                  ? <div className="alert"><b>الرقم السري القديم لـ {hasPin.length} مخدوم هيبطل</b><div className="muted">هيتعمل لكل واحد رقم جديد ويتطبع على كارته، وأي حد داخل بالقديم هيخرج ويدخل بالجديد.</div>
-                    <div className="row"><button className="btn grow" onClick={() => setAskReset(false)}>لا</button><button className="btnp grow" onClick={() => makePins(hasPin)}>اعمل أرقام جديدة</button></div></div>
-                  : <button className="btn" onClick={() => setAskReset(true)}>اطبع رقم سري جديد للي ليهم رقم ({hasPin.length})</button>)}
+                  ? <div className="alert"><b>هيتعمل رقم سري جديد لـ {everyone.length} مخدوم</b><div className="muted">الرقم القديم لـ {hasPin.length} منهم هيبطل، وكل واحد هيدخل بالرقم اللي على كارته الجديد.</div>
+                    <div className="row"><button className="btn grow" onClick={() => setAskReset(false)}>لا</button><button className="btnp grow" onClick={() => makePins(everyone)}>اعمل أرقام جديدة</button></div></div>
+                  : <button className={noPin.length ? 'btn' : 'btnp'} onClick={() => setAskReset(true)}>اعمل رقم سري جديد للكل ({everyone.length})</button>)}
               </>}
             {pinError && <div className="alert-t" role="alert">{pinError}</div>}
           </div>

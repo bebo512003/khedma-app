@@ -1,7 +1,7 @@
 import { onSnapshot, writeBatch, type Firestore, type WriteBatch } from 'firebase/firestore';
 import type { AppData } from '../data/types';
 import { buildMemberView } from '../data/memberView';
-import { col, ref } from './paths';
+import { col, phoneKey, ref } from './paths';
 
 /** Collections that hold one document per item, keyed by the item's id. */
 const LISTS = ['levels', 'hymns', 'books', 'terms', 'members', 'sessions'] as const;
@@ -68,6 +68,7 @@ export function writeDiff(db: Firestore, prev: AppData, next: AppData) {
  * `published` remembers what this device last wrote, so only views that changed are rewritten.
  */
 export function publishViews(db: Firestore, data: AppData, published: Map<string, string>, mayLevel: (levelId: string) => boolean = () => true) {
+  publishPhones(db, data).catch(() => undefined);
   const b = batcher(db);
   for (const m of data.members) {
     if (!mayLevel(m.levelId)) continue;
@@ -85,6 +86,33 @@ export function publishViews(db: Firestore, data: AppData, published: Map<string
     if (m) continue;
     b.op(w => w.delete(ref(db, 'memberViews', id)));
   }
+  return b.commit();
+}
+
+/** What this device last wrote to the phone index: hashed phone → codes. */
+const phonesPublished = new Map<string, string>();
+
+/**
+ * Members can sign in with a mobile number (theirs or a parent's) instead of their code: phones/{hash} lists the codes
+ * of members with a login on that number, and the PIN tells siblings apart. Hashed so the index holds no numbers.
+ */
+async function publishPhones(db: Firestore, data: AppData) {
+  const byPhone = new Map<string, string[]>();
+  for (const m of data.members) {
+    if (!m.account) continue;
+    for (const p of new Set([m.phone, m.parentPhone].filter((x): x is string => !!x))) byPhone.set(p, [...(byPhone.get(p) ?? []), m.code]);
+  }
+  const b = batcher(db);
+  const seen = new Set<string>();
+  for (const [phone, codes] of byPhone) {
+    const h = await phoneKey(phone);
+    seen.add(h);
+    const json = JSON.stringify(codes.sort());
+    if (phonesPublished.get(h) === json) continue;
+    phonesPublished.set(h, json);
+    b.op(w => w.set(ref(db, 'phones', h), { codes: codes.sort() }));
+  }
+  for (const h of [...phonesPublished.keys()]) if (!seen.has(h)) { phonesPublished.delete(h); b.op(w => w.delete(ref(db, 'phones', h))); }
   return b.commit();
 }
 
