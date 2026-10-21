@@ -29,8 +29,11 @@ export default function Gate({ children }: { children: ReactNode }) {
     </>;
     if (phase === 'signedOut') return byPhone ? <PhoneSignIn onBack={() => setByPhone(false)} /> : (
       <>
-        <button className="btnp" style={{ width: '100%' }} disabled={busy} onClick={run(signIn)}>ادخل بحساب جوجل</button>
-        <button className="btn" style={{ width: '100%' }} onClick={() => setByPhone(true)}>خادم؟ ادخل برقم الموبايل</button>
+        <fieldset style={{ width: '100%', border: '1.5px dashed var(--muted)', borderRadius: 16, padding: 12, margin: 0, display: 'grid', gap: 8 }}>
+          <legend className="muted" style={{ padding: '0 6px', fontSize: 13 }}>للخدام</legend>
+          <button className="btnp" style={{ width: '100%' }} disabled={busy} onClick={run(signIn)}>ادخل بحساب جوجل</button>
+          <button className="btn" style={{ width: '100%' }} onClick={() => setByPhone(true)}>ادخل برقم التليفون</button>
+        </fieldset>
         <Link to="/me" className="btn" style={{ width: '100%' }}>أنا مخدوم</Link>
       </>
     );
