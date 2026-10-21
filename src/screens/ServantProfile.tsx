@@ -13,7 +13,7 @@ export default function ServantProfile() {
   const [p, setP] = useState<Profile>(() => Object.fromEntries(SERVANT_PROFILE_KEYS.map(k => [k, servant?.[k]])) as Profile);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  if (!servant) return <main className="main gutter"><div className="card">البروفايل بيبقى للخدام اللي داخلين بحساب Google. <Link to="/">ارجع</Link></div></main>;
+  if (!servant) return <main className="main gutter"><div className="card">البروفايل بيبقى للخدام بس. <Link to="/">ارجع</Link></div></main>;
   const set = (x: Partial<Profile>) => setP(o => ({ ...o, ...x }));
 
   const onPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -66,11 +66,37 @@ export default function ServantProfile() {
           <textarea id="about" style={{ minHeight: 80 }} maxLength={300} placeholder="مثلاً: بخدم ألحان شباب، ومسؤول عن الافتقاد" value={p.about ?? ''} onChange={e => set({ about: e.target.value })} /></label>
         <div className="note">الفريق كله بيشوف صورتك واسمك وموبايلك ونبذتك في صفحة الفريق. المستويات والصلاحيات بيحددها الخادم المسؤول.</div>
         {error && <div className="alert-t" role="alert">{error}</div>}
+        {servant.login && <ChangePassword />}
       </main>
       <div className="bar gutter"><div>
         <button className="btn" onClick={() => nav(-1)}>إلغاء</button>
         <button className="btnp grow" onClick={save} disabled={busy}>احفظ</button>
       </div></div>
     </>
+  );
+}
+
+/** Phone servants replace the first password the admin gave them. */
+function ChangePassword() {
+  const [pw, setPw] = useState('');
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    setBusy(true); setMsg('');
+    try { await (await import('../firebase/servantPhone')).changePassword(pw); setPw(''); setMsg('✓ الباسورد اتغيّر.'); }
+    catch (e) {
+      const c = (e as { code?: string }).code ?? '';
+      setMsg(c.includes('requires-recent-login') ? 'لازم تخرج وتدخل تاني الأول، وبعدين غيّره.' : navigator.onLine ? 'ماتغيّرش، جرّب تاني.' : 'محتاج نت.');
+    }
+    setBusy(false);
+  };
+  return (
+    <div className="card">
+      <b>غيّر الباسورد</b>
+      <label className="field" htmlFor="newpw"><span>الباسورد الجديد (8 حروف أو أرقام على الأقل)</span>
+        <input id="newpw" className="input" dir="ltr" type="password" autoComplete="new-password" value={pw} onChange={e => setPw(e.target.value)} /></label>
+      <button className="btn" disabled={busy || pw.length < 8} onClick={go}>{busy ? 'بيتغيّر…' : 'غيّر الباسورد'}</button>
+      {msg && <div className="note" role="status">{msg}</div>}
+    </div>
   );
 }

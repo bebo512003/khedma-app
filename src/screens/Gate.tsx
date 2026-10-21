@@ -39,7 +39,7 @@ export default function Gate({ children }: { children: ReactNode }) {
     );
     return (
       <>
-        <div className="muted">أنت داخل بـ <span dir="ltr">{user?.email && !user.email.endsWith('.khedma.app') ? user.email : user?.phoneNumber?.replace(/^\+2/, '')}</span></div>
+        <div className="muted">أنت داخل بـ <span dir="ltr">{user?.email?.endsWith('.khedma.app') ? user.email.replace(/^s(\d+)-.*$/, '$1') : user?.email}</span></div>
         {!access?.churchExists ? (
           <>
             <div className="note" style={{ textAlign: 'center' }}>المدرسة لسه مش متسجلة. لو أنت الخادم المسؤول ابدأها دلوقتي، وأي بيانات دخلتها على الموبايل ده هتترفع معاها.</div>
@@ -50,7 +50,7 @@ export default function Gate({ children }: { children: ReactNode }) {
         ) : (
           <div className="card" style={{ textAlign: 'center', width: '100%' }}>
             <b>التطبيق ده داخلي لخدام مدرسة الشهيد اسطفانوس</b>
-            <div className="note">الحساب ده مش ضمن خدام المدرسة. لو انت خادم معانا، اطلب من الخادم المسؤول يضيف إيميلك أو رقمك من صفحة الفريق وادخل تاني. ولأي استفسار كلّمنا على واتساب.</div>
+            <div className="note">الحساب ده مش ضمن خدام المدرسة. لو انت خادم معانا، اطلب من الخادم المسؤول يضيفك من صفحة الفريق وادخل تاني. ولأي استفسار كلّمنا على واتساب.</div>
             <a className="btnp" href={`https://wa.me/2${SCHOOL.phone}`} target="_blank" rel="noopener noreferrer"><Icon name="whatsapp" size={20} /> كلّم المدرسة على واتساب</a>
           </div>
         )}

@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // مدرسة الشهيد اسطفانوس للشمامسة
-// Servants sign in with Google, or with a mobile number proven by SMS (later with a password on that same account),
+// Servants sign in with Google, or with mobile + password on a login the admin made for them,
 // and must be listed under churches/{c}/servants.
 // Members sign in with code + PIN (email/password under the hood) and can read only their own published view.
 service cloud.firestore {
@@ -11,11 +11,9 @@ service cloud.firestore {
       function signedIn() { return request.auth != null; }
       function google() { return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com'; }
       function email() { return request.auth.token.email.lower(); }
-      // A number proven by SMS: member logins never have one.
-      function phoned() { return signedIn() && request.auth.token.firebase.sign_in_provider in ['phone', 'password']
-        && request.auth.token.get('phone_number', '') is string && request.auth.token.get('phone_number', '').matches('^[+][0-9]{8,15}$'); }
-      // What a servant is invited by: their Google email or their mobile.
-      function who() { return google() ? email() : request.auth.token.phone_number; }
+      // A servant's phone login (s<number>-<n>@…), which only the admin makes; member logins are m<code>-….
+      function phoned() { return signedIn() && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.email.matches('^s01[0-9]{9}-[0-9]+@.*'); }
       function person() { return google() || phoned(); }
       function servant() { return person() && exists(doc('servants', request.auth.uid)); }
       function me() { return get(doc('servants', request.auth.uid)).data; }
@@ -43,12 +41,12 @@ service cloud.firestore {
 
       match /servants/{uid} {
         allow read: if servant() || (signedIn() && request.auth.uid == uid);
-        allow create: if admin() || (person() && request.auth.uid == uid && (
-          (google() && church().ownerUid == uid && request.resource.data.role in ['admin', 'lead'])
-          || (exists(doc('invites', who()))
-              && request.resource.data.role == get(doc('invites', who())).data.role
-              && request.resource.data.levelIds == get(doc('invites', who())).data.levelIds
-              && request.resource.data.get('perms', null) == get(doc('invites', who())).data.get('perms', null))));
+        allow create: if admin() || (google() && request.auth.uid == uid && (
+          (church().ownerUid == uid && request.resource.data.role in ['admin', 'lead'])
+          || (exists(doc('invites', email()))
+              && request.resource.data.role == get(doc('invites', email())).data.role
+              && request.resource.data.levelIds == get(doc('invites', email())).data.levelIds
+              && request.resource.data.get('perms', null) == get(doc('invites', email())).data.get('perms', null))));
         // The founder upgrades their own record to admin.
         allow update: if admin() || (servant() && request.auth.uid == uid && church().ownerUid == uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']) && request.resource.data.role == 'admin')
@@ -61,16 +59,22 @@ service cloud.firestore {
       }
 
       match /invites/{inviteEmail} {
-        allow get: if servant() || (person() && who() == inviteEmail);
+        allow get: if servant() || (google() && email() == inviteEmail);
         allow list: if servant();
         allow create, update: if admin();
-        allow delete: if admin() || (person() && who() == inviteEmail);
+        allow delete: if admin() || (google() && email() == inviteEmail);
       }
 
       // code → how many times the PIN was reset; needed before sign-in, holds nothing private.
       match /logins/{code} {
         allow get: if true;
         allow write: if servant();
+      }
+
+      // servant's mobile → which of their phone logins is current (after password resets); needed before sign-in.
+      match /servantLogins/{phone} {
+        allow get: if true;
+        allow write: if admin();
       }
 
       // hashed mobile number → codes of the members with a login on it; lets members sign in by phone.

@@ -238,6 +238,8 @@ export interface Servant {
   levelIds: string[];
   /** Only for role 'servant'. Missing on servants from before permissions existed: they keep every one. */
   perms?: Perm[];
+  /** Phone servants (no Google): how many times the admin made them a password; email holds their mobile. */
+  login?: number;
   /** Profile the servant fills in themselves (see SERVANT_PROFILE_KEYS). */
   photo?: string;
   phone?: string;

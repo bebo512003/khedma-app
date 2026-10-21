@@ -161,10 +161,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     location.reload();
   }, []);
 
-  const profile = (u: User) => ({
-    uid: u.uid, name: u.displayName ?? (u.phoneNumber ? u.phoneNumber.replace(/^\+2/, '') : u.email) ?? '', email: identity(u),
-    ...(u.phoneNumber ? { phone: u.phoneNumber.replace(/^\+2/, '') } : {}),
-  });
+  const profile = (u: User) => ({ uid: u.uid, name: u.displayName ?? u.email ?? '', email: identity(u) });
 
   /** First servant: creates the church, becomes its lead, and uploads what was entered on this device. */
   const startChurch = useCallback(async () => {
@@ -196,8 +193,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** How a servant is invited: their Google email, or their mobile (+20…) when they sign in by phone. */
-const identity = (u: User) => u.phoneNumber ?? (u.email ?? '').toLowerCase();
+/** How a servant is invited: their Google email. */
+const identity = (u: User) => (u.email ?? '').toLowerCase();
 
 export function useStore() {
   const s = useContext(Ctx);

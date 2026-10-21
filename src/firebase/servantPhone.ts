@@ -1,47 +1,53 @@
-import {
-  EmailAuthProvider, RecaptchaVerifier, linkWithCredential, signInWithEmailAndPassword, signInWithPhoneNumber, updatePassword,
-  type ConfirmationResult,
-} from 'firebase/auth';
-import { servantFb } from './app';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updatePassword } from 'firebase/auth';
+import { getDoc, setDoc } from 'firebase/firestore';
+import { provisionFb, servantFb } from './app';
 import { CHURCH_ID } from './config';
+import { ref } from './paths';
 
 /**
- * Servants without Google: one SMS proves the number the first time (and when they forget their password),
- * then they sign in with number + password. Both sign-ins are the same Firebase user, so the number stays on it.
+ * Servants without Google sign in with their mobile and a password. The admin makes the login (no SMS), so a number
+ * can't be claimed by someone else. A browser can't change another person's password, so a reset makes a fresh
+ * login (n + 1) and servantLogins/{number} says which one is current, like members' logins.
  */
 
-/** 01012345678 → +201012345678; null if it isn't an Egyptian mobile. */
-export function toE164(raw: string) {
-  const d = raw.replace(/\D/g, '');
-  if (/^01[0125]\d{8}$/.test(d)) return `+2${d}`;
-  if (/^201[0125]\d{8}$/.test(d)) return `+${d}`;
-  return null;
-}
-export const localPhone = (e164: string) => e164.replace(/^\+2/, '');
-
-const passwordEmail = (e164: string) => `s${e164.replace(/\D/g, '')}@${CHURCH_ID}.khedma.app`;
-
-let verifier: RecaptchaVerifier | null = null;
-
-/** Sends the SMS. `button` is the element the invisible reCAPTCHA hangs on. */
-export function sendCode(e164: string, button: HTMLElement): Promise<ConfirmationResult> {
-  const { auth } = servantFb();
-  auth.languageCode = 'ar';
-  verifier?.clear();
-  verifier = new RecaptchaVerifier(auth, button, { size: 'invisible' });
-  return signInWithPhoneNumber(auth, e164, verifier);
+/** Egyptian mobile as 11 digits (01012345678), or null. */
+export function localPhone(raw: string) {
+  const d = raw.replace(/\D/g, '').replace(/^20(?=1)/, '');
+  return /^01[0125]\d{8}$/.test(d) ? d : null;
 }
 
-/** Checks the SMS code and sets the password they'll use from now on. */
-export async function confirmCode(c: ConfirmationResult, code: string, e164: string, password: string) {
-  const { user } = await c.confirm(code);
-  try { await linkWithCredential(user, EmailAuthProvider.credential(passwordEmail(e164), password)); }
-  catch (e) {
-    const k = (e as { code?: string }).code ?? '';
-    // Already has a password (they forgot it and came back by SMS): this one replaces it.
-    if (k.includes('provider-already-linked') || k.includes('email-already-in-use') || k.includes('credential-already-in-use')) await updatePassword(user, password);
-    else throw e;
-  }
+const loginEmail = (phone: string, n: number) => `s${phone}-${n}@${CHURCH_ID}.khedma.app`;
+
+/** A random 8-digit first password the admin hands over; the servant can change it from their profile. */
+export const newPassword = () => String(crypto.getRandomValues(new Uint32Array(1))[0] % 100000000).padStart(8, '0');
+
+/** Makes the login and returns its uid; the admin then writes the servant record for it. */
+export async function createServantLogin(phone: string, password: string, previous = 0) {
+  const { auth } = provisionFb();
+  let n = previous + 1;
+  // Someone else made that login first (it would have no servant record): skip past it.
+  const make = (): ReturnType<typeof createUserWithEmailAndPassword> => createUserWithEmailAndPassword(auth, loginEmail(phone, n), password).catch(e => {
+    if (String((e as { code?: string }).code).includes('email-already-in-use') && n < previous + 5) { n++; return make(); }
+    throw e;
+  });
+  const cred = await make();
+  await signOut(auth);
+  await setDoc(ref(servantFb().db, 'servantLogins', phone), { n });
+  return { uid: cred.user.uid, n };
 }
 
-export const passwordSignIn = (e164: string, password: string) => signInWithEmailAndPassword(servantFb().auth, passwordEmail(e164), password);
+export async function passwordSignIn(phone: string, password: string) {
+  const { auth, db } = servantFb();
+  const n = (await getDoc(ref(db, 'servantLogins', phone))).get('n') as number | undefined;
+  if (!n) throw Object.assign(new Error('no login'), { code: 'auth/user-not-found' });
+  await signInWithEmailAndPassword(auth, loginEmail(phone, n), password);
+}
+
+/** A phone servant's own password change. */
+export function changePassword(password: string) {
+  const u = servantFb().auth.currentUser;
+  if (!u) throw new Error('signed out');
+  return updatePassword(u, password);
+}
+
+export const isPhoneLogin = (email?: string | null) => !!email && /^s\d+-\d+@/.test(email);
