@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useIsLead, useStore } from '../data/store';
+import { forgetLogins } from '../data/forgetLogins';
 import { RANKS, type Gender, type Member } from '../data/types';
 import { cancelled, shrinkPhoto as shrink } from '../data/photo';
 import { GRADES, MONTHS, contact, hashPin, levelForGrade, newPin, todayISO, uid, waLink } from '../data/logic';
@@ -64,11 +65,7 @@ export default function MemberForm() {
   };
   const remove = () => {
     update(d => ({ ...d, members: d.members.filter(x => x.id !== m.id) }));
-    // Their login and the copy the member app reads go too, so the old code and PIN stop working.
-    if (cloud) Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]).then(([{ servantFb }, { deleteDoc }, paths]) => {
-      const db = servantFb().db;
-      for (const r of [paths.ref(db, 'memberViews', m.id), paths.ref(db, 'logins', m.code), ...(m.account ? [paths.ref(db, 'accounts', m.account.uid)] : [])]) deleteDoc(r).catch(() => undefined);
-    });
+    if (cloud) forgetLogins([m]);
     nav('/members', { replace: true });
   };
 
