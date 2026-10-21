@@ -14,6 +14,7 @@ import Members from './screens/Members';
 import MemberForm from './screens/MemberForm';
 import MemberCard from './screens/MemberProfile';
 import ImportMembers from './screens/ImportMembers';
+import MemberPhotos from './screens/MemberPhotos';
 import Library from './screens/Library';
 import HymnForm from './screens/HymnForm';
 import HymnView from './screens/HymnView';
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="/members" element={s(<Members />)} />
           <Route path="/members/new" element={n('members', <MemberForm />)} />
           <Route path="/members/import" element={n('members', <ImportMembers />)} />
+          <Route path="/members/photos" element={n('members', <MemberPhotos />)} />
           <Route path="/members/:memberId" element={s(<MemberCard />)} />
           <Route path="/members/:memberId/edit" element={n('members', <MemberForm />)} />
           <Route path="/library" element={s(<Library />)} />
