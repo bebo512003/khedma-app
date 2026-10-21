@@ -47,10 +47,13 @@ export default function Members() {
           <div className="row"><Link to="/" className="icon" aria-label="رجوع">→</Link><div><h1>المخدومين</h1><div className="muted">{data.members.length} مخدوم</div></div></div>
           {edit && <div className="row" style={{ gap: 6 }}>
             <button className="btn" style={{ minHeight: 44 }} aria-pressed={picking} onClick={() => picking ? stop() : setPicking(true)}>{picking ? 'إلغاء' : 'تحديد'}</button>
-            {!picking && <Link to="/members/new" className="btnp" style={{ minHeight: 44 }}>+ مخدوم</Link>}
+            {!picking && <Link to="/members/new" className="btnp" style={{ minHeight: 44, whiteSpace: 'nowrap' }}>+ مخدوم</Link>}
           </div>}
         </div>
-        {edit && !picking && <div className="row" style={{ gap: 6 }}><Link to={`/cards${level !== 'all' ? `?level=${level}` : ''}`} className="btn grow" style={{ minHeight: 40 }}>كروت QR</Link><Link to="/members/import" className="btn grow" style={{ minHeight: 40 }}>إضافة من Excel</Link><Link to="/members/photos" className="btn grow" style={{ minHeight: 40 }}>صور كتير</Link>{lead && <Link to="/members/codes" className="btn grow" style={{ minHeight: 40 }}>الأكواد</Link>}</div>}
+        {edit && !picking && <div style={{ display: 'grid', gridTemplateColumns: `repeat(${lead ? 4 : 3}, minmax(0, 1fr))`, gap: 6 }}>
+          {([[`/cards${level !== 'all' ? `?level=${level}` : ''}`, 'كروت QR'], ['/members/import', 'من Excel'], ['/members/photos', 'صور كتير'], ...(lead ? [['/members/codes', 'الأكواد']] : [])] as [string, string][]).map(([to, label]) =>
+            <Link key={to} to={to} className="btn" style={{ minHeight: 40, paddingInline: 6, whiteSpace: 'nowrap', fontSize: 14 }}>{label}</Link>)}
+        </div>}
         <input id="search" className="input" placeholder="دوّر بالاسم أو الكود" value={q} onChange={e => setQ(e.target.value)} />
         <div className="chips">
           <button className="chip" aria-pressed={level === 'all'} onClick={() => setLevel('all')}>الكل</button>
