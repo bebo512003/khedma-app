@@ -28,8 +28,14 @@ NAMES = {
     "agios": "أجيوس الفرايحي لعيد الميلاد",
     "psalm-response": "مرد المزمور لعيد الميلاد",
     "gospel-response": "مرد إنجيل قداس عيد الميلاد",
-    "psalm150": "المزمور 150 الفرايحي (توزيع عيد الميلاد)"
+    "psalm150": "المزمور 150 الفرايحي (توزيع عيد الميلاد)",
+    "gabriel-kiahk": "ربع الملاك غبريال في شهر كيهك",
+    "kegar": "ذكصولوجية كيهك (كي غار إيشان)",
+    "kiahk-gospel-response": "مرد إنجيل شهر كيهك (تين تي ني إم بي شيريتيسموس)",
 }
+KIAHK = 'https://stgeorgesaman.com/libraries/hymns-library/occasionsandfeasts/kiahk/'
+SAMAN_SOURCE = 'نصوص ألحان كيهك ولينكات تسجيلاتها من مكتبة ألحان كنيسة مارجرجس بنزلة السمان، والنطق بالعربي فيها متولّد آليًا. ألحان الميلاد من كتاب "ألحان عيد الميلاد المجيد" بتاع المدرسة (كنيسة مارجرجس دروة)، وأصلها من نفس المكتبة.'
+
 
 PACKS = {
     'nativity-shabab': {
@@ -63,6 +69,33 @@ PACKS = {
             ('psalm150', 'القداس', 'التوزيع', SAMAN + 'nativity-psalm-150'),
         ],
     },
+    # Kiahk and Nativity for the primary levels: no booklet pages, the Kiahk texts come from scripts/packs/kiahk/
+    # (made from the Nazlet El Seman library), the Nativity ones are the youth booklet's.
+    'kiahk-nativity-l2': {
+        'title': 'ألحان كيهك والميلاد - ابتدائي 2',
+        'levelId': 'l2',
+        'version': 1,
+        'book': {'title': 'ألحان كيهك والميلاد - ابتدائي 2'},
+        'source': SAMAN_SOURCE,
+        'hymns': [
+            ('kiahk/gabriel-kiahk', 'رفع البخور', 'أرباع الناقوس في رفع بخور عشية وباكر في شهر كيهك', KIAHK + 'raising-incense-of-vespers-matins-kiahk/verses-of-the-cymbals-kiahk/', 'شهر كيهك'),
+            ('kiahk/kegar', 'رفع البخور', 'ذكصولوجية العدرا في رفع بخور عشية وباكر في شهر كيهك', KIAHK + 'raising-incense-of-vespers-matins-kiahk/kiahk-doxology-1/', 'شهر كيهك'),
+            ('nativity-shabab/iparthenos', 'القداس', 'بعد قراءة الإبركسيس والسنكسار', SAMAN + 'hparthenos/'),
+            ('nativity-shabab/doxology', 'رفع البخور', 'رفع بخور عشية وباكر العيد، قبل ذكصولوجية العدرا', 'https://www.youtube.com/watch?v=5fmR_KRFZy4'),
+        ],
+    },
+    'kiahk-nativity-l1': {
+        'title': 'ألحان كيهك والميلاد - ابتدائي 1',
+        'levelId': 'l1',
+        'version': 1,
+        'book': {'title': 'ألحان كيهك والميلاد - ابتدائي 1'},
+        'source': SAMAN_SOURCE,
+        'hymns': [
+            ('kiahk/kiahk-gospel-response', 'القداس', 'بعد إنجيل القداس في شهر كيهك (المكتبة كاتباه للأحد التاني)', KIAHK + 'kiahk-liturgy/kiahk-bible-response-2/', 'شهر كيهك'),
+            ('nativity-shabab/gospel-response', 'القداس', 'بعد قراءة إنجيل القداس', SAMAN + 'bible-response-liturgy-nativity'),
+            ('nativity-shabab/piginmici', 'القداس', 'بعد الإبركسيس والسنكسار، بعد إي بارثينوس', SAMAN + 'piginmici'),
+        ],
+    },
 }
 
 
@@ -78,18 +111,23 @@ def column(verses, key):
 
 def main(name):
     meta = PACKS[name]
-    src = ROOT / 'scripts' / 'packs' / name
     hymns = []
-    for file, prayer, when, audio in meta['hymns']:
-        h = json.loads((src / f'{file}.json').read_text(encoding='utf-8'))
-        out = {'key': file, 'nameAr': NAMES[file], 'prayer': prayer, 'occasion': 'عيد الميلاد'}
+    for file, prayer, when, audio, *occasion in meta['hymns']:
+        path = file if '/' in file else f'{name}/{file}'
+        key = path.split('/')[-1]
+        h = json.loads((ROOT / 'scripts' / 'packs' / f'{path}.json').read_text(encoding='utf-8'))
+        out = {'key': key, 'nameAr': NAMES[key], 'prayer': prayer, 'occasion': occasion[0] if occasion else 'عيد الميلاد'}
+        if not path.startswith(name + '/'):
+            # Another pack's hymn: the same library hymn whichever pack adds it first.
+            out['packKey'] = path
         if when:
             out['when'] = when
         if audio:
             out['audioUrl'] = audio
         if h.get('note'):
             out['notes'] = h['note'].strip()
-        out['from'], out['to'] = meta['pages'][file]
+        if 'pages' in meta:
+            out['from'], out['to'] = meta['pages'][key]
         for key, field in (('coptic', 'copticText'), ('arabicCoptic', 'arabicCoptic'), ('meaning', 'meaning')):
             out[field] = column(h['verses'], key)
         hymns.append(out)

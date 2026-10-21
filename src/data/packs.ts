@@ -13,12 +13,14 @@ export interface Pack {
   /** Level the booklet was made for. */
   levelId: string;
   source: string;
-  book: { title: string; pagesBase: string; pageCount: number };
-  hymns: (Omit<Hymn, 'id' | 'packKey'> & { key?: string; from?: number; to?: number })[];
+  /** Page images of the booklet, when there is one (Kiahk for the primary levels has none). */
+  book: { title: string; pagesBase?: string; pageCount?: number };
+  /** packKey: set when the hymn belongs to another pack (إي بارثينوس of the youth booklet), so both packs share one library hymn. */
+  hymns: (Omit<Hymn, 'id' | 'packKey'> & { key?: string; packKey?: string; from?: number; to?: number })[];
 }
 
 /** Packs offered on the curriculum and books screens. */
-export const PACKS = [{ id: 'nativity-shabab', levelId: 'l3' }];
+export const PACKS = [{ id: 'nativity-shabab', levelId: 'l3' }, { id: 'kiahk-nativity-l2', levelId: 'l2' }, { id: 'kiahk-nativity-l1', levelId: 'l1' }];
 
 const cache = new Map<string, Promise<Pack>>();
 export function loadPack(id: string) {
@@ -56,11 +58,11 @@ export function applyPack(d: AppData, pack: Pack, termId: string, levelId: strin
   const byKey = new Map(d.hymns.filter(h => h.packKey).map(h => [h.packKey!, h.id]));
   const added: Hymn[] = [];
   const changed = new Map<string, Partial<Hymn>>();
-  const entries = pack.hymns.map(({ from, to, key, ...hymn }, i) => {
-    const packKey = `${pack.id}/${key ?? i}`;
+  const entries = pack.hymns.map(({ from, to, key, packKey: shared, ...hymn }, i) => {
+    const packKey = shared ?? `${pack.id}/${key ?? i}`;
     const h = { ...hymn, packKey };
     // Same hymn as before: by its pack key, else its place in the book from the older edition, else its name.
-    let hymnId = byKey.get(packKey) ?? (updating && existing.entries[i] && d.hymns.find(x => x.id === existing.entries[i].hymnId && norm(x.nameAr) === norm(h.nameAr))?.id) ?? byName.get(norm(h.nameAr));
+    let hymnId = byKey.get(packKey) ?? (updating && existing.entries[i] ? d.hymns.find(x => x.id === existing.entries[i].hymnId && norm(x.nameAr) === norm(h.nameAr))?.id : undefined) ?? byName.get(norm(h.nameAr));
     if (hymnId) {
       const old = d.hymns.find(x => x.id === hymnId)!;
       changed.set(hymnId, updating
