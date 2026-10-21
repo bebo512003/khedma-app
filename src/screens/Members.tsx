@@ -57,7 +57,7 @@ export default function Members() {
           {levels.map(l => <button key={l.id} className="chip" aria-pressed={level === l.id} onClick={() => setLevel(l.id)}>{l.name}</button>)}
         </div>
       </header>
-      <main className="main gutter wide">
+      <main className="main gutter wide" style={picking ? { paddingBottom: 180 } : undefined}>
         <div className="card" style={{ paddingBlock: 4 }}><div className="list cols">
           {list.length === 0 && <div className="li muted">مفيش نتايج.</div>}
           {picking && mayPick.length > 0 && <label className="li" style={{ cursor: 'pointer' }}>
@@ -85,7 +85,8 @@ export default function Members() {
       </main>
       {picking && <div className="bar gutter"><div style={{ flexDirection: 'column', alignItems: 'stretch' }}>
         {action === 'move' && <div className="field"><span>تنقل {people(chosen.length)} لمستوى</span>
-          <div className="chips">{levels.filter(l => allowed(l.id)).map(l => <button key={l.id} className="chip" onClick={() => move(l.id)}>{l.name}</button>)}</div></div>}
+          <div className="chips">{levels.filter(l => allowed(l.id)).map(l => <button key={l.id} className="chip" onClick={() => move(l.id)}>{l.name}</button>)}
+            <button className="chip" onClick={() => setAction('')}>رجوع</button></div></div>}
         {action === 'delete' && <div className="card alert"><b>تمسح {people(chosen.length)} نهائي؟</b>
           <div className="muted">الكود والرقم السري بتاعهم هيبطلوا يشتغلوا، ومينفعش ترجّعهم غير من النسخة الاحتياطية.</div>
           <div className="row"><button className="btn grow" onClick={() => setAction('')}>لا</button><button className="btnp grow" onClick={remove}>امسح</button></div></div>}
