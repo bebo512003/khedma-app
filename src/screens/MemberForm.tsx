@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useIsLead, useStore } from '../data/store';
 import { forgetLogins } from '../data/forgetLogins';
+import { newCode } from '../data/codes';
 import { RANKS, type Gender, type Member } from '../data/types';
 import { cancelled, shrinkPhoto as shrink } from '../data/photo';
 import { GRADES, MONTHS, contact, hashPin, levelForGrade, newPin, todayISO, uid, waLink } from '../data/logic';
@@ -14,8 +15,10 @@ export default function MemberForm() {
   const allowed = useAllowedLevel();
   // A servant adds and edits members only in the levels they serve.
   const levels = data.levels.filter(l => allowed(l.id));
-  const [m, setM] = useState<Member>(existing ?? {
-    id: uid(), code: String(data.nextCode).padStart(4, '0'), name: '', gender: 'm', levelId: allowed('l2') ? 'l2' : levels[0]?.id ?? 'l2', grade: 'تالتة ابتدائي',
+  const [m, setM] = useState<Member>(() => {
+    if (existing) return existing;
+    const levelId = allowed('l2') ? 'l2' : levels[0]?.id ?? 'l2';
+    return { id: uid(), code: newCode(data, levelId), name: '', gender: 'm', levelId, grade: 'تالتة ابتدائي' };
   });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
@@ -23,7 +26,8 @@ export default function MemberForm() {
   const [pinBusy, setPinBusy] = useState(false);
   const { cloud } = useStore();
   const lead = useIsLead();
-  const set = (p: Partial<Member>) => setM(x => ({ ...x, ...p }));
+  // A new member's code follows the level picked, until they have a login; after they're saved it stays.
+  const set = (p: Partial<Member>) => setM(x => ({ ...x, ...p, ...(!existing && !x.account && !x.pinHash && p.levelId && p.levelId !== x.levelId ? { code: newCode(data, p.levelId) } : {}) }));
 
   const onPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return;
@@ -35,9 +39,12 @@ export default function MemberForm() {
   const save = () => {
     if (!m.name.trim()) { setError('اكتب اسم المخدوم.'); return; }
     const clean: Member = { ...m, name: m.name.trim(), rank: m.gender === 'm' ? m.rank : undefined, example: existing?.example };
-    update(d => existing
-      ? { ...d, members: d.members.map(x => x.id === clean.id ? clean : x) }
-      : { ...d, members: [...d.members, clean], nextCode: d.nextCode + 1 });
+    update(d => {
+      if (existing) return { ...d, members: d.members.map(x => x.id === clean.id ? clean : x) };
+      // Someone else may have taken this code meanwhile (another phone, offline).
+      const free = clean.account || clean.pinHash || !d.members.some(x => x.code === clean.code) ? clean : { ...clean, code: newCode(d, clean.levelId) };
+      return { ...d, members: [...d.members, free], nextCode: d.nextCode + 1 };
+    });
     nav(existing ? `/members/${clean.id}` : '/members', { replace: true });
   };
   /** New PIN: shown once to the servant, stored only as a hash. */

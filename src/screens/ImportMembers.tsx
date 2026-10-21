@@ -1,6 +1,7 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
+import { coder } from '../data/codes';
 import type { Gender, Member } from '../data/types';
 import { count, levelForGrade, MONTHS, uid } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
@@ -76,9 +77,9 @@ export default function ImportMembers() {
   const run = () => {
     if (missingGender) { setError(`حدد النوع لـ ${count(missingGender, 'مخدوم', 'مخدومين', 'مخدومين')} الأول.`); return; }
     update(d => {
-      let next = d.nextCode;
+      const code = coder(d);
       const added: Member[] = chosen.map(r => {
-        const m: Member = { id: uid(), code: String(next++).padStart(4, '0'), name: r.name, gender: r.gender!, levelId: r.levelId, grade: r.grade ?? '' };
+        const m: Member = { id: uid(), code: code(r.levelId), name: r.name, gender: r.gender!, levelId: r.levelId, grade: r.grade ?? '' };
         if (r.birthdate) m.birthdate = r.birthdate;
         else if (r.birthMonth) m.birthMonth = r.birthMonth;
         if (r.parentPhone) m.parentPhone = r.parentPhone;
@@ -86,7 +87,7 @@ export default function ImportMembers() {
         if (r.rank) m.rank = r.rank;
         return m;
       });
-      return { ...d, members: [...d.members, ...added], nextCode: next };
+      return { ...d, members: [...d.members, ...added], nextCode: d.nextCode + added.length };
     });
     setDone(chosen.length); setSheet(null); setError('');
   };

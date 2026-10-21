@@ -42,7 +42,7 @@ export default function Login() {
       <img src={logo} alt="" width={84} height={84} />
       <div style={{ textAlign: 'center' }}><h1>مدرسة الشهيد اسطفانوس للشمامسة</h1><div className="muted">إتعلم … رتل … افرح</div></div>
       <label className="field" htmlFor="code" style={{ width: '100%' }}><span>كودك</span>
-        <input id="code" className="input code" inputMode="numeric" dir="ltr" maxLength={6} placeholder="0042" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} /></label>
+        <input id="code" className="input code" inputMode="numeric" dir="ltr" maxLength={6} placeholder="3001" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} /></label>
       <div className="field" style={{ width: '100%' }}><span>الرقم السري</span>
         <div className="dots" aria-label={`اتكتب ${pin.length} أرقام`}>{Array.from({ length: 6 }, (_, i) => <i key={i} className={i < pin.length ? 'on' : ''} />)}</div>
       </div>

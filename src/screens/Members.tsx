@@ -50,7 +50,7 @@ export default function Members() {
             {!picking && <Link to="/members/new" className="btnp" style={{ minHeight: 44 }}>+ مخدوم</Link>}
           </div>}
         </div>
-        {edit && !picking && <div className="row" style={{ gap: 6 }}><Link to={`/cards${level !== 'all' ? `?level=${level}` : ''}`} className="btn grow" style={{ minHeight: 40 }}>كروت QR</Link><Link to="/members/import" className="btn grow" style={{ minHeight: 40 }}>إضافة من Excel</Link><Link to="/members/photos" className="btn grow" style={{ minHeight: 40 }}>صور كتير</Link></div>}
+        {edit && !picking && <div className="row" style={{ gap: 6 }}><Link to={`/cards${level !== 'all' ? `?level=${level}` : ''}`} className="btn grow" style={{ minHeight: 40 }}>كروت QR</Link><Link to="/members/import" className="btn grow" style={{ minHeight: 40 }}>إضافة من Excel</Link><Link to="/members/photos" className="btn grow" style={{ minHeight: 40 }}>صور كتير</Link>{lead && <Link to="/members/codes" className="btn grow" style={{ minHeight: 40 }}>الأكواد</Link>}</div>}
         <input id="search" className="input" placeholder="دوّر بالاسم أو الكود" value={q} onChange={e => setQ(e.target.value)} />
         <div className="chips">
           <button className="chip" aria-pressed={level === 'all'} onClick={() => setLevel('all')}>الكل</button>
