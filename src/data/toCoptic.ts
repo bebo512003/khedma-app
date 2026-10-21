@@ -57,6 +57,8 @@ export interface CWord {
   vb?: { stem: string; person: string; tense: 'past' | 'present' | 'future' };
   /** Colloquial ما تـ...ش: "don't ..." (ⲙ̀ⲡⲉⲣ) unless a subject comes before it. */
   prohib?: boolean;
+  /** A whole hymn line inside the sentence, with where it was found. */
+  line?: Match;
 }
 export interface CPhrase { text: string; words: CWord[]; coptic: string; match?: Match }
 export interface CTranslation { phrases: CPhrase[]; coptic: string; whole?: Match }
@@ -124,6 +126,8 @@ export interface Reverse {
   /** Built with Osama Thabet's word lists. */
   full: boolean;
   tm: Map<string, number>;
+  /** The same lines by their words in any order (قام المسيح = المسيح قام). */
+  tmBag: Map<string, number>;
   tmIndex: Map<string, number[]>;
   /** Arabic line key, Coptic as written, Arabic as printed. */
   tmList: [string, string, string][];
@@ -249,7 +253,7 @@ export function reverseOf(t: Translator, extra?: ArabicLexicon): Reverse {
   const hymnFirst = (c: string) => t.stems.has(copticKey(c)) ? 0 : 1;
   const alts = new Map<string, string[]>();
   for (const [k, per] of altCount) alts.set(k, [...per.values()].sort((a, b) => hymnFirst(a.word) - hymnFirst(b.word) || b.n - a.n || copticKey(a.word).length - copticKey(b.word).length).slice(0, 6).map(x => x.word));
-  const r: Reverse = { lex, nouns, verbs, present, dict: dmap, alts, words, ero, full: !!extra, tm: new Map(), tmIndex: new Map(), tmList: [], refs: t.refs };
+  const r: Reverse = { lex, nouns, verbs, present, dict: dmap, alts, words, ero, full: !!extra, tm: new Map(), tmBag: new Map(), tmIndex: new Map(), tmList: [], refs: t.refs };
   addLines(t, r);
   cache.set(t, r);
   return r;
@@ -260,9 +264,42 @@ function addLines(t: Translator, r: Reverse) {
   for (let i = r.tmList.length; i < t.tmList.length; i++) {
     const [, ar, cop] = t.tmList[i], k = arKey(ar);
     r.tmList.push([k, cop, ar]);
-    if (!r.tm.has(k)) r.tm.set(k, i);
+    keep(r, r.tm, k, i);
+    const b = bagKey(k);
+    if (b) keep(r, r.tmBag, b, i);
     for (const w of new Set(k.split(' '))) { const l = r.tmIndex.get(w); if (l) l.push(i); else r.tmIndex.set(w, [i]); }
   }
+}
+
+/**
+ * One line per Arabic key: the Coptic most lines give it, the first of them on a tie.
+ * (كلمة الآب is once a misaligned half-line, twice ⲡⲓⲖⲟⲅⲟⲥ ⲛ̀ⲧⲉ Ⲫ̀ⲓⲱⲧ.)
+ */
+const LEAD = new Set(['ⲛϫⲉ', 'ⲟⲩⲟϩ', 'ϫⲉ', 'ⲁ']);
+const votes = new WeakMap<Map<string, number>, Map<string, Map<string, number>>>();
+function keep(r: Reverse, m: Map<string, number>, k: string, i: number) {
+  if (!m.has(k)) { m.set(k, i); return; }
+  let byKey = votes.get(m);
+  if (!byKey) votes.set(m, byKey = new Map());
+  let v = byKey.get(k);
+  // ⲛ̀ϫⲉ / ⲟⲩⲟϩ / ϫⲉ before a half-line come from where it was cut, not from what it says.
+  const ck = (j: number) => copticKey((r.tmList[j]?.[1] ?? '').split(' ').filter((w, n, a) => n === a.length - 1 || a.slice(0, n + 1).some(x => !LEAD.has(copticKey(x)))).join(' '));
+  if (!v) byKey.set(k, v = new Map([[ck(m.get(k)!), 1]]));
+  const c = ck(i), n = (v.get(c) ?? 0) + 1;
+  v.set(c, n);
+  if (n > (v.get(ck(m.get(k)!)) ?? 0)) m.set(k, i);
+}
+
+/** Words that change nothing in a line's meaning: يا، قد، لقد، أيها، and the و before a word. */
+const FILLER = new Set(['يا', 'قد', 'لقد', 'ايها', 'ايتها', 'و', 'ف']);
+/** A line's words sorted, without fillers: the same words in any order give the same key. */
+function bagKey(k: string) {
+  const w = k.split(' ').filter(x => x && !FILLER.has(x)).map(x => (x.length > 3 && x[0] === 'و' ? x.slice(1) : x));
+  return w.length > 1 ? w.sort().join(' ') : '';
+}
+/** The line in standard Arabic: عايزين نشوف ربنا → نريد نري الرب, names in their usual spelling. */
+function standardLine(k: string) {
+  return k.split(' ').map(w => nameVariant(w)?.name ?? standardArabic(w)?.text ?? w).join(' ');
 }
 function apart(written: string, n: number) { const rest = dropLetters(written, n); return written.slice(0, written.length - rest.length) + ' ' + rest; }
 
@@ -377,8 +414,40 @@ function possessed(r: Reverse, w: string): CWord | null {
 
 /** The closest Arabic line in the hymns, with its Coptic. */
 export function nearestArabic(r: Reverse, k: string, min = 0.6): Match | undefined {
-  const exact = r.tm.get(k);
-  if (exact !== undefined) return { coptic: r.tmList[exact][1], arabic: r.tmList[exact][2], score: 1, ref: r.refs.get(exact) };
+  const hit = lineHit(r, k);
+  if (hit) return hit;
+  const std = standardLine(k);
+  const a = closestArabic(r, k, min), b = std === k ? undefined : closestArabic(r, std, min);
+  return b && (!a || b.score > a.score) ? b : a;
+}
+
+/** The hymns' Coptic without their singing marks: (ⲁϥϣⲉⲛⲁϥ)ⲅ̅ → ⲁϥϣⲉⲛⲁϥ, (Ⲁⲗ̅) dropped. */
+const sung = (c: string) => c.replace(/\(([^()]*)\)\s*[ⲁ-ⲱ]\u0305/g, '$1').replace(/\([^()]*\u0305[^()]*\)/g, '').replace(/\s+/g, ' ').trim();
+
+/** A hymn line with exactly these words: as written, in another order, or once in standard Arabic. */
+function lineHit(r: Reverse, k: string): Match | undefined {
+  const std = standardLine(k);
+  // A half-line keeps the ⲟⲩⲟϩ / ϫⲉ / ⲛ̀ϫⲉ it was cut with only when the Arabic asked has و / ان / لان too.
+  const first = k.split(' ')[0] ?? '';
+  const keepLead = (w: string) => (w === 'ⲟⲩⲟϩ' && /^و/.test(first)) || (w === 'ϫⲉ' && /^(ان|لان|انه|لانه|لانك|انك)$/.test(first));
+  const trim = (c: string) => {
+    const w = sung(c).split(' ');
+    while (w.length > 1 && (/^([^\s]\u0305)+$/.test(w[0]) || (['ⲟⲩⲟϩ', 'ϫⲉ', 'ⲛϫⲉ'].includes(copticKey(w[0])) && !keepLead(copticKey(w[0]))))) w.shift();
+    return w.join(' ');
+  };
+  const at = (i: number, note?: string): Match => ({ coptic: trim(r.tmList[i][1]), arabic: r.tmList[i][2], score: 1, ref: r.refs.get(i), note });
+  for (const q of std === k ? [k] : [k, std]) {
+    const exact = r.tm.get(q);
+    if (exact !== undefined) return at(exact, q === k ? undefined : 'نفس كلام الألحان بالفصحى');
+  }
+  for (const q of std === k ? [k] : [k, std]) {
+    const bag = r.tmBag.get(bagKey(q));
+    if (bag !== undefined) return at(bag, 'نفس كلام الألحان بترتيب تاني');
+  }
+  return undefined;
+}
+
+function closestArabic(r: Reverse, k: string, min: number): Match | undefined {
   const words = k.split(' ').filter(Boolean);
   if (words.length < 2) return undefined;
   const hits = new Map<number, number>();
@@ -402,6 +471,16 @@ export function phraseToCoptic(r: Reverse, text: string): CWord[] {
   for (let i = 0; i < toks.length;) {
     if (toks[i] === 'سوف') { future = true; i++; continue; }
     let done = false;
+    // Part of the sentence that is a whole hymn line, in any order: قام المسيح من الاموات + وصعد الي السماوات.
+    for (let n = Math.min(12, toks.length - i - (i === 0 ? 1 : 0)); n >= 3 && !done; n--) {
+      const k = toks.slice(i, i + n).join(' '), m = lineHit(r, k);
+      if (!m) continue;
+      const and = toks[i].length > 3 && toks[i][0] === 'و' && !/^ⲟⲩⲟϩ/.test(copticKey(m.coptic));
+      const coptic = (and ? 'ⲟⲩⲟϩ ' : '') + m.coptic;
+      out.push({ text: k, coptic, pieces: [{ form: coptic, gloss: m.arabic }], how: 'hymns', pos: 'other', line: m });
+      i += n; done = true;
+    }
+    if (done) continue;
     for (let n = Math.min(3, toks.length - i); n >= 2 && !done; n--) {
       const k = toks.slice(i, i + n).join(' ');
       const l = FIXED[k] ? null : r.lex.get(k);

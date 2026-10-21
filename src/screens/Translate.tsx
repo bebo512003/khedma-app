@@ -37,7 +37,12 @@ export default function Translate({ base = '' }: { base?: string }) {
   const back = useMemo(() => t && !result && scriptOf(typed) === 'arabic' ? toCoptic(t, typed, lexicon ?? undefined) : null, [t, typed, result, lexicon, versesIn]);
   const type = (ch: string) => setQ(x => x + ch);
   const whole = result?.whole?.score === 1 || (result && result.phrases.length > 0 && result.phrases.every(p => p.match?.score === 1));
-  const wholeBack = back?.whole?.score === 1 || (back && back.phrases.length > 0 && back.phrases.every(p => p.match?.score === 1));
+  // Whole, or put together from whole hymn lines (قام المسيح من الأموات + وصعد إلى السماوات).
+  const linesBack = !!back && back.phrases.length > 0 && back.phrases.every(p => p.match?.score === 1 || (p.words.length > 0 && p.words.every(w => w.line)));
+  const wholeBack = back?.whole?.score === 1 || linesBack;
+  const backNote = back?.whole?.score === 1 ? back.whole.note
+    : back?.phrases.some(p => p.match?.score !== 1) ? 'اتجمعت من كذا سطر في الألحان'
+    : back?.phrases.map(p => p.match?.note).find(Boolean);
 
   return (
     <>
@@ -82,6 +87,7 @@ export default function Translate({ base = '' }: { base?: string }) {
             <div className="card">
               <div className="row between"><h2>بالقبطي</h2><span className={`tag ${wholeBack ? 'tag-ok' : 'tag-ex'}`}>{wholeBack ? fromWhere(back.whole ?? back.phrases[0]?.match) : 'ترجمة تقريبية'}</span></div>
               <div className="coptic-font" dir="ltr" style={{ fontSize: 22, lineHeight: 1.8, textAlign: 'left' }}>{back.coptic || '…'}</div>
+              {wholeBack && backNote && <div className="muted" style={{ fontSize: 13 }}>{backNote}</div>}
               {back.coptic && <div className="say">النطق: <b>{arabize(back.coptic)}</b></div>}
               {!wholeBack && <div className="note">اتركّبت كلمة كلمة، فراجعها بالتحليل اللي تحت. الكلمات اللي بين أقواس ما لقيتلهاش مقابل.</div>}
             </div>
