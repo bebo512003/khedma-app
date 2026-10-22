@@ -194,6 +194,14 @@ export function contact(m: Member): { phone?: string; who: 'self' | 'parent' | n
   return { who: null };
 }
 
+/** Servants learning in the خدام level are called تاسوني (girls) and باصون (boys) before their name. */
+export const isServantsLevel = (name?: string) => !!name && /خدا?م|خادم/.test(name);
+export function titled(m: { name: string; gender?: 'm' | 'f' | null; levelId: string }, levels: { id: string; name: string }[] | string) {
+  const level = typeof levels === 'string' ? levels : levels.find(l => l.id === m.levelId)?.name;
+  if (!isServantsLevel(level) || !m.gender || /^(تاسوني|باصون|أبونا|ابونا)\s/.test(m.name)) return m.name;
+  return `${m.gender === 'f' ? 'تاسوني' : 'باصون'} ${m.name}`;
+}
+
 export const GRADES = [
   'أولى ابتدائي', 'تانية ابتدائي', 'تالتة ابتدائي', 'رابعة ابتدائي', 'خامسة ابتدائي', 'سادسة ابتدائي',
   'أولى إعدادي', 'تانية إعدادي', 'تالتة إعدادي', 'أولى ثانوي', 'تانية ثانوي', 'تالتة ثانوي', 'جامعة', 'خريج', 'خدام',

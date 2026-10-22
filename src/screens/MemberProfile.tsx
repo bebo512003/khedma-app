@@ -4,8 +4,7 @@ import { useAllowedLevel, useData, useCan } from '../data/store';
 import { STATUS_LABELS, type HymnStatus } from '../data/types';
 import {
   absenceStreak, contact, formatTime, isLate, lateBy, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, ranking,
-  sessionAverage, todayISO, waLink, yearsCount, MONTHS,
-} from '../data/logic';
+  sessionAverage, todayISO, waLink, yearsCount, MONTHS, titled } from '../data/logic';
 import Icon from '../ui/Icon';
 
 const age = (birthdate: string) => {
@@ -58,7 +57,7 @@ export default function MemberProfile() {
         <div className="profile-hero">
           <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
           <div className="grow">
-            <h1>{m.name}</h1>
+            <h1>{titled(m, data.levels)}</h1>
             <div className="muted">كود {m.code} • {m.gender === 'f' ? 'أنثى' : 'ذكر'}{m.grade ? ` • ${m.grade}` : ''}</div>
             <div className="chips" style={{ marginTop: 6 }}>
               {level && <span className="tag tag-soft">{level.name}</span>}

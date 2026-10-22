@@ -1,5 +1,5 @@
 import type { Attendance, AppData, Hymn, HymnStatus, MemberEdit, Rating, Recording } from './types';
-import { currentTerm, curriculumKey, lateBy, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO } from './logic';
+import { currentTerm, curriculumKey, lateBy, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO, titled } from './logic';
 import { bookOf, entryPages, hasPages, pageUrl, pagesLabel } from './books';
 
 /**
@@ -44,7 +44,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
   const rows = ranking(data, m.levelId, month);
   const pos = rows.findIndex(r => r.member.id === m.id);
   const breakdown = monthBreakdown(data, m.id, month);
-  const top = rows.slice(0, 3).map((r, i) => ({ id: r.member.id, name: r.member.name, photo: r.member.photo, points: r.points, place: i + 1 }));
+  const top = rows.slice(0, 3).map((r, i) => ({ id: r.member.id, name: titled(r.member, data.levels), photo: r.member.photo, points: r.points, place: i + 1 }));
   const hymns = (data.curricula[curriculumKey(term?.id, m.levelId)] ?? [])
     .map(id => data.hymns.find(h => h.id === id))
     .filter((h): h is Hymn => !!h)
@@ -80,7 +80,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
       entries: b.entries.map(e => ({ hymnId: e.hymnId, name: data.hymns.find(h => h.id === e.hymnId)?.nameAr ?? '', label: pagesLabel(e) })).filter(e => e.name),
     }));
   return clean({
-    memberId: m.id, name: m.name, photo: m.photo, rank: m.rank,
+    memberId: m.id, name: titled(m, data.levels), photo: m.photo, rank: m.rank,
     profile: { name: m.name, photo: m.photo, birthdate: m.birthdate, phone: m.phone, parentPhone: m.parentPhone, gender: m.gender, grade: m.grade, address: m.address }, levelName: level?.name ?? '', termName: term?.name, month,
     points: breakdown.total, place: pos + 1, gap: Math.max(0, (rows[0]?.points ?? 0) - breakdown.total), breakdown, top, hymns, ratings,
     sessions, books, levelId: m.levelId, code: m.code, gender: m.gender, grade: m.grade,

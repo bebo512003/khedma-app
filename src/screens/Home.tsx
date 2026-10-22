@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData, useIsLead, useStore, useCan } from '../data/store';
-import { absenceStreak, watchList, needsFollowUp } from '../data/logic';
+import { absenceStreak, watchList, needsFollowUp, titled } from '../data/logic';
 import { applyTheme, loadTheme } from '../theme';
 import { useState } from 'react';
 import logo from '../logo.png';
@@ -72,7 +72,7 @@ export default function Home() {
         {followUp.length > 0 && (
           <div className="card alert">
             <div className="alert-t">{followUp.length} محتاجين افتقاد</div>
-            <div className="muted">غابوا أكتر من مرتين ورا بعض: {followUp.map(m => m.name).join('، ')}</div>
+            <div className="muted">غابوا أكتر من مرتين ورا بعض: {followUp.map(m => titled(m, data.levels)).join('، ')}</div>
             <Link to="/followup" className="btnp">افتقد دلوقتي</Link>
           </div>
         )}
@@ -92,7 +92,7 @@ export default function Home() {
               {watch.slice(0, 8).map(({ member: m, reasons }) => (
                 <Link key={m.id} to={`/members/${m.id}`} className="li">
                   <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
-                  <div className="grow"><b>{m.name}</b><div className="muted">{reasons.join(' • ')}</div></div>
+                  <div className="grow"><b>{titled(m, data.levels)}</b><div className="muted">{reasons.join(' • ')}</div></div>
                 </Link>
               ))}
             </div>

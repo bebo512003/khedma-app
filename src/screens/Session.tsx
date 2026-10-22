@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { CRITERIA, STATUS_LABELS, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
-import { LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid } from '../data/logic';
+import { LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
 import Scanner from './Scanner';
 
 type Mode = 'att' | 'rate' | 'hym';
@@ -64,13 +64,13 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
   const onScan = (code: string) => {
     const m = data.members.find(x => x.code === code);
     if (!m) { setToast({ text: `مفيش مخدوم بالكود ${code}`, bad: true }); return; }
-    if (m.levelId !== levelId) { setToast({ text: `${m.name} مش في ${level?.name}`, bad: true }); return; }
-    if (att[m.id] === 'p' && arrivals[m.id]) { setToast({ text: `${m.name} متسجل قبل كده` }); return; }
+    if (m.levelId !== levelId) { setToast({ text: `${titled(m, data.levels)} مش في ${level?.name}`, bad: true }); return; }
+    if (att[m.id] === 'p' && arrivals[m.id]) { setToast({ text: `${titled(m, data.levels)} متسجل قبل كده` }); return; }
     const now = Date.now();
     const late = startedAt ? minutesLate(now, startedAt) : 0;
     setAtt(a => ({ ...a, [m.id]: 'p' }));
     setArrivals(a => ({ ...a, [m.id]: now }));
-    setToast(late > LATE_GRACE_MIN ? { text: `✓ ${m.name} حاضر، متأخر ${late} دقيقة`, bad: true } : { text: `✓ ${m.name} حاضر` });
+    setToast(late > LATE_GRACE_MIN ? { text: `✓ ${titled(m, data.levels)} حاضر، متأخر ${late} دقيقة`, bad: true } : { text: `✓ ${titled(m, data.levels)} حاضر` });
     navigator.vibrate?.(60);
   };
   const cycleAtt = (id: string) => setAtt(a => ({ ...a, [id]: (a[id] ?? 'a') === 'a' ? 'p' : a[id] === 'p' ? 'e' : 'a' }));
@@ -155,7 +155,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
               return (
                 <button key={m.id} className={`kid ${s === 'p' ? 'p' : s === 'e' ? 'e' : ''}`} onClick={() => cycleAtt(m.id)} aria-pressed={s === 'p'}>
                   <span className="ph">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
-                  <span className="nm">{m.name}</span>
+                  <span className="nm">{titled(m, data.levels)}</span>
                   <span className="tg">{s === 'p' ? (arrivals[m.id] ? `${formatTime(arrivals[m.id])}${late > LATE_GRACE_MIN ? ' • متأخر' : ''}` : 'حاضر') : s === 'e' ? 'اعتذر' : ''}</span>
                 </button>
               );
@@ -172,11 +172,11 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
               return (
                 <div key={m.id} className="li" style={{ flexWrap: 'wrap' }}>
                   <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
-                  <b className="grow">{m.name}</b>
+                  <b className="grow">{titled(m, data.levels)}</b>
                   <button className={`chip${notes[m.id]?.trim() ? ' chip-on' : ''}`} onClick={() => setNoteOpen(noteOpen === m.id ? null : m.id)} aria-expanded={noteOpen === m.id}>
                     {notes[m.id]?.trim() ? 'ملاحظة ✓' : '+ ملاحظة'}</button>
                   {noteOpen === m.id && (
-                    <textarea autoFocus style={{ width: '100%', minHeight: 64 }} aria-label={`ملاحظة لـ ${m.name}`} placeholder="كلمة تشجيع أو حاجة يركز عليها، هتظهرله في تقييماته"
+                    <textarea autoFocus style={{ width: '100%', minHeight: 64 }} aria-label={`ملاحظة لـ ${titled(m, data.levels)}`} placeholder="كلمة تشجيع أو حاجة يركز عليها، هتظهرله في تقييماته"
                       value={notes[m.id] ?? ''} maxLength={200} onChange={e => setNotes(n => ({ ...n, [m.id]: e.target.value }))} />
                   )}
                   <div className="row between" style={{ width: '100%' }}>
@@ -204,7 +204,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
             {present.map(m => (
               <div key={m.id} className="li">
                 <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
-                <b className="grow">{m.name}</b>
+                <b className="grow">{titled(m, data.levels)}</b>
                 {hymn && (s => <button className={`pill st${s}`} onClick={() => cycleHym(m.id, hymn.id)} aria-label={`${hymn.nameAr}: ${STATUS_LABELS[s]}`}>{STATUS_LABELS[s]}</button>)(hs(m.id, hymn.id))}
               </div>
             ))}

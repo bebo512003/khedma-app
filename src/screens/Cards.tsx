@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { useData, useStore } from '../data/store';
-import { hashPin, newPin } from '../data/logic';
+import { hashPin, newPin, titled } from '../data/logic';
 import type { Member } from '../data/types';
 import logo from '../logo.png';
 
@@ -24,7 +24,7 @@ function Card({ m, level, pin }: { m: Member; level?: string; pin?: string }) {
       <div className="idcard-body">
         <div className="idcard-info">
           <div className="idcard-photo">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</div>
-          <b className="idcard-name">{m.name}</b>
+          <b className="idcard-name">{titled(m, level ?? "")}</b>
           <span>{[level, m.rank].filter(Boolean).join(' • ')}</span>
           <span className="idcard-code">كود <b dir="ltr">{m.code}</b></span>
           {pin && <span className="idcard-code">رقم سري <b dir="ltr">{pin}</b></span>}

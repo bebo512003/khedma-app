@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData, useCan, useIsLead, useStore } from '../data/store';
-import { absenceStreak, birthdayWhen, count, fold, needsFollowUp, upcomingBirthdays } from '../data/logic';
+import { absenceStreak, birthdayWhen, count, fold, needsFollowUp, upcomingBirthdays, titled } from '../data/logic';
 import { forgetLogins } from '../data/forgetLogins';
 
 const people = (n: number) => count(n, 'مخدوم', 'مخدومين', 'مخدومين');
@@ -70,7 +70,7 @@ export default function Members() {
             const streak = absenceStreak(data, m);
             const inner = <>
                 <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
-                <div className="grow"><b>{m.name}</b><div className="muted">{m.code} • {data.levels.find(l => l.id === m.levelId)?.name}{m.rank ? ` • ${m.rank}` : ''}</div></div>
+                <div className="grow"><b>{titled(m, data.levels)}</b><div className="muted">{m.code} • {data.levels.find(l => l.id === m.levelId)?.name}{m.rank ? ` • ${m.rank}` : ''}</div></div>
                 {needsFollowUp(streak) && <span className="tag tag-alert">غاب {streak} مرات</span>}
                 {birthdays.has(m.id) && <span className="tag tag-ex">عيد {m.gender === 'f' ? 'ميلادها' : 'ميلاده'} {birthdayWhen(birthdays.get(m.id)!)}</span>}
                 {m.example && <span className="tag tag-ex">مثال</span>}

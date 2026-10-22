@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { monthName, monthReport, shiftMonth, thisMonth } from '../data/monthReport';
-import { sessionsCount } from '../data/logic';
+import { sessionsCount, titled } from '../data/logic';
 import Icon from '../ui/Icon';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
@@ -50,14 +50,14 @@ export default function MonthReport() {
                     <Link key={t.member.id} to={`/members/${t.member.id}`} className="li">
                       <span style={{ fontSize: 22 }}>{MEDAL[i]}</span>
                       <span className="av">{t.member.photo ? <img src={t.member.photo} alt="" /> : t.member.name[0]}</span>
-                      <b className="grow">{t.member.name}</b><span className="muted">{t.points} نقطة</span>
+                      <b className="grow">{titled(t.member, data.levels)}</b><span className="muted">{t.points} نقطة</span>
                     </Link>
                   ))}
                 </div>
               </>}
               {r.milestones.length > 0 && <>
                 <b>وصلوا لمرحلة جديدة في لحن</b>
-                <div className="muted">{r.milestones.map(x => `${x.member.name}${x.solo ? ' (قاله لوحده)' : ' (حفظ)'}`).join('، ')}</div>
+                <div className="muted">{r.milestones.map(x => `${titled(x.member, data.levels)}${x.solo ? ' (قاله لوحده)' : ' (حفظ)'}`).join('، ')}</div>
               </>}
               {r.slipped.length > 0 && <>
                 <b className="alert-t">مستواهم نزل</b>
@@ -65,7 +65,7 @@ export default function MonthReport() {
                   {r.slipped.map(x => (
                     <Link key={x.member.id} to={`/members/${x.member.id}`} className="li">
                       <span className="av">{x.member.photo ? <img src={x.member.photo} alt="" /> : x.member.name[0]}</span>
-                      <div className="grow"><b>{x.member.name}</b><div className="muted">{x.why.join(' • ')}</div></div>
+                      <div className="grow"><b>{titled(x.member, data.levels)}</b><div className="muted">{x.why.join(' • ')}</div></div>
                     </Link>
                   ))}
                 </div>

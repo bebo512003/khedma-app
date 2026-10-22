@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { CRITERIA, STATUS_LABELS } from '../data/types';
-import { currentTerm, hymnsCount, isoDate, sessionsCount } from '../data/logic';
+import { currentTerm, hymnsCount, isoDate, sessionsCount, titled } from '../data/logic';
 import { buildReport, round1, type MemberRow } from '../data/report';
 import { download, xlsxBlob } from '../data/xlsx';
 
@@ -115,12 +115,13 @@ export default function Reports() {
 }
 
 function Row({ r, curriculumSize }: { r: MemberRow; curriculumSize: number }) {
+  const [data] = useData();
   const taken = r.present + r.excused + r.absent;
   return (
     <Link to={`/members/${r.member.id}`} className="li" style={{ alignItems: 'flex-start' }}>
       <span className="av">{r.member.photo ? <img src={r.member.photo} alt="" /> : r.member.name[0]}</span>
       <div className="grow" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <b>{r.member.name}</b>
+        <b>{titled(r.member, data.levels)}</b>
         <div className="muted">{taken ? `حضر ${r.present} من ${taken}${r.excused ? ` • اعتذر ${r.excused}` : ''}` : 'مفيش حضور متسجل'}
           {r.criteria && ` • ${CRITERIA.map((c, i) => `${c} ${round1(r.criteria![i])}`).join(' • ')}`}</div>
         {curriculumSize > 0 && <div className="muted">حافظ {r.hymns[2] + r.hymns[3]} من {hymnsCount(curriculumSize)}{r.hymns[3] ? `، منهم ${r.hymns[3]} بيقولهم لوحده` : ''}</div>}

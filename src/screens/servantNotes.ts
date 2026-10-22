@@ -1,5 +1,5 @@
 import { useMemo, useSyncExternalStore } from 'react';
-import { absenceStreak, birthdayWhen, needsFollowUp, todayISO, upcomingBirthdays, watchList } from '../data/logic';
+import { absenceStreak, birthdayWhen, needsFollowUp, todayISO, upcomingBirthdays, watchList, titled } from '../data/logic';
 import { useAllowedLevel, useCan, useData, useStore } from '../data/store';
 import { usePending } from './usePending';
 import { monthName, shiftMonth, thisMonth } from '../data/monthReport';
@@ -40,12 +40,12 @@ export function useServantNotes() {
     for (const s of pending) notes.push({ key: `sub_${s.id}`, kind: 'mic', title: `${data.members.find(m => m.id === s.memberId)?.name ?? s.memberName} سمّع «${s.hymnName}»`, body: 'مستني تسمعه وترد عليه', to: '/reviews', urgent: true });
     for (const m of mine) {
       const n = absenceStreak(data, m);
-      if (needsFollowUp(n)) notes.push({ key: `fu_${m.id}_${n}`, kind: 'heart', title: `${m.name} محتاج افتقاد`, body: `غاب ${n} مرات ورا بعض`, to: '/followup', urgent: true });
+      if (needsFollowUp(n)) notes.push({ key: `fu_${m.id}_${n}`, kind: 'heart', title: `${titled(m, data.levels)} محتاج افتقاد`, body: `غاب ${n} مرات ورا بعض`, to: '/followup', urgent: true });
     }
     for (const { member: m, daysAway } of upcomingBirthdays(mine, 3))
-      notes.push({ key: `bd_${m.id}_${new Date().getFullYear()}`, kind: 'cake', title: `عيد ميلاد ${m.name} ${birthdayWhen(daysAway)}`, body: 'ابعتله تهنئة من الرئيسية', to: '/' });
+      notes.push({ key: `bd_${m.id}_${new Date().getFullYear()}`, kind: 'cake', title: `عيد ميلاد ${titled(m, data.levels)} ${birthdayWhen(daysAway)}`, body: 'ابعتله تهنئة من الرئيسية', to: '/' });
     for (const { member: m, reasons } of watchList(data, allowed))
-      notes.push({ key: `w_${m.id}_${reasons.join('|')}`, kind: 'eye', title: `خلّي بالك من ${m.name}`, body: reasons.join(' • '), to: `/members/${m.id}` });
+      notes.push({ key: `w_${m.id}_${reasons.join('|')}`, kind: 'eye', title: `خلّي بالك من ${titled(m, data.levels)}`, body: reasons.join(' • '), to: `/members/${m.id}` });
     if (canSessions) for (const s of data.sessions)
       if (allowed(s.levelId) && !s.summary && !(s.recordings?.length) && s.date <= todayISO() && Date.now() - new Date(s.date).getTime() < WEEK)
         notes.push({ key: `sum_${s.id}`, kind: 'clock', title: `حصة ${data.levels.find(l => l.id === s.levelId)?.name ?? ''} يوم ${s.date} من غير ملخص`, body: 'المخدومين بيستنوا الملخص والتسجيل عشان يراجعوا', to: `/summary/${s.id}` });
