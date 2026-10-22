@@ -1,7 +1,8 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
-import { COPTIC_KEYS, loadDictionary, search, scriptOf, type Hit } from '../data/dictionary';
+import { loadDictionary, search, scriptOf, type Hit } from '../data/dictionary';
+import CopticKeys from '../ui/CopticKeys';
 import { count } from '../data/logic';
 import { arabize } from '../data/arabize';
 
@@ -21,7 +22,6 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
   // Typing stays quick: the search catches up with the latest letters.
   const typed = useDeferredValue(q);
   const result = useMemo(() => dict && typed.trim() ? search(dict.entries, typed.trim()) : null, [dict, typed]);
-  const type = (ch: string) => setQ(x => x + ch);
 
   return (
     <>
@@ -39,11 +39,7 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
             {keyboard ? 'عربي' : 'ⲁⲃⲅ'}</button>
         </div>
         {keyboard && (
-          <div className="ckeys coptic-font" dir="ltr" role="group" aria-label="كيبورد قبطي">
-            {COPTIC_KEYS.map(k => <button key={k} onClick={() => type(k)}>{k}</button>)}
-            <button className="wide" onClick={() => type(' ')} aria-label="مسافة">مسافة</button>
-            <button className="wide" onClick={() => setQ(x => [...x].slice(0, -1).join(''))} aria-label="امسح حرف">⌫</button>
-          </div>
+          <CopticKeys field={input} value={q} onChange={setQ} />
         )}
       </header>
       <main className="main gutter wide coptic-font">

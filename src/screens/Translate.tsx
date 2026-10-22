@@ -1,7 +1,8 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
-import { COPTIC_KEYS, scriptOf } from '../data/dictionary';
+import { scriptOf } from '../data/dictionary';
+import CopticKeys from '../ui/CopticKeys';
 import { loadTranslator, loadVerses, translate, type Match, type Translator, type WordResult } from '../data/translator';
 import { arabize } from '../data/arabize';
 import { loadArabicLexicon, originOf, toCoptic, type ArabicLexicon, type CWord } from '../data/toCoptic';
@@ -35,7 +36,6 @@ export default function Translate({ base = '' }: { base?: string }) {
   useEffect(() => { if (script === 'arabic' && !lexicon) loadArabicLexicon().then(setLexicon).catch(() => undefined); }, [script, lexicon]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const back = useMemo(() => t && !result && scriptOf(typed) === 'arabic' ? toCoptic(t, typed, lexicon ?? undefined) : null, [t, typed, result, lexicon, versesIn]);
-  const type = (ch: string) => setQ(x => x + ch);
   const whole = result?.whole?.score === 1 || (result && result.phrases.length > 0 && result.phrases.every(p => p.match?.score === 1));
   // Whole, or put together from whole hymn lines (قام المسيح من الأموات + وصعد إلى السماوات).
   const linesBack = !!back && back.phrases.length > 0 && back.phrases.every(p => p.match?.score === 1 || (p.words.length > 0 && p.words.every(w => w.line)));
@@ -67,11 +67,7 @@ export default function Translate({ base = '' }: { base?: string }) {
           {q && <button className="btn" onClick={() => setQ('')}>امسح</button>}
         </div>
         {keyboard && (
-          <div className="ckeys coptic-font" dir="ltr" role="group" aria-label="كيبورد قبطي">
-            {COPTIC_KEYS.map(k => <button key={k} onClick={() => type(k)}>{k}</button>)}
-            <button className="wide" onClick={() => type(' ')} aria-label="مسافة">مسافة</button>
-            <button className="wide" onClick={() => setQ(x => [...x].slice(0, -1).join(''))} aria-label="امسح حرف">⌫</button>
-          </div>
+          <CopticKeys field={input} value={q} onChange={setQ} />
         )}
       </header>
       <main className="main gutter wide">
