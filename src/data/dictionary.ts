@@ -145,7 +145,9 @@ export function copticKey(s: string) {
     // Capitals sit on even code points, lowercase right after, in both Coptic ranges.
     if ((c >= 0x2c80 && c <= 0x2ce3 && c % 2 === 0) || (c >= 0x03e2 && c <= 0x03ef && c % 2 === 0)) return String.fromCodePoint(c + 1);
     return ch;
-  }).join('').replace(/[^Ⲁ-⳿Ϣ-ϯ]/g, '');
+  }).join('').replace(/[^Ⲁ-⳿Ϣ-ϯ]/g, '')
+    // ϣⲁⲛⲉϩ is the short spelling of ϣⲁⲉ̀ⲛⲉϩ (forever), not ϣⲁ + ⲛⲉϩ (oil).
+    .replace(/ϣⲁⲛⲉϩ/g, 'ϣⲁⲉⲛⲉϩ');
 }
 const latinKey = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 const stripAl = (s: string) => s.replace(/^ال(?=...)/, '');
