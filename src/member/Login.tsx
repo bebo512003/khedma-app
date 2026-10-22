@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../data/store';
 import { cloudEnabled } from '../firebase/config';
-import { memberLogin } from './session';
+import { memberLogin, memberSignedIn } from './session';
 import logo from '../logo.png';
 import { OpenDoor } from '../screens/Open';
 
@@ -36,6 +36,9 @@ export default function Login() {
     setPin(next);
     if (next.length === 6) submit(next);
   };
+
+  // Already signed in (the app was closed and opened again): straight to their home. A scanned card still opens the form.
+  if (memberSignedIn() && !params.get('code')) return <Navigate to="/me/home" replace />;
 
   return (
     <main className="login gutter">

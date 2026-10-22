@@ -56,7 +56,7 @@ export default function ImportMembers() {
       const match = name ? matchName(name, mine) : undefined;
       const gender = genders[i] ?? parseGender(cell(r, 'gender')) ?? match?.gender ?? null;
       const named = levels.find(l => norm(l.name) === norm(cell(r, 'level')))?.id;
-      const levelId = named ?? (grade && levels.some(l => l.id === levelForGrade(grade)) ? levelForGrade(grade) : match?.levelId ?? fallbackLevel);
+      const levelId = named ?? (grade && levels.some(l => l.id === levelForGrade(grade, levels)) ? levelForGrade(grade, levels) : match?.levelId ?? fallbackLevel);
       const key = match?.id ?? norm(name);
       const dup = seen.has(key) ? 'متكرر في الملف' : '';
       seen.add(key);

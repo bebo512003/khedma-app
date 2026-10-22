@@ -10,6 +10,9 @@ const KEY = 'khedma.member';
 const read = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
 const write = (id: string | null) => { try { if (id) localStorage.setItem(KEY, id); else localStorage.removeItem(KEY); } catch { /* private mode */ } };
 
+/** A member is signed in on this device (the app opens on their home instead of the sign-in screens). */
+export const memberSignedIn = () => !!read();
+
 /** Example members have no PIN yet, so 123456 lets anyone try the member app with them (offline mode only). */
 export const EXAMPLE_PIN = '123456';
 

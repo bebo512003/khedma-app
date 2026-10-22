@@ -98,7 +98,7 @@ export default function MemberForm() {
         </div>
 
         <label className="field" htmlFor="grade"><span>السنة الدراسية</span>
-          <select id="grade" className="input" value={m.grade} onChange={e => set({ grade: e.target.value, ...(allowed(levelForGrade(e.target.value)) ? { levelId: levelForGrade(e.target.value) } : {}) })}>
+          <select id="grade" className="input" value={m.grade} onChange={e => set({ grade: e.target.value, ...(allowed(levelForGrade(e.target.value, data.levels)) ? { levelId: levelForGrade(e.target.value, data.levels) } : {}) })}>
             {GRADES.map(g => <option key={g}>{g}</option>)}
           </select></label>
 

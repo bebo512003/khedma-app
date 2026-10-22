@@ -97,6 +97,7 @@ export function parseGrade(raw: string): string | null {
   const exact = GRADES.find(g => norm(g) === s); if (exact) return exact;
   if (/جامع|كليه|university/.test(s)) return 'جامعة';
   if (/خريج|متخرج|graduate/.test(s)) return 'خريج';
+  if (/خدام|خادم|خادمه/.test(s)) return 'خدام';
   const n = Number(s.match(/\d+/)?.[0] ?? s.split(' ').map(w => ORD[w.replace(/^ال/, '')]).find(Boolean) ?? NaN);
   // [offset into GRADES, highest year in that stage]; a bare number counts from first primary.
   const [offset, max] = /ابتدا/.test(s) ? [0, 6] : /اعداد/.test(s) ? [6, 3] : /ثانو/.test(s) ? [9, 3] : [0, 12];

@@ -67,7 +67,7 @@ export function OpenHome() {
         ))}
       </nav>
       <Contact />
-      <Link to="/" className="muted">أنت خادم أو مخدوم؟ ادخل من هنا</Link>
+      <Link to="/" className="muted">أنت خادم أو دارس؟ ادخل من هنا</Link>
     </main>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { memberSignedIn } from '../member/session';
 import { useStore } from '../data/store';
 import logo from '../logo.png';
 import DeskNav from './DeskNav';
@@ -27,6 +28,7 @@ export default function Gate({ children }: { children: ReactNode }) {
       <div className="muted">بيحمّل…</div>
       {syncError && <div className="note" dir="ltr">{syncError}</div>}
     </>;
+    if (phase === 'signedOut' && memberSignedIn()) return <Navigate to="/me/home" replace />;
     if (phase === 'signedOut') return byPhone ? <PhoneSignIn onBack={() => setByPhone(false)} /> : (
       <>
         <fieldset style={{ width: '100%', border: '1.5px dashed var(--muted)', borderRadius: 16, padding: 12, margin: 0, display: 'grid', gap: 8 }}>
@@ -34,7 +36,8 @@ export default function Gate({ children }: { children: ReactNode }) {
           <button className="btnp" style={{ width: '100%' }} disabled={busy} onClick={run(signIn)}>ادخل بحساب جوجل</button>
           <button className="btn" style={{ width: '100%' }} onClick={() => setByPhone(true)}>ادخل برقم التليفون</button>
         </fieldset>
-        <Link to="/me" className="btn" style={{ width: '100%' }}>أنا مخدوم</Link>
+        <Link to="/me" className="btn" style={{ width: '100%' }}>أنا دارس</Link>
+        <div className="muted" style={{ fontSize: 13, marginTop: -4 }}>للمخدومين والخدام اللي بيتعلموا ألحان، بالكود أو رقم الموبايل</div>
       </>
     );
     return (

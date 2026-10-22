@@ -196,7 +196,10 @@ export function contact(m: Member): { phone?: string; who: 'self' | 'parent' | n
 
 export const GRADES = [
   'أولى ابتدائي', 'تانية ابتدائي', 'تالتة ابتدائي', 'رابعة ابتدائي', 'خامسة ابتدائي', 'سادسة ابتدائي',
-  'أولى إعدادي', 'تانية إعدادي', 'تالتة إعدادي', 'أولى ثانوي', 'تانية ثانوي', 'تالتة ثانوي', 'جامعة', 'خريج',
+  'أولى إعدادي', 'تانية إعدادي', 'تالتة إعدادي', 'أولى ثانوي', 'تانية ثانوي', 'تالتة ثانوي', 'جامعة', 'خريج', 'خدام',
 ];
-/** Default level from school grade: grades 1-2 → ابتدائي 1, 3-6 → ابتدائي 2, prep and up → شباب. */
-export const levelForGrade = (g: string) => { const i = GRADES.indexOf(g); return i < 2 ? 'l1' : i < 6 ? 'l2' : 'l3'; };
+/** Default level from school grade: grades 1-2 → ابتدائي 1, 3-6 → ابتدائي 2, prep and up → شباب, servants → the level named خدام if there is one. */
+export const levelForGrade = (g: string, levels: { id: string; name: string }[] = []) => {
+  if (g === 'خدام') return levels.find(l => /خدا?م|خادم/.test(l.name))?.id ?? 'l3';
+  const i = GRADES.indexOf(g); return i < 2 ? 'l1' : i < 6 ? 'l2' : 'l3';
+};
