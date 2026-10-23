@@ -32,7 +32,7 @@ export const strayPackBooks = (d: AppData) => d.books.filter(b => b.packId && HY
 const cache = new Map<string, Promise<Pack>>();
 export function loadPack(id: string) {
   if (!cache.has(id)) {
-    const p = fetch(`packs/${id}.json?v=5`).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Pack>; });
+    const p = fetch(`packs/${id}.json?v=6`).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Pack>; });
     p.catch(() => cache.delete(id));
     cache.set(id, p);
   }
@@ -49,7 +49,9 @@ export function packState(d: AppData, pack: Pack): 'new' | 'old' | 'current' {
     // Added when every hymn is in the library and in this level's curriculum (any term).
     const inLevel = new Set(Object.entries(d.curricula).filter(([k]) => k.endsWith(`:${pack.levelId}`)).flatMap(([, ids]) => ids));
     const ids = new Map(d.hymns.filter(h => h.packKey).map(h => [h.packKey!, h.id]));
-    return pack.hymns.every((h, i) => inLevel.has(ids.get(keyOf(pack, h, i)) ?? '')) ? 'current' : 'new';
+    if (!pack.hymns.every((h, i) => inLevel.has(ids.get(keyOf(pack, h, i)) ?? ''))) return 'new';
+    const keys = new Set(pack.hymns.map((h, i) => keyOf(pack, h, i)));
+    return d.hymns.some(h => h.packKey && keys.has(h.packKey) && (h.packEditions?.[pack.id] ?? 1) < pack.version) ? 'old' : 'current';
   }
   const b = packBook(d, pack);
   if (!b) return 'new';
@@ -66,16 +68,17 @@ const TEXT = ['copticText', 'arabicCoptic', 'meaning', 'audioUrl', 'notes', 'whe
  */
 export function applyPack(d: AppData, pack: Pack, termId: string, levelId: string): AppData {
   const existing = packBook(d, pack);
-  const updating = !!existing;
-  const byName = new Map(d.hymns.map(h => [norm(h.nameAr), h.id]));
   const byKey = new Map(d.hymns.filter(h => h.packKey).map(h => [h.packKey!, h.id]));
+  // A hymns-only pack has no book: it is an update once its hymns are in the library.
+  const updating = !!existing || (hymnsOnly(pack) && pack.hymns.some((h, i) => byKey.has(keyOf(pack, h, i))));
+  const byName = new Map(d.hymns.map(h => [norm(h.nameAr), h.id]));
   const added: Hymn[] = [];
   const changed = new Map<string, Partial<Hymn>>();
   const entries = pack.hymns.map(({ from, to, key, packKey: shared, ...hymn }, i) => {
     const packKey = shared ?? `${pack.id}/${key ?? i}`;
     const h = { ...hymn, packKey };
     // Same hymn as before: by its pack key, else its place in the book from the older edition, else its name.
-    let hymnId = byKey.get(packKey) ?? (updating && existing.entries[i] ? d.hymns.find(x => x.id === existing.entries[i].hymnId && norm(x.nameAr) === norm(h.nameAr))?.id : undefined) ?? byName.get(norm(h.nameAr));
+    let hymnId = byKey.get(packKey) ?? (updating && existing?.entries[i] ? d.hymns.find(x => x.id === existing.entries[i].hymnId && norm(x.nameAr) === norm(h.nameAr))?.id : undefined) ?? byName.get(norm(h.nameAr));
     if (hymnId) {
       const old = d.hymns.find(x => x.id === hymnId)!;
       changed.set(hymnId, updating
@@ -94,7 +97,8 @@ export function applyPack(d: AppData, pack: Pack, termId: string, levelId: strin
     termId: existing?.termId ?? termId, levelId: existing?.levelId ?? levelId,
     packId: pack.id, packVersion: pack.version, entries: [...entries, ...extra],
   };
-  const hymns = [...d.hymns.map(x => changed.has(x.id) ? { ...x, ...changed.get(x.id) } : x), ...added];
+  const edition = (x: Hymn) => hymnsOnly(pack) ? { ...x, packEditions: { ...x.packEditions, [pack.id]: pack.version } } : x;
+  const hymns = [...d.hymns.map(x => changed.has(x.id) ? edition({ ...x, ...changed.get(x.id) }) : x), ...added.map(edition)];
   // Any older copy of a booklet hymn (added by hand or twice) is folded into the booklet's one.
   const merged = mergeDuplicates({ ...d, hymns, books: [...d.books.filter(b => b.id !== book.id), book] });
   const done = applyBook(merged, merged.books.find(b => b.id === book.id)!);

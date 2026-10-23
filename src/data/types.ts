@@ -95,6 +95,8 @@ export interface Hymn {
   notes?: string;
   /** Set on hymns that came from a booklet pack ("pack/hymn"), so a new edition updates the same hymn. */
   packKey?: string;
+  /** Edition of each hymns-only pack its text came from (a newer edition offers an update). */
+  packEditions?: Record<string, number>;
 }
 
 /** A hymn's place in a book: the pages it spans. */

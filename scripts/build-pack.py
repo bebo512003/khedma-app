@@ -74,7 +74,7 @@ PACKS = {
     'kiahk-nativity-l2': {
         'title': 'ألحان كيهك والميلاد - ابتدائي 2',
         'levelId': 'l2',
-        'version': 1,
+        'version': 2,
         'book': {'title': 'ألحان كيهك والميلاد - ابتدائي 2'},
         'source': SAMAN_SOURCE,
         'hymns': [

@@ -29,14 +29,15 @@ function One({ id, termId }: { id: string; termId: string }) {
   };
   return (
     <div className="card">
-      <h2>{state === 'old' ? `نسخة جديدة: ${pack.book.title}` : pack.book.title}</h2>
-      {state === 'old' && <div className="note">فيه نسخة أحدث من الكتاب ده ({pack.book.pageCount} صفحة). التحديث بيبدّل الصفحات وأرقامها في الفهرس، وبيحدّث نصوص الألحان ولينكات تسجيلاتها. الألحان اللي ضفتها للكتاب بإيدك بتفضل.</div>}
+      <h2>{state === 'old' ? `تحديث: ${pack.book.title}` : pack.book.title}</h2>
+      {state === 'old' && !pack.book.pageCount && <div className="note">فيه نصوص متصلّحة للألحان دي. التحديث بيبدّل النص القبطي والنطق المعرّب والمعنى ولينك التسجيل بالنسخة الجديدة، والمنهج زي ما هو.</div>}
+      {state === 'old' && !!pack.book.pageCount && <div className="note">فيه نسخة أحدث من الكتاب ده ({pack.book.pageCount} صفحة). التحديث بيبدّل الصفحات وأرقامها في الفهرس، وبيحدّث نصوص الألحان ولينكات تسجيلاتها. الألحان اللي ضفتها للكتاب بإيدك بتفضل.</div>}
       <div className="muted">{pack.book.pageCount
         ? `ملزمة المدرسة جاهزة: ${pack.hymns.length} لحن بالنص القبطي والمعرّب والمعنى ولينك التسجيل، وصفحات الكتاب بالهزات.`
         : `منهج جاهز: ${pack.hymns.length} لحن بالنص القبطي والمعرّب والمعنى ولينك التسجيل ومكانه في الصلاة.`}</div>
       <details><summary className="muted">الفهرس</summary><ol className="muted" style={{ margin: '6px 0 0', paddingInlineStart: 20 }}>{pack.hymns.map(h => <li key={h.nameAr}>{h.nameAr}</li>)}</ol></details>
       {state === 'old'
-        ? <button className="btnp" onClick={add}>حدّث الكتاب للنسخة الجديدة</button>
+        ? <button className="btnp" onClick={add}>{pack.book.pageCount ? 'حدّث الكتاب للنسخة الجديدة' : 'حدّث الألحان'}</button>
         : termId
         ? <button className="btnp" onClick={add}>{pack.book.pageCount ? 'ضيف الكتاب' : 'ضيف الألحان'} {level ? `لمنهج ${level.name}` : ''}</button>
         : <div className="note">اعمل ترم الأول من صفحة المنهج.</div>}
