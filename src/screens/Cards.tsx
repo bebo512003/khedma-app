@@ -16,7 +16,7 @@ function Card({ m, level, pin }: { m: Member; level?: string; pin?: string }) {
       .then(setSvg).catch(() => setSvg(''));
   }, [m.code]);
   return (
-    <div className="idcard">
+    <div className="idcard" data-member={m.id}>
       <div className="idcard-band">
         <img src={logo} alt="" />
         <div><b>مدرسة الشهيد اسطفانوس للشمامسة</b><span>إتعلم … رتل … افرح</span></div>
@@ -82,12 +82,37 @@ export default function Cards() {
   };
   const withPins = Object.keys(pins).length;
 
+  /** Every card on the page as its own picture (one zip for a level), to send each member theirs on WhatsApp. */
+  const [saving, setSaving] = useState<{ n: number; total: number } | null>(null);
+  const saveImages = async () => {
+    const [{ toPng }, { zipSync }, { download }] = await Promise.all([import('html-to-image'), import('fflate'), import('../data/xlsx')]);
+    const files: Record<string, Uint8Array> = {};
+    setSaving({ n: 0, total: members.length });
+    try {
+      for (const [i, m] of members.entries()) {
+        const el = document.querySelector<HTMLElement>(`.idcard[data-member="${m.id}"]`);
+        if (!el) continue;
+        const url = await toPng(el, { pixelRatio: 4, cacheBust: true });
+        const bytes = Uint8Array.from(atob(url.split(',')[1]), c => c.charCodeAt(0));
+        files[`${m.code} - ${titled(m, data.levels).replace(/[\\/:*?"<>|]/g, '')}.png`] = bytes;
+        setSaving({ n: i + 1, total: members.length });
+      }
+      const names = Object.keys(files);
+      // The download's own name stays in English letters: some browsers drop an Arabic one. The pictures inside keep the names.
+      if (names.length === 1) download(new Blob([files[names[0]] as BlobPart], { type: 'image/png' }), `card-${members[0].code}.png`);
+      else if (names.length) download(new Blob([zipSync(files, { level: 0 }) as BlobPart], { type: 'application/zip' }), `cards-${levels.findIndex(l => l.id === levelId) + 1}.zip`);
+    } finally { setSaving(null); }
+  };
+
   return (
     <>
       <header className="top gutter no-print">
         <div className="row between">
           <div className="row"><Link to={one ? `/members/${one}` : '/members'} className="icon" aria-label="رجوع">→</Link><h1>كروت QR</h1></div>
-          <button className="btnp" style={{ minHeight: 44 }} onClick={() => window.print()} disabled={!members.length}>اطبع</button>
+          <div className="row">
+            <button className="btn" style={{ minHeight: 44 }} onClick={saveImages} disabled={!members.length || !!saving}>{saving ? `${saving.n} من ${saving.total}` : one ? 'نزّله صورة' : 'نزّل كل كارت صورة'}</button>
+            <button className="btnp" style={{ minHeight: 44 }} onClick={() => window.print()} disabled={!members.length}>اطبع</button>
+          </div>
         </div>
         {!one && <div className="chips">{levels.map(l =>
           <button key={l.id} className="chip" aria-pressed={levelId === l.id} onClick={() => setLevelId(l.id)}>{l.name}</button>)}</div>}
