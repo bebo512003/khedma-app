@@ -382,3 +382,7 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 /* How a Coptic word is said, in Arabic letters. */
 .say { font-size: 13px; color: var(--muted); }
 .say b { color: var(--fg); font-weight: 600; }
+
+.verse { gap: 6px; }
+.verse .verse-ar { font-size: 18px; line-height: 1.8; }
+.verse .cop { font-size: 16px; line-height: 1.6; color: var(--muted); direction: ltr; text-align: left; }

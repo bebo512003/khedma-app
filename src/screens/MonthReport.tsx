@@ -73,6 +73,7 @@ export default function MonthReport() {
             </div>
           );
         })}
+        <Link to="/ranking" className="btn span">الترتيب الكامل لكل مستوى</Link>
         <Link to="/reports" className="btn span">التقارير التفصيلية وتصدير إكسيل</Link>
       </main>
     </>

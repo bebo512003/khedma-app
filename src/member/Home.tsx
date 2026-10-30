@@ -4,6 +4,7 @@ import { STATUS_LABELS } from '../data/types';
 import { Bell, useView } from './Layout';
 import { memberLogout } from './session';
 import CopticToday from '../screens/CopticToday';
+import VerseToday from '../screens/VerseToday';
 import PushToggle from '../screens/PushToggle';
 
 export default function MemberHome() {
@@ -35,6 +36,7 @@ export default function MemberHome() {
         <PushToggle who="member" />
 
         <CopticToday plain />
+        <VerseToday />
 
         {goal && (
           <div className="card">
