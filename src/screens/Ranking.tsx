@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { monthName, shiftMonth, thisMonth } from '../data/monthReport';
-import { monthBreakdown, ranking, titled } from '../data/logic';
+import { hymnsCount, monthBreakdown, ranking, titled } from '../data/logic';
 import Icon from '../ui/Icon';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
@@ -16,7 +16,8 @@ export default function Ranking() {
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const [levelId, setLevelId] = useState(() => { try { return localStorage.getItem(KEY) ?? ''; } catch { return ''; } });
   const [month, setMonth] = useState(thisMonth());
-  const level = levels.find(l => l.id === levelId) ?? levels[0];
+  // Until a level is picked, open on the first one that has learners.
+  const level = levels.find(l => l.id === levelId) ?? levels.find(l => data.members.some(m => m.levelId === l.id)) ?? levels[0];
   const pick = (id: string) => { setLevelId(id); try { localStorage.setItem(KEY, id); } catch { /* private mode */ } };
   const rows = level ? ranking(data, level.id, month) : [];
   const current = month === thisMonth();
@@ -51,7 +52,7 @@ export default function Ranking() {
                   <b style={{ width: 28, textAlign: 'center', fontSize: p <= 3 && r.points > 0 ? 20 : undefined }}>{p <= 3 && r.points > 0 ? MEDAL[p - 1] : p}</b>
                   <span className="av">{r.member.photo ? <img src={r.member.photo} alt="" /> : r.member.name[0]}</span>
                   <div className="grow"><b>{titled(r.member, data.levels)}</b>
-                    <div className="muted">حضور {b.attendance} • تقييم {b.rating}{b.memorized ? ` • حفظ ${b.memorized}` : ''}{b.solo ? ` • لوحده ${b.solo}` : ''}</div></div>
+                    <div className="muted">نقط الحضور {b.attendance} • التقييم {b.rating}{b.memorized ? ` • حفظ ${hymnsCount(b.memorized)}` : ''}{b.solo ? ` • قال لوحده ${hymnsCount(b.solo)}` : ''}</div></div>
                   <b>{r.points}</b>
                 </Link>
               );
