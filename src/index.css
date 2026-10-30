@@ -1,3 +1,5 @@
+/* Coptic letters and their jinkim/abbreviation strokes come from one font, so the marks sit on their letters (Noto Sans Coptic, SIL OFL 1.1). */
+@font-face { font-family: 'KCoptic'; src: url('./fonts/noto-sans-coptic.ttf') format('truetype'); unicode-range: U+2C80-2CFF, U+03E2-03EF, U+0300-036F, U+FE20-FE2F; font-display: swap; }
 @font-face { font-family: 'Bahij'; src: url('./fonts/bahij-400.ttf') format('truetype'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'Bahij'; src: url('./fonts/bahij-600.ttf') format('truetype'); font-weight: 600; font-display: swap; }
 @font-face { font-family: 'Bahij'; src: url('./fonts/bahij-700.ttf') format('truetype'); font-weight: 700; font-display: swap; }
@@ -7,7 +9,7 @@
   --bg: #FAF6EF; --surface: #FFFFFF; --line: #E8DDD0; --fg: #2B0B0D; --muted: #6E5A55; --ph: #EFE4D6;
   --act: #5C1716; --on-act: #FFFFFF; --hero: #2B0B0D; --on-hero: #FAF6EF; --gold: #E8BD7E; --alert: #9E2A22;
   --s0: #A89488; --s1: #F3DDB8; --s2: #D49A55; --s3: #5C1716; --on-s3: #FFFFFF;
-  --font: 'Bahij', 'Segoe UI', Tahoma, sans-serif;
+  --font: 'KCoptic', 'Bahij', 'Segoe UI', Tahoma, sans-serif;
   --shadow: 0 1px 2px rgba(43,11,13,.04), 0 6px 18px rgba(43,11,13,.05);
   color-scheme: light;
 }
@@ -201,13 +203,13 @@ textarea { min-height: 110px; padding: 10px; line-height: 1.7; resize: vertical;
 }
 
 /* Coptic dictionary */
-.coptic-font { font-family: 'Noto Sans Coptic', var(--font); }
+.coptic-font { font-family: var(--font); }
 .cword { font-size: 22px; overflow-wrap: anywhere; }
 .ckeys { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
 .ckeys button { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 20px; font-family: inherit; }
 .ckeys button:active { background: var(--s1); }
-.ckeys .wide { grid-column: span 4; font-size: 15px; font-family: var(--font); }
-@media (min-width: 900px) { .ckeys { grid-template-columns: repeat(16, 1fr); } .ckeys .wide { grid-column: span 8; } }
+.ckeys .wide { grid-column: span 2; font-size: 15px; font-family: var(--font); }
+@media (min-width: 900px) { .ckeys { grid-template-columns: repeat(16, 1fr); } .ckeys .wide { grid-column: span 4; } }
 
 /* Reports */
 .stats.stats4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
