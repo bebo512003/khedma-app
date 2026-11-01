@@ -66,9 +66,13 @@ export function monthBreakdown(data: AppData, memberId: string, month: string) {
 
 export const monthPoints = (data: AppData, memberId: string, month: string) => monthBreakdown(data, memberId, month).total;
 
+/** A level's month ranking. Anyone who attended that level's sessions that month counts, so an old month keeps its
+ * learners after some move up a level; this month also lists the level's current learners who have no points yet. */
 export function ranking(data: AppData, levelId: string, month: string) {
+  const took = new Set(data.sessions.filter(s => s.levelId === levelId && s.date.startsWith(month)).flatMap(s => Object.keys(s.attendance)));
+  const now = month === todayISO().slice(0, 7);
   return data.members
-    .filter(m => m.levelId === levelId)
+    .filter(m => took.has(m.id) || (now && m.levelId === levelId))
     .map(m => ({ member: m, points: monthPoints(data, m.id, month) }))
     .sort((a, b) => b.points - a.points);
 }

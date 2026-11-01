@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { monthName, shiftMonth, thisMonth } from '../data/monthReport';
 import { hymnsCount, monthBreakdown, ranking, titled } from '../data/logic';
+import { download, xlsxBlob } from '../data/xlsx';
 import Icon from '../ui/Icon';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
@@ -15,12 +16,23 @@ export default function Ranking() {
   const nav = useNavigate();
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const [levelId, setLevelId] = useState(() => { try { return localStorage.getItem(KEY) ?? ''; } catch { return ''; } });
-  const [month, setMonth] = useState(thisMonth());
+  // Early in a month with no sessions yet, open on last month's final ranking instead of a list of zeros.
+  const [month, setMonth] = useState(() => data.sessions.some(x => x.date.startsWith(thisMonth())) ? thisMonth() : shiftMonth(thisMonth(), -1));
   // Until a level is picked, open on the first one that has learners.
   const level = levels.find(l => l.id === levelId) ?? levels.find(l => data.members.some(m => m.levelId === l.id)) ?? levels[0];
   const pick = (id: string) => { setLevelId(id); try { localStorage.setItem(KEY, id); } catch { /* private mode */ } };
   const rows = level ? ranking(data, level.id, month) : [];
   const current = month === thisMonth();
+  // Every month from the first session to now, newest first, to jump straight to any of them.
+  const first = data.sessions.reduce((a, x) => (x.date.slice(0, 7) < a ? x.date.slice(0, 7) : a), thisMonth());
+  const months: string[] = [];
+  for (let m = thisMonth(); m >= first && months.length < 120; m = shiftMonth(m, -1)) months.push(m);
+  const exportSheet = () => {
+    if (!level) return;
+    const head = ['المركز', 'الكود', 'الاسم', 'نقط الحضور', 'التقييم', 'وصل حافظه', 'قاله لوحده', 'المجموع'];
+    const body = rows.map((r, i) => { const b = monthBreakdown(data, r.member.id, month); return [places[i], r.member.code ?? '', titled(r.member, data.levels), b.attendance, b.rating, b.memorized, b.solo, r.points]; });
+    download(xlsxBlob([{ name: 'الترتيب', rows: [head, ...body], widths: [8, 8, 26, 11, 9, 10, 10, 9] }]), `ترتيب ${level.name} - ${monthName(month)}.xlsx`);
+  };
   // Same points share the same place, so a tie never reads as one beating the other.
   const places = rows.map((r, i) => (i && rows[i - 1].points === r.points ? -1 : i + 1));
   for (let i = 1; i < places.length; i++) if (places[i] === -1) places[i] = places[i - 1];
@@ -32,12 +44,12 @@ export default function Ranking() {
           <button className="icon" onClick={() => nav(-1)} aria-label="رجوع"><Icon name="back" size={20} /></button>
           <div><h1>ترتيب الدارسين</h1><div className="muted">{monthName(month)}{current ? ' • الترتيب بيتصفّر أول الشهر الجاي' : ''}</div></div>
         </div>
-        <div className="row" style={{ gap: 6 }}>
-          <button className="icon" onClick={() => setMonth(shiftMonth(month, -1))} aria-label="الشهر اللي قبله"><Icon name="back" size={18} /></button>
-          {!current && <button className="icon" onClick={() => setMonth(shiftMonth(month, 1))} aria-label="الشهر اللي بعده" style={{ transform: 'scaleX(-1)' }}><Icon name="back" size={18} /></button>}
-        </div>
       </div></header>
       <main className="main gutter">
+        <label className="row" style={{ gap: 8 }}><span className="muted">الشهر</span>
+          <select className="input grow" value={month} onChange={e => setMonth(e.target.value)}>
+            {months.map(m => <option key={m} value={m}>{monthName(m)}</option>)}
+          </select></label>
         {levels.length > 1 && <div className="chips">
           {levels.map(l => <button key={l.id} className="chip" aria-pressed={l.id === level?.id} onClick={() => pick(l.id)}>{l.name}</button>)}
         </div>}
@@ -58,6 +70,7 @@ export default function Ranking() {
               );
             })}
           </div></div>}
+        {rows.length > 0 && <button className="btn" onClick={exportSheet}>نزّل الترتيب إكسيل</button>}
         <div className="note">النقط من الحضور وتقييم كل حصة، وزيادة لما حد يوصل "حافظه" أو "بيقوله لوحده" في لحن. نفس النقط يعني نفس المركز.</div>
       </main>
     </>
