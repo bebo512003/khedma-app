@@ -171,13 +171,15 @@ async function synaxarium(now) {
   const res = await fetch(url, { headers: { 'User-Agent': 'St-Stephan-SCH/1.0 (church school app; reads the day\'s synaxarium titles once a day)' }, signal: AbortSignal.timeout(20000) });
   if (!res.ok) throw new Error(`synaxarium ${res.status}`);
   const html = await res.text();
-  const clean = t => t.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
-  // Each day's entries are headed by their title: "استشهاد القديس لوقا الانجيلي", "نياحة البابا ...".
-  const heads = [...html.matchAll(/<(h[1-6]|strong|b)[^>]*>([\s\S]*?)<\/\1>/gi)].map(x => clean(x[2]));
+  const clean = t => t.replace(/<[^>]+>/g, ' ').replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+  // Each entry is headed by its title in a dark red paragraph: "استشهاد القديس لوقا الانجيلي", "نياحة البابا ...".
+  const heads = [
+    ...[...html.matchAll(/<p[^>]*color:\s*#8b0000[^>]*>([\s\S]*?)<\/p>/gi)].map(x => clean(x[1])),
+    ...[...html.matchAll(/<(h[1-6]|strong|b)[^>]*>([\s\S]*?)<\/\1>/gi)].map(x => clean(x[2])),
+  ];
   const titles = [...new Set(heads.filter(t => SYNAX_WORDS.test(t) && t.length < 140))].slice(0, 8);
   if (!titles.length) {
-    const i = html.search(/استشهاد|نياحة|تذكار/);
-    console.log('Synaxarium: no titles found on', url, html.length, 'bytes', JSON.stringify(html.slice(Math.max(0, i - 600), i + 300)));
+    console.log('Synaxarium: no titles found on', url, html.length, 'bytes');
     return;
   }
   await ref.set({ date: now.date, titles, url, at: Date.now() });
