@@ -97,8 +97,8 @@ export function ranking(data: AppData, levelId: string, month: string) {
   const keys = (r: typeof rows[number]) => [r.points, r.attended, r.hymnLevel, r.rating, r.onTime];
   const cmp = (a: typeof rows[number], b: typeof rows[number]) => { const x = keys(a), y = keys(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i]; return 0; };
   rows.sort(cmp);
-  // Only a tie on every measure shares a place.
-  rows.forEach((r, i) => { r.place = i && cmp(rows[i - 1], r) === 0 ? rows[i - 1].place : i + 1; });
+  // Only a tie on every measure shares a place; the next learner takes the next place (1, 1, 1, 2), so silver and bronze stay given.
+  rows.forEach((r, i) => { r.place = !i ? 1 : cmp(rows[i - 1], r) === 0 ? rows[i - 1].place : rows[i - 1].place + 1; });
   return rows;
 }
 
