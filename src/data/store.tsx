@@ -80,6 +80,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         // waits for the server: the rules check that record, and reading church data before it lands is refused for good.
         stopServant = onSnapshot(paths.ref(db, 'servants', u.uid), { includeMetadataChanges: true }, async snap => {
           if (snap.exists() && snap.metadata.hasPendingWrites) return;
+          // "No servant record" from this phone's cache (fresh sign-in, weak connection) is not an answer: wait for the server.
+          if (!snap.exists() && snap.metadata.fromCache) return;
           if (snap.exists()) {
             const sv = snap.data() as Servant;
             setServant(sv);
