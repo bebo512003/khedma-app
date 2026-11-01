@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useCan } from '../data/store';
 import { STATUS_LABELS, type HymnStatus } from '../data/types';
 import {
-  absenceStreak, contact, formatTime, isLate, lateBy, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, ranking,
+  absenceStreak, contact, formatTime, isLate, lateBy, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, pointsWhy, ranking, sessionPoints,
   sessionAverage, todayISO, waLink, yearsCount, MONTHS, titled } from '../data/logic';
 import Icon from '../ui/Icon';
 
@@ -32,7 +32,8 @@ export default function MemberProfile() {
   const status = (id: string) => (data.progress[m.id]?.[id] ?? 0) as HymnStatus;
   const done = hymns.filter(h => status(h.id) >= 2).length;
   const month = todayISO().slice(0, 7);
-  const points = monthBreakdown(data, m.id, month).total;
+  const mb = monthBreakdown(data, m.id, month);
+  const points = mb.total;
   const place = ranking(data, m.levelId, month).find(r => r.member.id === m.id)?.place ?? 0;
   const mine = data.sessions.filter(s => s.attendance[m.id] !== undefined).sort((a, b) => b.date.localeCompare(a.date));
   const rate = mine.length ? Math.round(100 * mine.filter(s => s.attendance[m.id] === 'p').length / mine.length) : null;
@@ -70,6 +71,7 @@ export default function MemberProfile() {
           <div className="stat"><b>{points}</b><span className="muted">نقطة الشهر ده</span></div>
           <div className="stat"><b>{rate === null ? '–' : `${rate}%`}</b><span className="muted">حضور</span></div>
         </div>
+        <div className="muted" style={{ fontSize: 13 }}>نقط الشهر: {pointsWhy(mb)}</div>
         <div className="ptabs" role="tablist">
           {([['hymns', 'الألحان'], ['ratings', 'التقييمات'], ['info', 'البيانات']] as const).map(([k, l]) =>
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}
@@ -109,7 +111,8 @@ export default function MemberProfile() {
                 <div className="grow"><b>{formatDay(s.date)}</b>
                   <div className="muted">{s.hymnIds.map(id => data.hymns.find(h => h.id === id)?.nameAr).filter(Boolean).join('، ') || 'من غير لحن محدد'}</div>
                   {s.arrivals?.[m.id] && <div className="muted">وصل {formatTime(s.arrivals[m.id])}{isLate(s, m.id) ? ` • متأخر ${lateBy(s, m.id)} دقيقة` : ''}</div>}
-                  {s.notes?.[m.id] && <div className="note">«{s.notes[m.id]}»</div>}</div>
+                  {s.notes?.[m.id] && <div className="note">«{s.notes[m.id]}»</div>}
+                  <PtsRow p={sessionPoints(s, m.id)} /></div>
                 <b className="score">{sessionAverage(s, m.id)?.toFixed(1)}</b>
               </Link>
             ))}
@@ -128,5 +131,18 @@ export default function MemberProfile() {
         </div>}
       </main>
     </>
+  );
+}
+
+/** One session's points in pieces, for the servant: «نقط الحصة 9: حضور 2 • تقييم 4.7 • …». */
+export function PtsRow({ p }: { p?: ReturnType<typeof sessionPoints> }) {
+  if (!p) return null;
+  return (
+    <div className="pts">
+      <b>نقط الحصة: {p.total}</b>
+      <span>حضور {p.att}</span><span>تقييم {p.rating}</span>
+      {p.memorized > 0 && <span>حافظه {p.memorized}</span>}
+      {p.solo > 0 && <span>بيقوله لوحده {p.solo}</span>}
+    </div>
   );
 }

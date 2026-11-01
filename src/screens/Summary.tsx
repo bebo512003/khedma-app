@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useCan } from '../data/store';
-import { LATE_GRACE_MIN, sessionRecordings, absenceStreak, formatDay, formatTime, lateBy, needsFollowUp, sessionAverage } from '../data/logic';
+import { LATE_GRACE_MIN, sessionRecordings, absenceStreak, formatDay, formatTime, lateBy, needsFollowUp, sessionAverage, sessionPoints } from '../data/logic';
+import { PtsRow } from './MemberProfile';
 import FollowUpList from './FollowUpList';
 import SessionSummary from './SessionSummary';
 import Icon from '../ui/Icon';
@@ -82,6 +83,17 @@ export default function Summary() {
             {!s.startedAt && <div className="note">الحصة دي مالهاش ميعاد بداية، فمش محسوب مين اتأخر. حطه من تعديل الحصة.</div>}
           </div>
         )}
+
+        {ids.length > 0 && <div className="card">
+          <h2>نقط الحصة لكل مخدوم</h2>
+          <div className="list">
+            {[...ids].sort((a, b) => (sessionPoints(s, b)?.total ?? 0) - (sessionPoints(s, a)?.total ?? 0)).map(id => (
+              <div key={id} className="li" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+                <b>{name(id)}</b><PtsRow p={sessionPoints(s, id)} />
+              </div>
+            ))}
+          </div>
+        </div>}
 
         <div className="card">
           <h2>الحضور</h2>
