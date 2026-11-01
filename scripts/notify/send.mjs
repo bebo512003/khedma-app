@@ -180,6 +180,7 @@ async function synaxarium(now) {
 }
 
 const now = cairoNow();
-await synaxarium(now).catch(e => console.log('Synaxarium skipped:', e.message));
+// Off: their site refuses automated reads (403). Turn on only if they allow it (or offer a feed).
+// await synaxarium(now).catch(e => console.log('Synaxarium skipped:', e.message));
 const publicKey = await vapid();
 for (const church of (await db.collection('churches').get()).docs) await runChurch(church, publicKey, now);
