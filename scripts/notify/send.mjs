@@ -175,7 +175,11 @@ async function synaxarium(now) {
   // Each day's entries are headed by their title: "استشهاد القديس لوقا الانجيلي", "نياحة البابا ...".
   const heads = [...html.matchAll(/<(h[1-6]|strong|b)[^>]*>([\s\S]*?)<\/\1>/gi)].map(x => clean(x[2]));
   const titles = [...new Set(heads.filter(t => SYNAX_WORDS.test(t) && t.length < 140))].slice(0, 8);
-  if (!titles.length) { console.log('Synaxarium: no titles found on', url, html.length, 'bytes'); return; }
+  if (!titles.length) {
+    const i = html.search(/استشهاد|نياحة|تذكار/);
+    console.log('Synaxarium: no titles found on', url, html.length, 'bytes', JSON.stringify(html.slice(Math.max(0, i - 600), i + 300)));
+    return;
+  }
   await ref.set({ date: now.date, titles, url, at: Date.now() });
   console.log('Synaxarium', now.date, titles);
 }
