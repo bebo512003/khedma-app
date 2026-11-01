@@ -189,4 +189,11 @@ async function synaxarium(now) {
 const now = cairoNow();
 await synaxarium(now).catch(e => console.log('Synaxarium skipped:', e.message));
 const publicKey = await vapid();
-for (const church of (await db.collection('churches').get()).docs) await runChurch(church, publicKey, now);
+const churches = (await db.collection('churches').get()).docs;
+console.log('Churches:', churches.map(c => c.id).join(', ') || 'none');
+for (const church of churches) {
+  // How much each church holds, so a log shows at a glance that its data is there.
+  const n = await Promise.all(['servants', 'members', 'sessions', 'hymns', 'levels'].map(async k => `${k} ${(await church.ref.collection(k).count().get()).data().count}`));
+  console.log(church.id, 'holds:', n.join(', '));
+  await runChurch(church, publicKey, now);
+}

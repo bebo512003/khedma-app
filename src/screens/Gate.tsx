@@ -11,7 +11,7 @@ import PhoneSignIn from './PhoneSignIn';
 
 /** In cloud mode, servant screens open only for signed-in servants of this church. */
 export default function Gate({ children }: { children: ReactNode }) {
-  const { phase, data, user, access, signIn, signOut, startChurch, acceptInvite, syncError } = useStore();
+  const { phase, data, user, access, signIn, signOut, acceptInvite, syncError } = useStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [byPhone, setByPhone] = useState(false);
@@ -43,12 +43,8 @@ export default function Gate({ children }: { children: ReactNode }) {
     return (
       <>
         <div className="muted">أنت داخل بـ <span dir="ltr">{user?.email?.endsWith('.khedma.app') ? user.email.replace(/^s(\d+)-.*$/, '$1') : user?.email}</span></div>
-        {!access?.churchExists ? (
-          <>
-            <div className="note" style={{ textAlign: 'center' }}>المدرسة لسه مش متسجلة. لو أنت الخادم المسؤول ابدأها دلوقتي، وأي بيانات دخلتها على الموبايل ده هتترفع معاها.</div>
-            <button className="btnp" style={{ width: '100%' }} disabled={busy} onClick={run(startChurch)}>ابدأ المدرسة كخادم مسؤول</button>
-          </>
-        ) : access.invite ? (
+        {/* The school is already started: a missing church here means a read that failed, never "start it again". */}
+        {access?.invite ? (
           <button className="btnp" style={{ width: '100%' }} disabled={busy} onClick={run(acceptInvite)}>اقبل الدعوة وادخل</button>
         ) : (
           <div className="card" style={{ textAlign: 'center', width: '100%' }}>
