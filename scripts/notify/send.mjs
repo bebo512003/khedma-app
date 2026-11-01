@@ -3,6 +3,7 @@
 // The Web Push key pair is made on the first run and kept at /private/vapid, which no app user can read.
 import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import webpush from 'web-push';
 
 // Keep in sync with src/data/notify.ts.
@@ -195,5 +196,11 @@ for (const church of churches) {
   // How much each church holds, so a log shows at a glance that its data is there.
   const n = await Promise.all(['servants', 'members', 'sessions', 'hymns', 'levels'].map(async k => `${k} ${(await church.ref.collection(k).count().get()).data().count}`));
   console.log(church.id, 'holds:', n.join(', '));
+  // TEMP diagnosis: does each servant record still match a sign-in account? (uid prefixes only)
+  for (const sv of (await church.ref.collection('servants').get()).docs) {
+    const e = String(sv.get('email') ?? '');
+    const u = e ? await getAuth().getUserByEmail(e).then(x => x.uid, () => null) : null;
+    console.log('servant', sv.id.slice(0, 6), sv.get('role'), e.replace(/^(..).*@/, '$1…@'), 'account', u ? u.slice(0, 6) : 'none', u === sv.id ? 'match' : 'MISMATCH');
+  }
   await runChurch(church, publicKey, now);
 }
