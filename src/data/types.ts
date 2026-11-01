@@ -40,6 +40,8 @@ export interface Member {
   /** Cloud mode: the member's Firebase login (uid) and how many times its PIN was reset (n). */
   account?: { uid: string; n: number };
   example?: boolean;
+  /** YYYY-MM-DD the member joined their current level; sessions before it are marked "before you joined". */
+  levelSince?: string;
 }
 
 /** What a member may change about themselves from the member app. */
@@ -97,6 +99,8 @@ export interface Hymn {
   packKey?: string;
   /** Edition of each hymns-only pack its text came from (a newer edition offers an update). */
   packEditions?: Record<string, number>;
+  /** Where the hymn's text and recordings come from, shown under it. */
+  source?: string;
 }
 
 /** A hymn's place in a book: the pages it spans. */

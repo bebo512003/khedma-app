@@ -35,11 +35,15 @@ export function subscribe(db: Firestore, onData: (d: AppData) => void, onError: 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Firestore batches cap at 500 operations; split larger change sets. */
+/** Groups writes into batches under Firestore's limits: 500 writes and 10 MiB a request (kept well under both). */
 function batcher(db: Firestore) {
   const batches: WriteBatch[] = [];
-  let n = 500;
+  let n = 500, size = 0;
   return {
-    op(fn: (b: WriteBatch) => void) { if (n >= 450) { batches.push(writeBatch(db)); n = 0; } fn(batches[batches.length - 1]); n++; },
+    op(fn: (b: WriteBatch) => void, bytes = 2000) {
+      if (n >= 450 || size + bytes > 4_000_000) { batches.push(writeBatch(db)); n = 0; size = 0; }
+      fn(batches[batches.length - 1]); n++; size += bytes;
+    },
     commit: () => Promise.all(batches.map(b => b.commit())),
   };
 }
@@ -50,7 +54,7 @@ export function writeDiff(db: Firestore, prev: AppData, next: AppData) {
   for (const k of LISTS) {
     const before = new Map((prev[k] as { id: string }[]).map(x => [x.id, x]));
     const after = new Map((next[k] as { id: string }[]).map(x => [x.id, x]));
-    for (const [id, x] of after) if (!same(before.get(id), x)) b.op(w => w.set(ref(db, k, id), x));
+    for (const [id, x] of after) if (!same(before.get(id), x)) b.op(w => w.set(ref(db, k, id), x), JSON.stringify(x).length * 1.2);
     for (const id of before.keys()) if (!after.has(id)) b.op(w => w.delete(ref(db, k, id)));
   }
   const ids = new Set([...Object.keys(prev.progress), ...Object.keys(next.progress)]);
@@ -70,13 +74,15 @@ export function writeDiff(db: Firestore, prev: AppData, next: AppData) {
 export function publishViews(db: Firestore, data: AppData, published: Map<string, string>, mayLevel: (levelId: string) => boolean = () => true) {
   publishPhones(db, data).catch(() => undefined);
   const b = batcher(db);
+  const written: string[] = [];
   for (const m of data.members) {
     if (!mayLevel(m.levelId)) continue;
     const v = buildMemberView(data, m.id);
     const json = JSON.stringify(v);
     if (published.get(m.id) === json) continue;
     published.set(m.id, json);
-    b.op(w => w.set(ref(db, 'memberViews', m.id), v!));
+    written.push(m.id);
+    b.op(w => w.set(ref(db, 'memberViews', m.id), v!), json.length * 1.2);
   }
   for (const id of [...published.keys()]) {
     const m = data.members.find(x => x.id === id);
@@ -86,7 +92,8 @@ export function publishViews(db: Firestore, data: AppData, published: Map<string
     if (m) continue;
     b.op(w => w.delete(ref(db, 'memberViews', id)));
   }
-  return b.commit();
+  // A failed write is forgotten, so the next change (or the next app start) tries that view again.
+  return b.commit().catch(e => { for (const id of written) published.delete(id); throw e; });
 }
 
 /** What this device last wrote to the phone index: hashed phone → codes. */

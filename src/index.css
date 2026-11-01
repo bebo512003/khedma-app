@@ -404,3 +404,8 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 :root[data-theme="maroon"] .li.medal.gold small { color: #F2C94C; }
 :root[data-theme="maroon"] .li.medal.silver small { color: #D0D2D6; }
 :root[data-theme="maroon"] .li.medal.bronze small { color: #E0A070; }
+
+/* Sessions held before a learner joined their level */
+.divider-t { font-size: 13px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.divider-t::before, .divider-t::after { content: ''; flex: 1; border-top: 1px dashed var(--line); }
+.card.before { opacity: .85; border-style: dashed; }

@@ -1,3 +1,4 @@
+import { todayISO } from './logic';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { unifyCoptic } from './unicodeCoptic';
 import { get, set } from 'idb-keyval';
@@ -112,7 +113,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const update = useCallback((fn: (d: AppData) => AppData) => {
     const prev = latest.current;
     if (!prev) return;
-    const next = fn(prev);
+    const next = stampLevelMoves(prev, fn(prev));
     latest.current = next;
     setData(next);
     if (!cloudEnabled) {
@@ -125,6 +126,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sync.publishViews(db, next, published.current, levels.current).catch(e => setSyncError(String(e.message ?? e)));
     });
   }, []);
+
+  // Keep every learner's view fresh even when this device changed nothing: a member added on another phone, a new
+  // month's ranking. Only views that differ from what this device last wrote are sent.
+  useEffect(() => {
+    if (!cloudEnabled || !servant || !data) return;
+    const t = setTimeout(() => {
+      Promise.all([import('../firebase/app'), import('../firebase/sync')]).then(([{ servantFb }, sync]) =>
+        sync.publishViews(servantFb().db, data, published.current, levels.current).catch(e => setSyncError(String(e.message ?? e))));
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [data, servant]);
 
   // A member changed their photo or details from the member app: copy it into their record, then clear it.
   useEffect(() => {
@@ -243,4 +255,17 @@ const servesLevel = (servant: Servant | null, levelId: string) => !servant || se
 export function useAllowedLevel() {
   const { servant } = useStore();
   return (levelId: string) => servesLevel(servant, levelId);
+}
+
+/** A member who is new or just moved to another level gets today as the day they joined it (old sessions show as "before you joined"). */
+function stampLevelMoves(prev: AppData, next: AppData): AppData {
+  if (next.members === prev.members) return next;
+  const was = new Map(prev.members.map(m => [m.id, m.levelId]));
+  let changed = false;
+  const members = next.members.map(m => {
+    if (was.get(m.id) === m.levelId) return m;
+    changed = true;
+    return { ...m, levelSince: todayISO() };
+  });
+  return changed ? { ...next, members } : next;
 }
