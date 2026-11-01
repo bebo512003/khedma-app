@@ -6,6 +6,8 @@ rules_version = '2';
 // Members sign in with code + PIN (email/password under the hood) and can read only their own published view.
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Today's synaxarium titles, written once a day by the scheduled job; anyone may read them.
+    match /public/{id} { allow read: if true; allow write: if false; }
     match /churches/{c} {
       function doc(coll, id) { return /databases/$(database)/documents/churches/$(c)/$(coll)/$(id); }
       function signedIn() { return request.auth != null; }

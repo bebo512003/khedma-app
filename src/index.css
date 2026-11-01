@@ -410,3 +410,4 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .divider-t::before, .divider-t::after { content: ''; flex: 1; border-top: 1px dashed var(--line); }
 .card.before { opacity: .85; border-style: dashed; }
 .hymn-src { font-size: 13px; border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
+.coptic .csynax a { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }

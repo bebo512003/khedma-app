@@ -158,6 +158,28 @@ async function cleanSubmissions(c) {
   }
 }
 
+/**
+ * Today's synaxarium titles from مدرسة شمامسة مار أفرام السرياني (madraset-elshamamsa.com): one page read a day, titles
+ * only (the saints and occasions), with a link back to their page for the full text.
+ */
+async function synaxarium(now) {
+  const ref = db.doc('public/synaxarium');
+  if ((await ref.get()).data()?.date === now.date) return;
+  const [, m, d] = now.date.split('-');
+  const url = `https://madraset-elshamamsa.com/Seneksar.php?m=${+m}&d=${d}`;
+  const res = await fetch(url, { headers: { 'User-Agent': 'St-Stephan-SCH (daily synaxarium titles)' }, signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error(`synaxarium ${res.status}`);
+  const html = await res.text();
+  const clean = t => t.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+  let titles = [...html.matchAll(/href=["']#saint\d+["'][^>]*>([\s\S]*?)<\/a>/g)].map(x => clean(x[1])).filter(Boolean);
+  if (!titles.length) titles = [...html.matchAll(/<h3[^>]*>([\s\S]*?)<\/h3>/g)].map(x => clean(x[1])).filter(t => t && t.length < 120);
+  titles = [...new Set(titles)].slice(0, 8);
+  if (!titles.length) { console.log('Synaxarium: no titles found on', url); return; }
+  await ref.set({ date: now.date, titles, url, at: Date.now() });
+  console.log('Synaxarium', now.date, titles);
+}
+
 const now = cairoNow();
+await synaxarium(now).catch(e => console.log('Synaxarium skipped:', e.message));
 const publicKey = await vapid();
 for (const church of (await db.collection('churches').get()).docs) await runChurch(church, publicKey, now);
