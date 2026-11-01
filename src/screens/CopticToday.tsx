@@ -5,7 +5,7 @@ import { firebaseConfig, useEmulator } from '../firebase/config';
 
 type Synax = { date: string; titles: string[]; url: string };
 const SYNAX_KEY = 'khedma.synaxarium';
-const SYNAX_PAGE = 'https://madraset-elshamamsa.com/Seneksar.php';
+const SYNAX_PAGE = 'https://st-takla.org/zJ/index.php/ar-synaxarium';
 
 /** Today's synaxarium titles, which the scheduled job copies once a day; read without signing in, kept for the day. */
 function useSynaxarium(today: string) {
