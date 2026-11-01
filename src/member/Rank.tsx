@@ -1,4 +1,4 @@
-import { hymnsCount, medal, pointsCount, POINTS, sessionsCount } from '../data/logic';
+import { hymnsCount, medal, pointsCount, pointsWhy, POINTS, sessionsCount } from '../data/logic';
 import { useView } from './Layout';
 
 const monthName = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { month: 'long' });
@@ -8,7 +8,7 @@ export default function MemberRank() {
   const b = v.breakdown;
   // Members see the top 3 and their own place only, never the full list.
   const shown = [...v.top];
-  if (!shown.some(r => r.id === v.memberId)) shown.push({ id: v.memberId, name: v.name, photo: v.photo, points: v.points, place: v.place });
+  if (!shown.some(r => r.id === v.memberId)) shown.push({ id: v.memberId, name: v.name, photo: v.photo, points: v.points, place: v.place, why: pointsWhy(v.breakdown) });
   const parts = ([
     [`حضور ${sessionsCount(b.attended)}`, b.attendance],
     ['تقييم الحصص (متوسط كل حصة)', b.rating],
@@ -25,7 +25,7 @@ export default function MemberRank() {
             <div key={r.id} className={medal(r.place, r.points) ? `li medal ${medal(r.place, r.points)!.cls}` : 'li'} style={r.id === v.memberId ? { outline: '2px solid var(--act)', borderRadius: 12, paddingInline: 8 } : undefined}>
               <b className="place">{medal(r.place, r.points) ? <><span>{medal(r.place, r.points)!.icon}</span><small>{medal(r.place, r.points)!.name}</small></> : r.place}</b>
               <div className="av">{r.photo ? <img src={r.photo} alt="" /> : r.name[0]}</div>
-              <b className="grow">{r.id === v.memberId ? 'أنت' : r.name}</b>
+              <div className="grow"><b>{r.id === v.memberId ? 'أنت' : r.name}</b>{r.why && <div className="muted" style={{ fontSize: 12 }}>{r.why}</div>}</div>
               <span className="muted">{r.points} نقطة</span>
             </div>
           ))}

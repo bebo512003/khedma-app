@@ -35,6 +35,10 @@ const css = (c: Col, st: TextStyle) => {
 };
 
 /** Hymn text verse by verse; tapping a Coptic word looks it up in the dictionary. */
+const SAMAN = 'مكتبة ألحان كنيسة الشهيد العظيم مارجرجس بنزلة السمان (stgeorgesaman.com)';
+/** The source written under a hymn: what the servant typed, or the Nazlet El Seman library for hymns that came from it. */
+export const hymnSource = (h: Hymn) => h.source?.trim() || ([h.audioUrl, h.pdfUrl].some(u => u?.includes('stgeorgesaman')) || h.packKey ? SAMAN : '');
+
 export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: string }) {
   // Old-font or Greek-lettered Coptic shows as Unicode, so every word can be looked up.
   const rows = { cop: lines(hymn.copticText && unifyCoptic(hymn.copticText, true)), arCop: lines(hymn.arabicCoptic), ar: lines(hymn.meaning) };
@@ -48,7 +52,8 @@ export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: str
     return next;
   });
   const [word, setWord] = useState<{ text: string; hits: Hit[] | null; failed?: boolean } | null>(null);
-  if (present.length === 0) return hymn.notes ? <div className="card"><h2>ملاحظات</h2><div className="pre">{hymn.notes}</div></div> : null;
+  if (present.length === 0) return hymn.notes || hymnSource(hymn) ? <div className="card">{hymn.notes && <><h2>ملاحظات</h2><div className="pre">{hymn.notes}</div></>}
+    {hymnSource(hymn) && <div className="muted hymn-src">المصدر: {hymnSource(hymn)}</div>}</div> : null;
   const n = Math.max(...present.map(([c]) => rows[c].length));
   /** A line starting with § in any column is a section title (same line number in every column). */
   const section = (i: number) => present.map(([c]) => rows[c][i]).find(l => l?.startsWith('§'))?.slice(1).trim();
@@ -103,6 +108,7 @@ export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: str
           </li>
         ))}
       </ol>
+      {hymnSource(hymn) && <div className="muted hymn-src">المصدر: {hymnSource(hymn)}</div>}
 
       {word && <div className="backdrop" onClick={() => setWord(null)} />}
       {word && (

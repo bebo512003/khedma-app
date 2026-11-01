@@ -92,6 +92,14 @@ export function ranking(data: AppData, levelId: string, month: string) {
   return rows;
 }
 
+/** Where a month's points came from, written out: «حضور 4 حصص (8) + تقييم الحصص (7) + حافظ لحنين (10) = 25». */
+export function pointsWhy(b: { attended: number; attendance: number; rating: number; memorized: number; solo: number; total: number }) {
+  const parts = [`حضور ${sessionsCount(b.attended)} (${b.attendance})`, `تقييم الحصص (${b.rating})`];
+  if (b.memorized) parts.push(`حافظ ${hymnsCount(b.memorized)} (${b.memorized * POINTS.memorized})`);
+  if (b.solo) parts.push(`بيقول ${hymnsCount(b.solo)} لوحده (${b.solo * POINTS.solo})`);
+  return `${parts.join(' + ')} = ${b.total}`;
+}
+
 /** 🥇🥈🥉 and their names for places 1–3, once a learner has points. */
 export const MEDALS = [{ icon: '🥇', name: 'ذهبي', cls: 'gold' }, { icon: '🥈', name: 'فضي', cls: 'silver' }, { icon: '🥉', name: 'برونزي', cls: 'bronze' }] as const;
 export const medal = (place: number, points: number) => (points > 0 && place >= 1 && place <= 3 ? MEDALS[place - 1] : null);

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { monthName, shiftMonth, thisMonth } from '../data/monthReport';
-import { hymnsCount, medal, monthBreakdown, POINTS, ranking, titled } from '../data/logic';
+import { medal, pointsWhy, monthBreakdown, POINTS, ranking, titled } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
 import Icon from '../ui/Icon';
 
@@ -61,7 +61,7 @@ export default function Ranking() {
                   <b className="place">{md ? <><span>{md.icon}</span><small>{md.name}</small></> : r.place}</b>
                   <span className="av">{r.member.photo ? <img src={r.member.photo} alt="" /> : r.member.name[0]}</span>
                   <div className="grow"><b>{titled(r.member, data.levels)}</b>
-                    <div className="muted">نقط الحضور {b.attendance} • التقييم {b.rating}{b.memorized ? ` • حفظ ${hymnsCount(b.memorized)}` : ''}{b.solo ? ` • قال لوحده ${hymnsCount(b.solo)}` : ''}</div></div>
+                    <div className="muted">{pointsWhy(b)}</div></div>
                   <b>{r.points}</b>
                 </Link>
               );

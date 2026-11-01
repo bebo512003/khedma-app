@@ -1,3 +1,4 @@
+import { hymnSource } from './HymnText';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../data/store';
@@ -78,6 +79,9 @@ export default function HymnForm() {
         {link('pdfUrl', 'لينك الـ PDF على Google Drive')}
         {link('audioUrl', 'لينك التسجيل الصوتي')}
         <div className="note">الملفات بتفضل على الـ Drive بتاعكم، والتطبيق بيحفظ اللينك بس. خلي الملف متاح لأي حد معاه اللينك.</div>
+        <label className="field" htmlFor="source"><span>المصدر</span>
+          <input id="source" className="input" placeholder={hymnSource({ ...h, source: '' }) || 'مثلاً: كتاب أو موقع أو كنيسة'} value={h.source ?? ''} onChange={e => set({ source: e.target.value })} /></label>
+        <div className="note">بيظهر تحت نص اللحن. لو سبته فاضي واللحن من مكتبة نزلة السمان، بيتكتب المصدر بتاعها لوحده.</div>
         <label className="field" htmlFor="notes"><span>ملاحظات (اختياري)</span>
           <textarea id="notes" style={{ minHeight: 80 }} placeholder="مثلاً: ترتيب الأرباع، أو بيتقال إمتى بالظبط" value={h.notes ?? ''} onChange={e => set({ notes: e.target.value })} /></label>
         <h2>نص اللحن (اختياري)</h2>

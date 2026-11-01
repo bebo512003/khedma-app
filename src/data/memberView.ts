@@ -1,5 +1,5 @@
 import type { Attendance, AppData, Hymn, HymnStatus, MemberEdit, Rating, Recording } from './types';
-import { currentTerm, curriculumKey, lateBy, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO, titled } from './logic';
+import { currentTerm, curriculumKey, lateBy, pointsWhy, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO, titled } from './logic';
 import { bookOf, entryPages, hasPages, pageUrl, pagesLabel } from './books';
 
 /**
@@ -21,7 +21,7 @@ export interface MemberView {
   place: number;
   gap: number;
   breakdown: ReturnType<typeof monthBreakdown>;
-  top: { id: string; name: string; photo?: string; points: number; place: number }[];
+  top: { id: string; name: string; photo?: string; points: number; place: number; why?: string }[];
   hymns: (Hymn & { status: HymnStatus; levels: string[]; book?: { title: string; label: string; pages: string[] }; recordings?: (Recording & { date: string })[] })[];
   ratings: { id: string; date: string; r: Rating; avg: number; memorized: number; solo: number; note?: string }[];
   attendanceRate: number | null;
@@ -44,7 +44,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
   const rows = ranking(data, m.levelId, month);
   const pos = rows.findIndex(r => r.member.id === m.id);
   const breakdown = monthBreakdown(data, m.id, month);
-  const top = rows.filter(r => r.place <= 3).slice(0, 5).map(r => ({ id: r.member.id, name: titled(r.member, data.levels), photo: r.member.photo, points: r.points, place: r.place }));
+  const top = rows.filter(r => r.place <= 3).slice(0, 5).map(r => ({ id: r.member.id, name: titled(r.member, data.levels), photo: r.member.photo, points: r.points, place: r.place, why: pointsWhy(monthBreakdown(data, r.member.id, month)) }));
   const hymns = (data.curricula[curriculumKey(term?.id, m.levelId)] ?? [])
     .map(id => data.hymns.find(h => h.id === id))
     .filter((h): h is Hymn => !!h)
