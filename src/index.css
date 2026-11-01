@@ -411,3 +411,6 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .card.before { opacity: .85; border-style: dashed; }
 .hymn-src { font-size: 13px; border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
 .coptic .csynax a { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.pts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+.pts b { width: 100%; font-size: 14px; }
+.pts span { background: var(--ph); border-radius: 999px; padding: 3px 10px; }

@@ -23,6 +23,12 @@ export default function MemberSessions() {
               {s.before && <span className="pill" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 28 }}>قبل ما تنضم</span>}
             </div>
             {s.arrived && <div className="muted">وصلت {formatTime(s.arrived)}{(s.late ?? 0) > 10 ? `، متأخر ${s.late} دقيقة` : ''}</div>}
+            {s.pts && <div className="pts">
+              <b>نقطك في الحصة دي: {s.pts.total}</b>
+              <span>حضور {s.pts.att}</span><span>تقييم {s.pts.rating}</span>
+              {s.pts.memorized > 0 && <span>حافظه {s.pts.memorized}</span>}
+              {s.pts.solo > 0 && <span>بيقوله لوحده {s.pts.solo}</span>}
+            </div>}
             {s.summary && <div style={{ whiteSpace: 'pre-wrap' }}>{s.summary}</div>}
             {(s.recordings ?? []).map(r => <div key={r.id} className="vrow">{r.title && <b>{r.title}</b>}<VoiceNote id={r.id} ms={r.ms} getBlob={() => loadRecording(r)} /></div>)}
           </div>

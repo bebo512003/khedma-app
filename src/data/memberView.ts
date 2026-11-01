@@ -1,5 +1,5 @@
 import type { Attendance, AppData, Hymn, HymnStatus, MemberEdit, Rating, Recording } from './types';
-import { currentTerm, curriculumKey, lateBy, pointsWhy, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO, titled } from './logic';
+import { currentTerm, curriculumKey, lateBy, pointsWhy, sessionPoints, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO, titled } from './logic';
 import { bookOf, entryPages, hasPages, pageUrl, pagesLabel } from './books';
 
 /**
@@ -26,7 +26,7 @@ export interface MemberView {
   ratings: { id: string; date: string; r: Rating; avg: number; memorized: number; solo: number; note?: string }[];
   attendanceRate: number | null;
   /** The level's recent sessions: what was covered, the voice summary, and whether this member came. */
-  sessions?: { id: string; date: string; hymn?: string; summary?: string; summaryAt?: number; recordings?: Recording[]; att?: Attendance; arrived?: number; late?: number; before?: boolean }[];
+  sessions?: { id: string; date: string; hymn?: string; summary?: string; summaryAt?: number; recordings?: Recording[]; att?: Attendance; arrived?: number; late?: number; before?: boolean; pts?: { att: number; rating: number; memorized: number; solo: number; total: number } }[];
   /** The level's booklets, newest term first. */
   books?: { id: string; title: string; term?: string; current: boolean; pdfUrl?: string; pages: string[]; entries: { hymnId: string; name: string; label: string }[] }[];
   code?: string;
@@ -71,6 +71,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
       id: s.id, date: s.date, hymn: data.hymns.find(h => h.id === s.hymnIds[0])?.nameAr, summary: s.summary, summaryAt: s.summaryAt, recordings: sessionRecordings(s),
       att: s.attendance[m.id], arrived: s.arrivals?.[m.id], late: lateBy(s, m.id) ?? undefined,
       before: s.attendance[m.id] === undefined && !!since && s.date < since ? true : undefined,
+      pts: sessionPoints(s, m.id),
     }));
   const termName = (id?: string) => data.terms.find(t => t.id === id)?.name;
   const termStart = (id?: string) => data.terms.find(t => t.id === id)?.start ?? '';

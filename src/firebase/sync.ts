@@ -1,4 +1,4 @@
-import { onSnapshot, writeBatch, type Firestore, type WriteBatch } from 'firebase/firestore';
+import { deleteDoc, onSnapshot, setDoc, writeBatch, type Firestore, type WriteBatch } from 'firebase/firestore';
 import type { AppData } from '../data/types';
 import { buildMemberView } from '../data/memberView';
 import { col, phoneKey, ref } from './paths';
@@ -71,18 +71,17 @@ export function writeDiff(db: Firestore, prev: AppData, next: AppData) {
  * Publishes each member's view (points, rank, hymns, ratings) for the member app.
  * `published` remembers what this device last wrote, so only views that changed are rewritten.
  */
-export function publishViews(db: Firestore, data: AppData, published: Map<string, string>, mayLevel: (levelId: string) => boolean = () => true) {
+export async function publishViews(db: Firestore, data: AppData, published: Map<string, string>, mayLevel: (levelId: string) => boolean = () => true) {
   publishPhones(db, data).catch(() => undefined);
-  const b = batcher(db);
-  const written: string[] = [];
+  // One write per view, so a view that is refused doesn't hold back everyone else's, and we can say whose it was.
+  const jobs: { id: string; run: () => Promise<void> }[] = [];
   for (const m of data.members) {
     if (!mayLevel(m.levelId)) continue;
     const v = buildMemberView(data, m.id);
     const json = JSON.stringify(v);
     if (published.get(m.id) === json) continue;
     published.set(m.id, json);
-    written.push(m.id);
-    b.op(w => w.set(ref(db, 'memberViews', m.id), v!), json.length * 1.2);
+    jobs.push({ id: m.id, run: () => setDoc(ref(db, 'memberViews', m.id), v!) });
   }
   for (const id of [...published.keys()]) {
     const m = data.members.find(x => x.id === id);
@@ -90,10 +89,16 @@ export function publishViews(db: Firestore, data: AppData, published: Map<string
     published.delete(id);
     // Moved to a level this servant doesn't serve: that level's servants publish it now.
     if (m) continue;
-    b.op(w => w.delete(ref(db, 'memberViews', id)));
+    jobs.push({ id, run: () => deleteDoc(ref(db, 'memberViews', id)) });
   }
-  // A failed write is forgotten, so the next change (or the next app start) tries that view again.
-  return b.commit().catch(e => { for (const id of written) published.delete(id); throw e; });
+  const results = await Promise.allSettled(jobs.map(j => j.run()));
+  const failed = jobs.filter((_, i) => results[i].status === 'rejected');
+  if (!failed.length) return;
+  // Forgotten, so the next change (or the next app start) tries them again.
+  for (const j of failed) published.delete(j.id);
+  const names = failed.map(j => data.members.find(m => m.id === j.id)?.name ?? j.id).slice(0, 5).join('، ');
+  const why = (results.find(r => r.status === 'rejected') as PromiseRejectedResult).reason;
+  throw new Error(`بيانات الدارسين (${names}${failed.length > 5 ? ` و${failed.length - 5} كمان` : ''}): ${why?.message ?? why}`);
 }
 
 /** What this device last wrote to the phone index: hashed phone → codes. */

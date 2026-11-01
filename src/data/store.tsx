@@ -122,7 +122,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     Promise.all([import('../firebase/app'), import('../firebase/sync')]).then(([{ servantFb }, sync]) => {
       const { db } = servantFb();
-      sync.writeDiff(db, prev, next).then(() => setSyncError('')).catch(e => setSyncError(String(e.message ?? e)));
+      sync.writeDiff(db, prev, next).then(() => setSyncError('')).catch(e => setSyncError(`الحفظ: ${String(e.message ?? e)}`));
       sync.publishViews(db, next, published.current, levels.current).catch(e => setSyncError(String(e.message ?? e)));
     });
   }, []);

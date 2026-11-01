@@ -64,6 +64,16 @@ export function monthBreakdown(data: AppData, memberId: string, month: string) {
   return b;
 }
 
+/** One session's points for a member, the same pieces the month adds up (the month rounds the ratings once at the end). */
+export function sessionPoints(s: Session, memberId: string) {
+  if (s.attendance[memberId] === undefined) return undefined;
+  const att = s.attendance[memberId] === 'p' ? POINTS.attendance : 0;
+  const rating = Math.round((sessionAverage(s, memberId) ?? 0) * 10) / 10;
+  const ms = s.milestones?.[memberId];
+  const memorized = (ms?.memorized ?? 0) * POINTS.memorized, solo = (ms?.solo ?? 0) * POINTS.solo;
+  return { att, rating, memorized, solo, total: Math.round((att + rating + memorized + solo) * 10) / 10 };
+}
+
 export const monthPoints = (data: AppData, memberId: string, month: string) => monthBreakdown(data, memberId, month).total;
 
 /** A level's month ranking. Anyone who attended that level's sessions that month counts, so an old month keeps its
