@@ -33,7 +33,7 @@ export default function MemberProfile() {
   const done = hymns.filter(h => status(h.id) >= 2).length;
   const month = todayISO().slice(0, 7);
   const points = monthBreakdown(data, m.id, month).total;
-  const place = ranking(data, m.levelId, month).findIndex(r => r.member.id === m.id) + 1;
+  const place = ranking(data, m.levelId, month).find(r => r.member.id === m.id)?.place ?? 0;
   const mine = data.sessions.filter(s => s.attendance[m.id] !== undefined).sort((a, b) => b.date.localeCompare(a.date));
   const rate = mine.length ? Math.round(100 * mine.filter(s => s.attendance[m.id] === 'p').length / mine.length) : null;
   const streak = absenceStreak(data, m);

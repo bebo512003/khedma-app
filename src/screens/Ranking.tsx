@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { monthName, shiftMonth, thisMonth } from '../data/monthReport';
-import { hymnsCount, monthBreakdown, ranking, titled } from '../data/logic';
+import { hymnsCount, medal, monthBreakdown, POINTS, ranking, titled } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
 import Icon from '../ui/Icon';
 
-const MEDAL = ['🥇', '🥈', '🥉'];
 const KEY = 'khedma.rankLevel';
 
 /** The full month ranking of a level. Members only see the top 3 and their own place; servants see everyone. */
@@ -29,13 +28,11 @@ export default function Ranking() {
   for (let m = thisMonth(); m >= first && months.length < 120; m = shiftMonth(m, -1)) months.push(m);
   const exportSheet = () => {
     if (!level) return;
-    const head = ['المركز', 'الكود', 'الاسم', 'نقط الحضور', 'التقييم', 'وصل حافظه', 'قاله لوحده', 'المجموع'];
-    const body = rows.map((r, i) => { const b = monthBreakdown(data, r.member.id, month); return [places[i], r.member.code ?? '', titled(r.member, data.levels), b.attendance, b.rating, b.memorized, b.solo, r.points]; });
-    download(xlsxBlob([{ name: 'الترتيب', rows: [head, ...body], widths: [8, 8, 26, 11, 9, 10, 10, 9] }]), `ترتيب ${level.name} - ${monthName(month)}.xlsx`);
+    const head = ['المركز', 'الوسام', 'الكود', 'الاسم', 'نقط الحضور', 'التقييم', 'وصل حافظه', 'قاله لوحده', 'المجموع'];
+    const body = rows.map(r => { const b = monthBreakdown(data, r.member.id, month); return [r.place, medal(r.place, r.points)?.name ?? '', r.member.code ?? '', titled(r.member, data.levels), b.attendance, b.rating, b.memorized, b.solo, r.points]; });
+    download(xlsxBlob([{ name: 'الترتيب', rows: [head, ...body], widths: [8, 9, 8, 26, 11, 9, 10, 10, 9] }]), `ترتيب ${level.name} - ${monthName(month)}.xlsx`);
   };
   // Same points share the same place, so a tie never reads as one beating the other.
-  const places = rows.map((r, i) => (i && rows[i - 1].points === r.points ? -1 : i + 1));
-  for (let i = 1; i < places.length; i++) if (places[i] === -1) places[i] = places[i - 1];
 
   return (
     <>
@@ -56,12 +53,12 @@ export default function Ranking() {
         {!level ? <div className="note">مفيش مستويات مسموحلك بيها.</div>
           : !rows.length ? <div className="note">مفيش دارسين في {level.name}.</div>
           : <div className="card"><div className="list">
-            {rows.map((r, i) => {
+            {rows.map(r => {
               const b = monthBreakdown(data, r.member.id, month);
-              const p = places[i];
+              const md = medal(r.place, r.points);
               return (
-                <Link key={r.member.id} to={`/members/${r.member.id}`} className="li">
-                  <b style={{ width: 28, textAlign: 'center', fontSize: p <= 3 && r.points > 0 ? 20 : undefined }}>{p <= 3 && r.points > 0 ? MEDAL[p - 1] : p}</b>
+                <Link key={r.member.id} to={`/members/${r.member.id}`} className={md ? `li medal ${md.cls}` : 'li'}>
+                  <b className="place">{md ? <><span>{md.icon}</span><small>{md.name}</small></> : r.place}</b>
                   <span className="av">{r.member.photo ? <img src={r.member.photo} alt="" /> : r.member.name[0]}</span>
                   <div className="grow"><b>{titled(r.member, data.levels)}</b>
                     <div className="muted">نقط الحضور {b.attendance} • التقييم {b.rating}{b.memorized ? ` • حفظ ${hymnsCount(b.memorized)}` : ''}{b.solo ? ` • قال لوحده ${hymnsCount(b.solo)}` : ''}</div></div>
@@ -71,7 +68,7 @@ export default function Ranking() {
             })}
           </div></div>}
         {rows.length > 0 && <button className="btn" onClick={exportSheet}>نزّل الترتيب إكسيل</button>}
-        <div className="note">النقط من الحضور وتقييم كل حصة، وزيادة لما حد يوصل "حافظه" أو "بيقوله لوحده" في لحن. نفس النقط يعني نفس المركز.</div>
+        <div className="note">النقط من الحضور ({POINTS.attendance} للحصة) وتقييم كل حصة، و{POINTS.memorized} لما حد يوصل "حافظه" في لحن و{POINTS.solo} لما يوصل "بيقوله لوحده". لو النقط اتساوت، الأعلى اللي حضر أكتر، ولو الحضور اتساوى، اللي ماشي أكتر في ألحان الترم، وبعدها تقييم الحصص، وبعدها اللي اتأخر أقل. اللي متساويين في كل ده بياخدوا نفس المركز.</div>
       </main>
     </>
   );

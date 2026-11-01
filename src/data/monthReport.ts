@@ -33,7 +33,7 @@ export function monthReport(data: AppData, levelId: string, month: string) {
     const t = rows.reduce((a, r) => a + r[k].taken, 0);
     return t ? Math.round(rows.reduce((a, r) => a + r[k].present, 0) / t * 100) : null;
   };
-  const top = ranking(data, levelId, month).filter(r => r.points > 0).slice(0, 3);
+  const top = ranking(data, levelId, month).filter(r => r.points > 0 && r.place <= 3);
   const milestones = members.flatMap(m => {
     const n = sessions.reduce((a, s) => ({ memorized: a.memorized + (s.milestones?.[m.id]?.memorized ?? 0), solo: a.solo + (s.milestones?.[m.id]?.solo ?? 0) }), { memorized: 0, solo: 0 });
     return n.memorized || n.solo ? [{ member: m, ...n }] : [];

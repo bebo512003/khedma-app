@@ -1,4 +1,4 @@
-import { hymnsCount, pointsCount, POINTS, sessionsCount } from '../data/logic';
+import { hymnsCount, medal, pointsCount, POINTS, sessionsCount } from '../data/logic';
 import { useView } from './Layout';
 
 const monthName = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { month: 'long' });
@@ -8,7 +8,7 @@ export default function MemberRank() {
   const b = v.breakdown;
   // Members see the top 3 and their own place only, never the full list.
   const shown = [...v.top];
-  if (v.place > 3) shown.push({ id: v.memberId, name: v.name, photo: v.photo, points: v.points, place: v.place });
+  if (!shown.some(r => r.id === v.memberId)) shown.push({ id: v.memberId, name: v.name, photo: v.photo, points: v.points, place: v.place });
   const parts = ([
     [`حضور ${sessionsCount(b.attended)}`, b.attendance],
     ['تقييم الحصص (متوسط كل حصة)', b.rating],
@@ -22,8 +22,8 @@ export default function MemberRank() {
       <main className="main gutter">
         <div className="card"><div className="list">
           {shown.map(r => (
-            <div key={r.id} className="li" style={r.id === v.memberId ? { background: 'var(--bg)', borderRadius: 10, paddingInline: 8 } : undefined}>
-              <b style={{ width: 22, color: r.place === 1 ? 'var(--s2)' : undefined }}>{r.place}</b>
+            <div key={r.id} className={medal(r.place, r.points) ? `li medal ${medal(r.place, r.points)!.cls}` : 'li'} style={r.id === v.memberId ? { outline: '2px solid var(--act)', borderRadius: 12, paddingInline: 8 } : undefined}>
+              <b className="place">{medal(r.place, r.points) ? <><span>{medal(r.place, r.points)!.icon}</span><small>{medal(r.place, r.points)!.name}</small></> : r.place}</b>
               <div className="av">{r.photo ? <img src={r.photo} alt="" /> : r.name[0]}</div>
               <b className="grow">{r.id === v.memberId ? 'أنت' : r.name}</b>
               <span className="muted">{r.points} نقطة</span>
@@ -38,7 +38,7 @@ export default function MemberRank() {
           {parts.map(([k, val]) => <div key={k} className="row between"><span>{k}</span><b>{val}</b></div>)}
           <div className="row between" style={{ borderTop: '1px solid var(--line)', paddingTop: 8 }}><b>المجموع</b><b>{b.total}</b></div>
         </div>
-        <div className="note">بتشوف أول 3 وترتيبك أنت بس، مش ترتيب كل اللي معاك.</div>
+        <div className="note">بتشوف الذهبي والفضي والبرونزي وترتيبك أنت بس. لو النقط اتساوت، الأعلى اللي حضر أكتر، وبعدها اللي ماشي أكتر في ألحان الترم.</div>
       </main>
     </>
   );

@@ -1,6 +1,6 @@
 import type { AppData, Member, Session } from './types';
 
-export const POINTS = { attendance: 2, memorized: 5, solo: 10 } as const;
+export const POINTS = { attendance: 2, memorized: 5, solo: 12 } as const;
 
 /** Consecutive absences counting back from the latest session of the member's level. Excused breaks the streak. */
 export function absenceStreak(data: AppData, member: Member, extra?: Session): number {
@@ -71,11 +71,30 @@ export const monthPoints = (data: AppData, memberId: string, month: string) => m
 export function ranking(data: AppData, levelId: string, month: string) {
   const took = new Set(data.sessions.filter(s => s.levelId === levelId && s.date.startsWith(month)).flatMap(s => Object.keys(s.attendance)));
   const now = month === todayISO().slice(0, 7);
-  return data.members
+  // The hymns this level was learning that month, for the third tie-break.
+  const term = currentTerm(data, `${month}-15`);
+  const hymns = term ? data.curricula[curriculumKey(term.id, levelId)] ?? [] : [];
+  const rows = data.members
     .filter(m => took.has(m.id) || (now && m.levelId === levelId))
-    .map(m => ({ member: m, points: monthPoints(data, m.id, month) }))
-    .sort((a, b) => b.points - a.points);
+    .map(m => {
+      const b = monthBreakdown(data, m.id, month);
+      const hymnLevel = hymns.reduce((n, h) => n + (data.progress[m.id]?.[h] ?? 0), 0);
+      // Fewer late arrivals ranks higher, so it counts negatively.
+      const late = data.sessions.filter(x => x.levelId === levelId && x.date.startsWith(month) && (lateBy(x, m.id) ?? 0) > 0).length;
+      return { member: m, points: b.total, attended: b.attended, hymnLevel, rating: b.rating, onTime: -late, place: 0 };
+    });
+  // Same points: more sessions attended first, then further along in this term's hymns, then better session ratings, then fewer late arrivals.
+  const keys = (r: typeof rows[number]) => [r.points, r.attended, r.hymnLevel, r.rating, r.onTime];
+  const cmp = (a: typeof rows[number], b: typeof rows[number]) => { const x = keys(a), y = keys(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i]; return 0; };
+  rows.sort(cmp);
+  // Only a tie on every measure shares a place.
+  rows.forEach((r, i) => { r.place = i && cmp(rows[i - 1], r) === 0 ? rows[i - 1].place : i + 1; });
+  return rows;
 }
+
+/** 🥇🥈🥉 and their names for places 1–3, once a learner has points. */
+export const MEDALS = [{ icon: '🥇', name: 'ذهبي', cls: 'gold' }, { icon: '🥈', name: 'فضي', cls: 'silver' }, { icon: '🥉', name: 'برونزي', cls: 'bronze' }] as const;
+export const medal = (place: number, points: number) => (points > 0 && place >= 1 && place <= 3 ? MEDALS[place - 1] : null);
 
 /** 01xxxxxxxxx → 201xxxxxxxxx for wa.me links. Returns null when it doesn't look like an Egyptian mobile. */
 export function waNumber(phone?: string): string | null {

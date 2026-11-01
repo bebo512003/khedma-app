@@ -44,7 +44,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
   const rows = ranking(data, m.levelId, month);
   const pos = rows.findIndex(r => r.member.id === m.id);
   const breakdown = monthBreakdown(data, m.id, month);
-  const top = rows.slice(0, 3).map((r, i) => ({ id: r.member.id, name: titled(r.member, data.levels), photo: r.member.photo, points: r.points, place: i + 1 }));
+  const top = rows.filter(r => r.place <= 3).slice(0, 5).map(r => ({ id: r.member.id, name: titled(r.member, data.levels), photo: r.member.photo, points: r.points, place: r.place }));
   const hymns = (data.curricula[curriculumKey(term?.id, m.levelId)] ?? [])
     .map(id => data.hymns.find(h => h.id === id))
     .filter((h): h is Hymn => !!h)
@@ -82,7 +82,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
   return clean({
     memberId: m.id, name: titled(m, data.levels), photo: m.photo, rank: m.rank,
     profile: { name: m.name, photo: m.photo, birthdate: m.birthdate, phone: m.phone, parentPhone: m.parentPhone, gender: m.gender, grade: m.grade, address: m.address }, levelName: level?.name ?? '', termName: term?.name, month,
-    points: breakdown.total, place: pos + 1, gap: Math.max(0, (rows[0]?.points ?? 0) - breakdown.total), breakdown, top, hymns, ratings,
+    points: breakdown.total, place: pos < 0 ? 0 : rows[pos].place, gap: Math.max(0, (rows[0]?.points ?? 0) - breakdown.total), breakdown, top, hymns, ratings,
     sessions, books, levelId: m.levelId, code: m.code, gender: m.gender, grade: m.grade,
     attendanceRate: mine.length ? Math.round(100 * mine.filter(s => s.attendance[m.id] === 'p').length / mine.length) : null,
   });

@@ -1,10 +1,9 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { monthName, monthReport, shiftMonth, thisMonth } from '../data/monthReport';
-import { sessionsCount, titled } from '../data/logic';
+import { medal, sessionsCount, titled } from '../data/logic';
 import Icon from '../ui/Icon';
 
-const MEDAL = ['🥇', '🥈', '🥉'];
 
 /** The month in review for each of the servant's levels: what the bell opens on the 1st and before the ranking resets. */
 export default function MonthReport() {
@@ -46,9 +45,9 @@ export default function MonthReport() {
               {r.top.length > 0 && <>
                 <b>{current ? 'الأوائل لحد دلوقتي' : 'أوائل الشهر'}</b>
                 <div className="list">
-                  {r.top.map((t, i) => (
+                  {r.top.map(t => (
                     <Link key={t.member.id} to={`/members/${t.member.id}`} className="li">
-                      <span style={{ fontSize: 22 }}>{MEDAL[i]}</span>
+                      <span style={{ fontSize: 22 }} title={medal(t.place, t.points)?.name}>{medal(t.place, t.points)?.icon}</span>
                       <span className="av">{t.member.photo ? <img src={t.member.photo} alt="" /> : t.member.name[0]}</span>
                       <b className="grow">{titled(t.member, data.levels)}</b><span className="muted">{t.points} نقطة</span>
                     </Link>
