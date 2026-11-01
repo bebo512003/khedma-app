@@ -9,11 +9,38 @@ const FRONT = new Set('ⲉⲓⲏⲩ');
 const JINKIM = '̀';
 const MARKS = /[̣̅̄̈́̂̃̇⳯-⳱︤-︦]/g;
 
-/** Words written short under a line (ⲡⲟ̅ⲥ̅, ⲓⲏ̅ⲥ̅, ⲡⲭ̅ⲥ̅), said in full. */
-const ABBREV: Record<string, string> = {
-  ⲟⲥ: 'ϭⲟⲓⲥ', ⲡⲟⲥ: 'ⲡϭⲟⲓⲥ', ⲡⲉⲛⲟⲥ: 'ⲡⲉⲛϭⲟⲓⲥ', ⲡϭⲥ: 'ⲡϭⲟⲓⲥ', ⲡⲉⲛϭⲥ: 'ⲡⲉⲛϭⲟⲓⲥ', ⲓⲏⲥ: 'ⲓⲏⲥⲟⲩⲥ', ⲓⲥ: 'ⲓⲏⲥⲟⲩⲥ', ⲡⲭⲥ: 'ⲡⲭⲣⲓⲥⲧⲟⲥ', ⲭⲥ: 'ⲭⲣⲓⲥⲧⲟⲥ',
-  ⲫϯ: 'ⲫⲛⲟⲩϯ', ⲡⲛⲁ: 'ⲡⲛⲉⲩⲙⲁ', ⲓⲗⲏⲙ: 'ⲓⲉⲣⲟⲩⲥⲁⲗⲏⲙ', ⲓⲥⲗ: 'ⲓⲥⲣⲁⲏⲗ', ⲁⲗ: 'ⲁⲗⲗⲏⲗⲟⲩⲓⲁ', ⲁⲗⲗ: 'ⲁⲗⲗⲏⲗⲟⲩⲓⲁ',
-};
+/** Words written short under a line (ⲡⲟ̅ⲥ̅, ⲓⲏ̅ⲥ̅, ⲡⲭ̅ⲥ̅), said in full. Longest first, so ⲉⲑⲩ wins over ⲑⲩ. */
+const ABBREV: [string, string][] = ([
+  ['ⲡⲛⲁⲧⲟⲩⲫⲟⲣⲟⲥ', 'ⲡⲛⲉⲩⲙⲁⲧⲟⲫⲟⲣⲟⲥ'], ['ⲡⲛⲁⲧⲓⲕⲟⲛ', 'ⲡⲛⲉⲩⲙⲁⲧⲓⲕⲟⲛ'], ['ⲡⲛⲁⲧⲓⲕⲏ', 'ⲡⲛⲉⲩⲙⲁⲧⲓⲕⲏ'], ['ⲡⲛⲁⲧⲓⲕⲟⲥ', 'ⲡⲛⲉⲩⲙⲁⲧⲓⲕⲟⲥ'],
+  ['ⲥⲧⲣⲟⲥ', 'ⲥⲧⲁⲩⲣⲟⲥ'], ['ⲥⲣⲟⲥ', 'ⲥⲧⲁⲩⲣⲟⲥ'], ['ⲓⲗⲏⲙ', 'ⲓⲉⲣⲟⲩⲥⲁⲗⲏⲙ'], ['ⲓⲏⲥ', 'ⲓⲏⲥⲟⲩⲥ'], ['ⲓⲥⲗ', 'ⲓⲥⲣⲁⲏⲗ'], ['ⲉⲑⲩ', 'ⲉⲑⲟⲩⲁⲃ'], ['ⲥⲱⲣ', 'ⲥⲱⲧⲏⲣ'],
+  ['ⲇⲁⲇ', 'ⲇⲁⲩⲓⲇ'], ['ⲁⲗⲗ', 'ⲁⲗⲗⲏⲗⲟⲩⲓⲁ'], ['ⲡⲛⲁ', 'ⲡⲛⲉⲩⲙⲁ'], ['ⲡⲛⲓ', 'ⲡⲛⲉⲩⲙⲁⲧⲓ'], ['ⲁⲗ', 'ⲁⲗⲗⲏⲗⲟⲩⲓⲁ'],
+  ['ⲟⲥ', 'ϭⲟⲓⲥ'], ['ϭⲥ', 'ϭⲟⲓⲥ'], ['ⲓⲥ', 'ⲓⲏⲥⲟⲩⲥ'], ['ⲭⲥ', 'ⲭⲣⲓⲥⲧⲟⲥ'], ['ⲭⲩ', 'ⲭⲣⲓⲥⲧⲟⲩ'], ['ⲑⲥ', 'ⲑⲉⲟⲥ'], ['ⲑⲩ', 'ⲑⲉⲟⲩ'],
+  ['ⲩⲥ', 'ⲩⲓⲟⲥ'], ['ⲕⲥ', 'ⲕⲩⲣⲓⲟⲥ'], ['ⲕⲉ', 'ⲕⲩⲣⲓⲉ'], ['ⲫϯ', 'ⲫⲛⲟⲩϯ'],
+] as [string, string][]).sort((a, b) => b[0].length - a[0].length);
+/** What can stand before a short word: articles, possessives, prepositions (ⲙ̀ⲡ̅ⲟ̅ⲥ̅, ⲡⲁⲟ̅ⲥ̅, ⲛⲏⲉ̅ⲑ̅ⲩ̅). */
+const BEFORE = ['ϧⲉⲛⲑⲏ', 'ϧⲉⲛ', 'ⲛϫⲉ', 'ⲛⲛⲏ', 'ⲡⲉⲛ', 'ⲧⲉⲛ', 'ⲛⲉⲛ', 'ⲡⲉⲕ', 'ⲡⲉϥ', 'ⲡⲉⲧ', 'ⲛⲏ', 'ⲑⲏ', 'ⲫⲏ', 'ⲡⲓ', 'ⲛⲓ', 'ⲡⲁ', 'ⲧⲁ', 'ⲛⲁ', 'ⲟⲩ', 'ⲱ', 'ⲙ', 'ⲛ', 'ⲉ', 'ⲁ', 'ⲡ', 'ⲧ', 'ⲫ'];
+const OVERLINE = /[\u0304\u0305\ufe24-\ufe26]/;
+
+/** A word with a short form in it, written out: ⲙ̀ⲡ̅ⲟ̅ⲥ̅ → ⲙ̀ⲡϭⲟⲓⲥ. Up to two words can come before the short form. */
+function expand(w: string): string {
+  const chars = [...w.normalize('NFD')];
+  // Each letter with the marks after it, so the jinkim of what comes before stays.
+  const units: { ch: string; raw: string }[] = [];
+  for (const c of chars) {
+    if (/[Ⲁ-⳿Ϣ-ϯ]/.test(c)) units.push({ ch: lower(c), raw: c });
+    else if (units.length && !OVERLINE.test(c)) units[units.length - 1].raw += c;
+  }
+  const bare = units.map(u => u.ch).join('');
+  const tryAt = (at: number, depth: number): string | null => {
+    const rest = bare.slice(at);
+    const hit = ABBREV.find(([k]) => k === rest);
+    if (hit) return units.slice(0, [...bare.slice(0, at)].length).map(u => u.raw).join('') + hit[1];
+    if (depth === 2) return null;
+    for (const b of BEFORE) if (b && rest.startsWith(b) && rest.length > b.length) { const r = tryAt(at + b.length, depth + 1); if (r) return r; }
+    return null;
+  };
+  return tryAt(0, 0) ?? w;
+}
 const lower = (ch: string) => {
   const c = ch.codePointAt(0)!;
   return (c >= 0x2c80 && c <= 0x2ce3 && c % 2 === 0) || (c >= 0x03e2 && c <= 0x03ef && c % 2 === 0) ? String.fromCodePoint(c + 1) : ch;
@@ -21,10 +48,7 @@ const lower = (ch: string) => {
 
 /** One Coptic word in Arabic letters. */
 function word(w: string): string {
-  if (w.includes('\u0305')) {
-    const bare = [...w.normalize('NFD')].map(lower).join('').replace(/[^Ⲁ-⳿Ϣ-ϯ]/g, '');
-    if (ABBREV[bare]) w = ABBREV[bare];
-  }
+  if (OVERLINE.test(w)) w = expand(w);
   // ⲫϯ is God's name written short, even without the line over it.
   if (/^ⲫ\u0300?ϯ$/i.test(w.normalize('NFD')) || /^Ⲫϯ$/.test(w)) w = 'ⲫⲛⲟⲩϯ';
   // Lowercase, keeping the jinkim right after its letter.

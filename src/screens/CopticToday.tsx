@@ -15,6 +15,8 @@ export default function CopticToday({ plain = false }: { plain?: boolean }) {
         <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
           <span className="ctag">{t.tune}</span>
           {t.fast && <span className="ctag">{t.fast}</span>}
+          {/* Today's synaxarium on the Nazlet El Seman church site (with their permission); a link, not a copy of their text. */}
+          <a className="ctag" href="https://stgeorgesaman.com/coptic/readings/#synaxarium" target="_blank" rel="noopener">سنكسار النهارده ↗</a>
         </div>
       </div>
       {next && <div className="sub cnext">الجاي: <b>{next.occasion.name}</b> {inDays(next.days)} ({formatDay(isoDate(next.occasion.start))})</div>}
