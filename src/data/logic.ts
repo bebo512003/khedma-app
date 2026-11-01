@@ -59,9 +59,11 @@ export function monthBreakdown(data: AppData, memberId: string, month: string) {
     const ms = s.milestones?.[memberId];
     if (ms) { b.memorized += ms.memorized; b.solo += ms.solo; }
   }
+  // Points use whole numbers; the ranking breaks ties on the exact ratings (exactRating), so rounding never hides a difference.
+  const exactRating = b.rating;
   b.rating = Math.round(b.rating);
   b.total = b.attendance + b.rating + b.memorized * POINTS.memorized + b.solo * POINTS.solo;
-  return b;
+  return { ...b, exactRating };
 }
 
 /** One session's points for a member, the same pieces the month adds up (the month rounds the ratings once at the end). */
@@ -90,8 +92,8 @@ export function ranking(data: AppData, levelId: string, month: string) {
       const b = monthBreakdown(data, m.id, month);
       const hymnLevel = hymns.reduce((n, h) => n + (data.progress[m.id]?.[h] ?? 0), 0);
       // Fewer late arrivals ranks higher, so it counts negatively.
-      const late = data.sessions.filter(x => x.levelId === levelId && x.date.startsWith(month) && (lateBy(x, m.id) ?? 0) > 0).length;
-      return { member: m, points: b.total, attended: b.attended, hymnLevel, rating: b.rating, onTime: -late, place: 0 };
+      const late = data.sessions.filter(x => x.levelId === levelId && x.date.startsWith(month) && (lateBy(x, m.id) ?? 0) > LATE_GRACE_MIN).length;
+      return { member: m, points: b.total, attended: b.attended, hymnLevel, rating: b.exactRating, onTime: -late, place: 0 };
     });
   // Same points: more sessions attended first, then further along in this term's hymns, then better session ratings, then fewer late arrivals.
   const keys = (r: typeof rows[number]) => [r.points, r.attended, r.hymnLevel, r.rating, r.onTime];
