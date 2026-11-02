@@ -60,6 +60,7 @@ export function OpenHome() {
         <h1>ركن اللغة القبطية والألحان</h1>
         <div className="muted">مفتوح لأي حد بيحب يتعلم، من غير حساب ولا تسجيل</div>
       </div>
+      <div style={{ width: '100%', textAlign: 'start' }}><CopticToday part="date" /></div>
       <nav className="doors" aria-label="الأدوات">
         {DOORS.map(d => (
           <Link key={d.to} to={d.to} className="door">
@@ -70,7 +71,7 @@ export function OpenHome() {
         ))}
       </nav>
       {/* Today in the Coptic calendar and a praise verse: something new for visitors every day. */}
-      <div style={{ width: '100%', display: 'grid', gap: 12, textAlign: 'start' }}><CopticToday /><VerseToday /></div>
+      <div style={{ width: '100%', display: 'grid', gap: 12, textAlign: 'start' }}><CopticToday part="synaxarium" plain /><VerseToday /></div>
       <Link to="/login" className="btn" style={{ width: '100%', border: '1.5px solid var(--gold)' }}>دخول الخدام والدارسين</Link>
       <Contact />
       <Link to="/install" className="muted">إزاي أنزّل التطبيق؟</Link>

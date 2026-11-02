@@ -29,10 +29,20 @@ function useSynaxarium(today: string) {
 const inDays = (n: number) => n === 1 ? 'بكرة' : `بعد ${count(n, 'يوم', 'يومين', 'أيام')}`;
 
 /** Today's Coptic date, feast, fast and tune, plus what's coming next. Shared by servant and member home. */
-export default function CopticToday({ plain = false }: { plain?: boolean }) {
+export default function CopticToday({ plain = false, part }: { plain?: boolean; part?: 'date' | 'synaxarium' }) {
   const t = copticDay();
   const next = t.next;
   const synax = useSynaxarium(isoDate(t.date));
+  const synaxarium = (
+        <div className="sub csynax">
+          <b>السنكسار</b>
+          {/* One remembrance per line, then the link to read them in full. */}
+          {(synax?.titles.length ? synax.titles : ['تذكارات النهارده']).map(t => <div key={t}>• {t}</div>)}
+          <a href={synax?.url ?? SYNAX_PAGE} target="_blank" rel="noopener">اقرا السيرة ↗</a>
+        </div>
+  );
+  // The front page splits the card: today's date at the top, the synaxarium further down.
+  if (part === 'synaxarium') return <div className={plain ? 'card coptic' : 'hero coptic'}>{synaxarium}</div>;
   return (
     <div className={plain ? 'card coptic' : 'hero coptic'}>
       <div><div className="cdate">{formatCoptic(t.coptic)}</div><div className="sub">{formatDay(isoDate(t.date))}</div></div>
@@ -42,12 +52,7 @@ export default function CopticToday({ plain = false }: { plain?: boolean }) {
           <span className="ctag">{t.tune}</span>
           {t.fast && <span className="ctag">{t.fast}</span>}
         </div>
-        <div className="sub csynax">
-          <b>السنكسار</b>
-          {/* One remembrance per line, then the link to read them in full. */}
-          {(synax?.titles.length ? synax.titles : ['تذكارات النهارده']).map(t => <div key={t}>• {t}</div>)}
-          <a href={synax?.url ?? SYNAX_PAGE} target="_blank" rel="noopener">اقرا السيرة ↗</a>
-        </div>
+        {part !== 'date' && synaxarium}
       </div>
       {next && <div className="sub cnext">الجاي: <b>{next.occasion.name}</b> {inDays(next.days)} ({formatDay(isoDate(next.occasion.start))})</div>}
     </div>
