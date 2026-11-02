@@ -8,10 +8,11 @@ import MobileNav from './MobileNav';
 import { OpenDoor, SCHOOL } from './Open';
 import Icon from '../ui/Icon';
 import PhoneSignIn from './PhoneSignIn';
+import { useEmulator } from '../firebase/config';
 
 /** In cloud mode, servant screens open only for signed-in servants of this church. */
 export default function Gate({ children }: { children: ReactNode }) {
-  const { phase, data, user, access, signIn, signOut, acceptInvite, syncError } = useStore();
+  const { phase, data, user, access, signIn, signOut, startChurch, acceptInvite, syncError } = useStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [byPhone, setByPhone] = useState(false);
@@ -43,8 +44,10 @@ export default function Gate({ children }: { children: ReactNode }) {
     return (
       <>
         <div className="muted">أنت داخل بـ <span dir="ltr">{user?.email?.endsWith('.khedma.app') ? user.email.replace(/^s(\d+)-.*$/, '$1') : user?.email}</span></div>
-        {/* The school is already started: a missing church here means a read that failed, never "start it again". */}
-        {access?.invite ? (
+        {/* The school is already started: a missing church here means a read that failed, never "start it again" (only the test emulator starts one). */}
+        {useEmulator && !access?.churchExists ? (
+          <button className="btnp" style={{ width: '100%' }} disabled={busy} onClick={run(startChurch)}>ابدأ المدرسة كخادم مسؤول</button>
+        ) : access?.invite ? (
           <button className="btnp" style={{ width: '100%' }} disabled={busy} onClick={run(acceptInvite)}>اقبل الدعوة وادخل</button>
         ) : (
           <div className="card" style={{ textAlign: 'center', width: '100%' }}>

@@ -24,7 +24,7 @@ export default function Home() {
   const watch = watchList(data, allowed);
   const pending = usePending().length;
   const { unread } = useServantNotes();
-  const last = data.sessions.filter(s => allowed(s.levelId)).sort((a, b) => b.date.localeCompare(a.date))[0];
+  const last = data.sessions.filter(s => allowed(s.levelId) && Object.keys(s.attendance).length).sort((a, b) => b.date.localeCompare(a.date))[0];
   const hasExamples = data.members.some(m => m.example);
 
   const toggle = () => { const t = theme === 'light' ? 'maroon' : 'light'; applyTheme(t); setTheme(t); };

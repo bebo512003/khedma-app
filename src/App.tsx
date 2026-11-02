@@ -28,6 +28,7 @@ import Cards from './screens/Cards';
 import Dictionary from './screens/Dictionary';
 import Translate from './screens/Translate';
 import Reports from './screens/Reports';
+import Settings from './screens/Settings';
 import Ranking from './screens/Ranking';
 import MemberLogin from './member/Login';
 import { OpenBook, OpenBooks, OpenHome, OpenHymn, OpenLibrary } from './screens/Open';
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="/levels" element={s(<Levels />)} />
           <Route path="/team" element={s(<Team />)} />
           <Route path="/profile" element={s(<ServantProfile />)} />
+          <Route path="/settings" element={s(<Settings />)} />
           <Route path="/notify" element={s(<Notify />)} />
           <Route path="/cards" element={n('members', <Cards />)} />
           <Route path="/dictionary" element={s(<Dictionary />)} />

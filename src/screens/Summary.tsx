@@ -97,6 +97,7 @@ export default function Summary() {
 
         <div className="card">
           <h2>الحضور</h2>
+          {ids.length === 0 && <div className="note">الحصة دي متسجلة بالتاريخ بس، من غير حضور ولا تقييم.{edit ? ' تقدر تضيفهم من زرار التعديل فوق.' : ''}</div>}
           {[['حضروا', present], ['اعتذروا', excused], ['غابوا', absent]].map(([label, list]) => (list as string[]).length > 0 && (
             <div key={label as string}><b>{label}</b> <span className="muted">({(list as string[]).length})</span>
               <div className="note">{(list as string[]).map(name).join('، ')}</div></div>

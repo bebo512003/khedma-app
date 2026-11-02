@@ -1,37 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useAllowedLevel, useData, useIsLead, useStore, useCan } from '../data/store';
-import { applyTheme, loadTheme } from '../theme';
+import { useAllowedLevel, useData, useStore, useCan } from '../data/store';
+import { useMenu } from './menu';
 import Icon from '../ui/Icon';
 import { usePending } from './usePending';
 
 /** Main sections get a bottom tab bar on phones; forms and the session keep their own action bar instead. */
-const TAB_ROUTES = ['/', '/notifications', '/sessions', '/reviews', '/members', '/library', '/curriculum', '/books', '/reports', '/ranking', '/dictionary', '/translate', '/followup', '/team', '/notify', '/levels', '/backup'];
+const TAB_ROUTES = ['/', '/notifications', '/sessions', '/reviews', '/members', '/library', '/curriculum', '/books', '/reports', '/ranking', '/dictionary', '/translate', '/followup', '/team', '/notify', '/levels', '/backup', '/settings', '/profile'];
 
 export default function MobileNav() {
   const { pathname } = useLocation();
   const [data] = useData();
-  const canSessions = useCan('sessions'), canReports = useCan('reports'), canMembers = useCan('members');
-  const { cloud, servant, signOut } = useStore();
+  const canSessions = useCan('sessions');
+  const { servant } = useStore();
   const allowed = useAllowedLevel();
-  const lead = useIsLead();
   const nav = useNavigate();
   const [sheet, setSheet] = useState<'more' | 'start' | null>(null);
-  const [theme, setTheme] = useState(loadTheme());
   const pending = usePending().length;
+  // The tab bar already has these.
+  const groups = useMenu().map(g => ({ ...g, items: g.items.filter(([to]) => to !== '/members' && to !== '/library') }));
+  // Any page change (a link, the back button) closes an open sheet.
+  useEffect(() => setSheet(null), [pathname]);
   if (!TAB_ROUTES.includes(pathname)) return null;
 
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const start = () => levels.length === 1 ? nav(`/session/${levels[0].id}`) : setSheet('start');
-  const toggleTheme = () => { const t = theme === 'light' ? 'maroon' : 'light'; applyTheme(t); setTheme(t); };
-  const more: [string, string, string][] = [
-    ['/sessions', 'clock', 'سجل الحصص'], ['/reviews', 'mic', 'التسميع'], ['/ranking', 'chart', 'الترتيب'], ['/curriculum', 'list', 'المنهج'], ['/books', 'books', 'الكتب'], ['/reports', 'chart', 'التقارير'],
-    ['/followup', 'heart', 'الافتقاد'], ['/dictionary', 'dict', 'القاموس'], ['/translate', 'dict', 'ترجمة جملة'], ['/cards', 'qr', 'كروت QR'],
-    ...(cloud ? [['/team', 'team', 'الفريق'], ['/notify', 'bell', 'التنبيهات'], ['/profile', 'user', 'بروفايلي']] as [string, string, string][] : []),
-    ...(lead ? [['/levels', 'layers', 'المستويات'], ['/backup', 'download', 'نسخة احتياطية']] as [string, string, string][] : []),
-  ];
-  const shown = more.filter(([to]) => (to !== '/reports' || canReports) && (to !== '/cards' || canMembers));
-  const inMore = more.some(([to]) => to === pathname);
+  const inMore = !['/', '/members', '/library'].includes(pathname);
 
   return (
     <>
@@ -66,11 +60,15 @@ export default function MobileNav() {
             <div className="row">{servant && <span className="av">{servant.photo ? <img src={servant.photo} alt="" /> : servant.name[0]}</span>}<b>{servant?.name ?? 'المزيد'}</b></div>
             <button className="icon" onClick={() => setSheet(null)} aria-label="اقفل"><Icon name="close" size={18} /></button>
           </div>
-          <div className="tiles">
-            {shown.map(([to, icon, label]) => <Link key={to} to={to} className="tile badged" onClick={() => setSheet(null)}><Icon name={icon} />{label}{to === '/reviews' && pending > 0 && <span className="count">{pending > 9 ? '9+' : pending}</span>}</Link>)}
-            <button className="tile" onClick={toggleTheme}><Icon name={theme === 'light' ? 'moon' : 'sun'} />{theme === 'light' ? 'وضع النبيتي' : 'الوضع الفاتح'}</button>
-            {cloud && <button className="tile" onClick={signOut}><Icon name="logout" />خروج</button>}
-          </div>
+          {groups.map(g => (
+            <div key={g.title} className="menu-group">
+              <div className="muted menu-t">{g.title}</div>
+              <div className="tiles tiles4">
+                {g.items.map(([to, icon, label]) => <Link key={to} to={to} className="tile badged" onClick={() => setSheet(null)}><Icon name={icon} />{label}{to === '/reviews' && pending > 0 && <span className="count">{pending > 9 ? '9+' : pending}</span>}</Link>)}
+              </div>
+            </div>
+          ))}
+          <Link to="/settings" className="li" onClick={() => setSheet(null)}><Icon name="gear" size={20} /><b className="grow">الإعدادات</b><span className="muted">الشكل، الفريق، النسخة الاحتياطية</span></Link>
         </div>
       )}
     </>

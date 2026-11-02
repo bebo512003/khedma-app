@@ -76,12 +76,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!u) { setPhase('signedOut'); return; }
         setPhase('loading');
         let subscribed = false;
+        let tries = 0;
+        // A refused or dropped read (token refresh, weak network) is not "you're not a servant": keep loading and listen again.
+        const watch = () => {
         // Metadata changes too, so a servant record still being written (just accepted an invite or started the church)
         // waits for the server: the rules check that record, and reading church data before it lands is refused for good.
         stopServant = onSnapshot(paths.ref(db, 'servants', u.uid), { includeMetadataChanges: true }, async snap => {
           if (snap.exists() && snap.metadata.hasPendingWrites) return;
           // "No servant record" from this phone's cache (fresh sign-in, weak connection) is not an answer: wait for the server.
           if (!snap.exists() && snap.metadata.fromCache) return;
+          if (tries) { tries = 0; setSyncError(''); }
           if (snap.exists()) {
             const sv = snap.data() as Servant;
             setServant(sv);
@@ -106,7 +110,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           // A read that failed counts as "the church exists": only its real absence offers to start it.
           setAccess({ churchExists: church === null || church.exists(), invite: invite?.exists() ? (invite.data() as Invite) : null });
           setPhase('noAccess');
-        }, e => { setSyncError(e.message); setPhase('noAccess'); });
+        }, e => {
+          if (auth.currentUser?.uid !== u.uid) return;
+          tries++;
+          setSyncError(`بنحاول نوصل تاني… (${e.message})`);
+          setTimeout(() => { if (auth.currentUser?.uid === u.uid) { stopServant(); watch(); } }, Math.min(30000, 2000 * tries));
+        });
+        };
+        watch();
       });
     })();
     return () => { stopAuth(); stopServant(); stopData(); };
