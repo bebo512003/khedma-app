@@ -28,6 +28,7 @@ export function useSettingsMenu(): Group[] {
   if (lead) school.push(['/levels', 'layers', 'المستويات']);
   if (cloud) school.push(['/team', 'team', 'الفريق'], ['/notify', 'bell', 'التنبيهات والتذكيرات']);
   if (lead) school.push(['/backup', 'download', 'نسخة احتياطية']);
+  if (lead && cloud) school.push(['/changes', 'clock', 'سجل التعديلات']);
   if (school.length) out.push({ title: 'المدرسة', items: school });
   out.push({ title: 'عن الأبلكيشن', items: [['/install', 'download', 'إزاي أنزّل التطبيق']] });
   return out;

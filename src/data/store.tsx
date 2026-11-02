@@ -27,6 +27,8 @@ interface Store {
   servant: Servant | null;
   access: { churchExists: boolean; invite: Invite | null } | null;
   syncError: string;
+  /** Saves this device made that the server hasn't confirmed yet. */
+  unsynced: number;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   startChurch: () => Promise<void>;
@@ -51,6 +53,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const published = useRef(new Map<string, string>());
   /** The levels this servant serves; their app publishes and applies only those members' views and edits. */
   const levels = useRef<(levelId: string) => boolean>(() => true);
+  /** Who is saving, for the change log. */
+  const me = useRef<{ uid: string; name: string } | null>(null);
+  me.current = servant ? { uid: servant.uid, name: servant.name } : null;
+  /** Saves sent but not yet confirmed by the server (offline, or still uploading). */
+  const [unsynced, setUnsynced] = useState(0);
   levels.current = (levelId: string) => servesLevel(servant, levelId);
 
   // Offline mode
@@ -97,6 +104,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             if (!subscribed) {
               subscribed = true;
               const stopLists = sync.subscribe(db, d => { latest.current = d; setData(d); }, e => setSyncError(e.message));
+              // Saves left waiting from an earlier visit (app closed while offline) still count until the server has them.
+              setUnsynced(n => n + 1);
+              import('firebase/firestore').then(({ waitForPendingWrites }) => waitForPendingWrites(db)).catch(() => undefined).finally(() => setUnsynced(n => Math.max(0, n - 1)));
               const stopEdits = onSnapshot(paths.col(db, 'memberEdits'), q => setEdits(q.docs.map(x => ({ id: x.id, edit: x.data() as MemberEdit }))), () => undefined);
               stopData = () => { stopLists(); stopEdits(); };
             }
@@ -133,9 +143,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       set(KEY, next).catch(() => { /* storage blocked: keep working in memory */ });
       return;
     }
-    Promise.all([import('../firebase/app'), import('../firebase/sync')]).then(([{ servantFb }, sync]) => {
+    setUnsynced(n => n + 1);
+    Promise.all([import('../firebase/app'), import('../firebase/sync'), import('../firebase/changes')]).then(([{ servantFb }, sync, changes]) => {
       const { db } = servantFb();
-      sync.writeDiff(db, prev, next).then(() => setSyncError('')).catch(e => setSyncError(`الحفظ: ${String(e.message ?? e)}`));
+      sync.writeDiff(db, prev, next).then(() => setSyncError('')).catch(e => setSyncError(`الحفظ: ${String(e.message ?? e)}`)).finally(() => setUnsynced(n => Math.max(0, n - 1)));
+      if (me.current) changes.logChange(db, me.current, prev, next).catch(() => undefined);
       sync.publishViews(db, next, published.current, levels.current).catch(e => setSyncError(String(e.message ?? e)));
     });
   }, []);
@@ -220,7 +232,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [user, access]);
 
   return (
-    <Ctx.Provider value={{ data, update, reset, cloud: cloudEnabled, phase, user, servant, access, syncError, signIn, signOut, startChurch, acceptInvite }}>
+    <Ctx.Provider value={{ data, update, reset, cloud: cloudEnabled, phase, user, servant, access, syncError, unsynced, signIn, signOut, startChurch, acceptInvite }}>
       {children}
     </Ctx.Provider>
   );

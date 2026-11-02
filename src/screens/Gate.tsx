@@ -8,6 +8,7 @@ import MobileNav from './MobileNav';
 import { OpenDoor, OpenHome, SCHOOL } from './Open';
 import Icon from '../ui/Icon';
 import PhoneSignIn from './PhoneSignIn';
+import SyncBadge from '../ui/SyncBadge';
 import { useEmulator } from '../firebase/config';
 
 /** In cloud mode, servant screens open only for signed-in servants of this church. */
@@ -23,7 +24,7 @@ export default function Gate({ children }: { children: ReactNode }) {
     setBusy(false);
   };
 
-  if (phase === 'ready' && data) return <><DeskNav />{children}<MobileNav /></>;
+  if (phase === 'ready' && data) return <><DeskNav />{children}<MobileNav /><div className="sync-float mobile-only"><SyncBadge /></div></>;
 
   const body = (() => {
     if (phase === 'loading' || phase === 'ready') return <>

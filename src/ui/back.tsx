@@ -37,7 +37,7 @@ export function parentOf(path: string): string {
     [/^\/books\/[^/]+$/, '/books'],
     [/^\/(curriculum|books)$/, '/library'],
     [/^\/month(\/.*)?$/, '/ranking'],
-    [/^\/(levels|team|notify|backup|profile)$/, '/settings'],
+    [/^\/(levels|team|notify|backup|profile|changes)$/, '/settings'],
     [/^\/me\/books\/[^/]+$/, '/me/books'],
     [/^\/me\/profile\/edit$/, '/me/profile'],
     [/^\/me\/.+$/, '/me/home'],

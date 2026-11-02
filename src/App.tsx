@@ -29,6 +29,7 @@ import Dictionary from './screens/Dictionary';
 import Translate from './screens/Translate';
 import Reports from './screens/Reports';
 import Settings from './screens/Settings';
+import Changes from './screens/Changes';
 import { HistoryTracker } from './ui/back';
 import Ranking from './screens/Ranking';
 import MemberLogin from './member/Login';
@@ -92,6 +93,7 @@ export default function App() {
           <Route path="/team" element={s(<Team />)} />
           <Route path="/profile" element={s(<ServantProfile />)} />
           <Route path="/settings" element={s(<Settings />)} />
+          <Route path="/changes" element={s(<Changes />)} />
           <Route path="/notify" element={s(<Notify />)} />
           <Route path="/cards" element={n('members', <Cards />)} />
           <Route path="/dictionary" element={s(<Dictionary />)} />

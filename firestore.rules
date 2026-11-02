@@ -131,6 +131,15 @@ service cloud.firestore {
         allow write: if can('curriculum');
       }
 
+      // Who changed what: each servant's app adds an entry when it saves; only the lead and admin read the log.
+      match /changes/{id} {
+        allow read: if lead();
+        allow create: if servant() && request.resource.data.by == request.auth.uid && request.resource.data.items is list
+          && request.resource.data.items.size() <= 40 && request.resource.data.at is number;
+        allow update: if false;
+        allow delete: if admin();
+      }
+
       // Levels, terms and removing members are the lead's call.
       match /levels/{id} { allow read: if true; allow write: if lead(); }
       match /terms/{id} { allow read: if servant(); allow write: if lead(); }
