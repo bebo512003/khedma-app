@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useData, useIsLead, useStore } from '../data/store';
 import { count } from '../data/logic';
 import { renumber, repeatedCodes } from '../data/codes';
+import { BackButton } from '../ui/back';
 
 const people = (n: number) => count(n, 'مخدوم', 'مخدومين', 'مخدومين');
 
@@ -58,7 +59,7 @@ export default function MemberCodes() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/members" className="icon" aria-label="رجوع">→</Link><h1>ترقيم الأكواد</h1>
+        <BackButton /><h1>ترقيم الأكواد</h1>
       </div></header>
       <main className="main gutter">
         {done ? (

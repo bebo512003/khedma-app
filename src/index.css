@@ -410,6 +410,7 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .divider-t::before, .divider-t::after { content: ''; flex: 1; border-top: 1px dashed var(--line); }
 .card.before { opacity: .85; border-style: dashed; }
 .hymn-src { font-size: 13px; border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
+.coptic .csynax { display: grid; gap: 2px; }
 .coptic .csynax a { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .pts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
 .pts b { width: 100%; font-size: 14px; }
@@ -419,3 +420,7 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .menu-group { display: grid; gap: 6px; margin-bottom: 10px; }
 .menu-t { font-size: 12px; font-weight: 700; }
 .desknav .grp { display: inline-flex; flex-wrap: wrap; gap: 2px; padding-inline-start: 8px; margin-inline-start: 6px; border-inline-start: 1px solid rgba(250,246,239,.25); }
+
+/* Levels: drag handle and the row being dragged. */
+.drag { touch-action: none; cursor: grab; user-select: none; padding: 10px 6px; color: var(--muted); font-weight: 700; letter-spacing: -3px; }
+.li.dragging { background: var(--s1); border-radius: 12px; }

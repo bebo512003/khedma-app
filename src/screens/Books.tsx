@@ -4,6 +4,7 @@ import { currentTerm, uid } from '../data/logic';
 import { hasPages, pageUrl } from '../data/books';
 import PageImg from './PageImg';
 import PackCard from './PackCard';
+import { BackButton } from '../ui/back';
 
 /** The school's booklets. Each one's index is a level's curriculum for a term. */
 export default function Books() {
@@ -22,7 +23,7 @@ export default function Books() {
   return (
     <>
       <header className="top gutter"><div className="row between">
-        <div className="row"><Link to="/library" className="icon" aria-label="رجوع">→</Link><h1>الكتب</h1></div>
+        <div className="row"><BackButton /><h1>الكتب</h1></div>
         <Link to="/curriculum" className="btn" style={{ minHeight: 40 }}>المنهج</Link>
       </div></header>
       <main className="main gutter wide">

@@ -7,6 +7,7 @@ import FollowUpList from './FollowUpList';
 import SessionSummary from './SessionSummary';
 import Icon from '../ui/Icon';
 import { deleteRecording } from '../firebase/recordings';
+import { BackButton } from '../ui/back';
 
 const fmt = (ms = 0) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
@@ -42,7 +43,7 @@ export default function Summary() {
     <>
       <header className="top gutter">
         <div className="row between">
-          {!fresh && <button className="icon" onClick={() => nav(-1)} aria-label="رجوع"><Icon name="back" size={20} /></button>}
+          {!fresh && <BackButton />}
           <div className="grow"><h1>{fresh ? 'اتحفظت الحصة' : `حصة ${level?.name ?? ''}`}</h1>
             <div className="muted">{fresh ? `${level?.name} • ` : ''}{formatDay(s.date)}{hymn ? ` • ${hymn.nameAr}` : ''}</div></div>
           {edit && <Link to={`/sessions/${s.id}/edit`} className="icon" aria-label="تعديل الحصة"><Icon name="edit" size={20} /></Link>}

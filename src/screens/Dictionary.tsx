@@ -1,10 +1,11 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import '@fontsource/noto-sans-coptic/coptic-400.css';
 import { loadDictionary, search, scriptOf, type Hit } from '../data/dictionary';
 import CopticKeys from '../ui/CopticKeys';
 import { count } from '../data/logic';
 import { arabize } from '../data/arabize';
+import { BackButton } from '../ui/back';
 
 type Dict = Awaited<ReturnType<typeof loadDictionary>>;
 
@@ -26,7 +27,7 @@ export default function Dictionary({ back = '/', base = '' }: { back?: string; b
   return (
     <>
       <header className="top gutter">
-        <div className="row"><Link to={back} className="icon" aria-label="رجوع">→</Link><div><h1>القاموس القبطي</h1>
+        <div className="row"><BackButton to={back} /><div><h1>القاموس القبطي</h1>
           <div className="muted">{dict ? `${dict.entries.length.toLocaleString('en')} كلمة من 4 قواميس • كل اللهجات` : 'لحظة، بنجهّز القاموس…'}</div></div></div>
         <div className="seg" role="tablist">
           <button role="tab" aria-pressed>كلمة</button>

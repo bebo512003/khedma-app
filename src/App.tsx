@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { HashRouter, Link, Route, Routes } from 'react-router-dom';
+import { HashRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
 import { useCan } from './data/store';
 import type { Perm } from './data/types';
 import Gate from './screens/Gate';
@@ -29,6 +29,7 @@ import Dictionary from './screens/Dictionary';
 import Translate from './screens/Translate';
 import Reports from './screens/Reports';
 import Settings from './screens/Settings';
+import { HistoryTracker } from './ui/back';
 import Ranking from './screens/Ranking';
 import MemberLogin from './member/Login';
 import { OpenBook, OpenBooks, OpenHome, OpenHymn, OpenLibrary } from './screens/Open';
@@ -58,9 +59,11 @@ function Need({ p, children }: { p: Perm; children: ReactNode }) {
 export default function App() {
   return (
     <HashRouter>
+      <HistoryTracker />
       <div className="app">
         <Routes>
           <Route path="/" element={s(<Home />)} />
+          <Route path="/login" element={s(<Navigate to="/" replace />)} />
           <Route path="/session/:levelId" element={n('sessions', <SessionScreen />)} />
           <Route path="/summary/:sessionId" element={s(<Summary />)} />
           <Route path="/sessions" element={s(<Sessions />)} />

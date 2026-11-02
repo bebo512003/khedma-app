@@ -7,6 +7,7 @@ import { pdfToImages } from '../data/pdfPages';
 import PageImg from './PageImg';
 import type { Book } from '../data/types';
 import { pagesCount, safeUrl } from '../data/logic';
+import { BackButton } from '../ui/back';
 
 
 /** One booklet: its index (hymns with pages) drives the level's curriculum for its term. */
@@ -149,7 +150,7 @@ export default function BookPage() {
   return (
     <>
       <header className="top gutter"><div className="row between">
-        <div className="row"><Link to="/books" className="icon" aria-label="رجوع">→</Link>
+        <div className="row"><BackButton />
           <div><h1>{saved.title}</h1><div className="muted">{[level?.name, term?.name].filter(Boolean).join(' • ')}</div></div></div>
         {edit && <button className="btn" style={{ minHeight: 40 }} onClick={() => setDraft(saved)}>تعديل</button>}
       </div></header>

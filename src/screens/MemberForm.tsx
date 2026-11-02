@@ -6,6 +6,7 @@ import { newCode } from '../data/codes';
 import { RANKS, type Gender, type Member } from '../data/types';
 import { cancelled, shrinkPhoto as shrink } from '../data/photo';
 import { GRADES, MONTHS, contact, hashPin, levelForGrade, newPin, todayISO, uid, waLink } from '../data/logic';
+import { BackButton, goTo } from '../ui/back';
 
 export default function MemberForm() {
   const { memberId } = useParams();
@@ -45,7 +46,7 @@ export default function MemberForm() {
       const free = clean.account || clean.pinHash || !d.members.some(x => x.code === clean.code) ? clean : { ...clean, code: newCode(d, clean.levelId) };
       return { ...d, members: [...d.members, free], nextCode: d.nextCode + 1 };
     });
-    nav(existing ? `/members/${clean.id}` : '/members', { replace: true });
+    goTo(nav, existing ? `/members/${clean.id}` : '/members');
   };
   /** New PIN: shown once to the servant, stored only as a hash. */
   const makePin = async () => {
@@ -73,13 +74,13 @@ export default function MemberForm() {
   const remove = () => {
     update(d => ({ ...d, members: d.members.filter(x => x.id !== m.id) }));
     if (cloud) forgetLogins([m]);
-    nav('/members', { replace: true });
+    goTo(nav, '/members');
   };
 
   return (
     <>
       <header className="top gutter"><div className="row between">
-        <div className="row"><Link to={existing ? `/members/${m.id}` : '/members'} className="icon" aria-label="رجوع">→</Link><h1>{existing ? `تعديل ${m.name}` : 'مخدوم جديد'}</h1></div>
+        <div className="row"><BackButton /><h1>{existing ? `تعديل ${m.name}` : 'مخدوم جديد'}</h1></div>
         <span className="tag tag-ex">كود {m.code}</span>
       </div></header>
       <main className="main gutter">

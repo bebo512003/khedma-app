@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { monthName, shiftMonth, thisMonth } from '../data/monthReport';
 import { medal, pointsWhy, monthBreakdown, POINTS, ranking, titled } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
-import Icon from '../ui/Icon';
+import { BackButton } from '../ui/back';
 
 const KEY = 'khedma.rankLevel';
 
@@ -12,7 +12,6 @@ const KEY = 'khedma.rankLevel';
 export default function Ranking() {
   const [data] = useData();
   const allowed = useAllowedLevel();
-  const nav = useNavigate();
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const [levelId, setLevelId] = useState(() => { try { return localStorage.getItem(KEY) ?? ''; } catch { return ''; } });
   // Early in a month with no sessions yet, open on last month's final ranking instead of a list of zeros.
@@ -38,7 +37,7 @@ export default function Ranking() {
     <>
       <header className="top gutter"><div className="row between">
         <div className="row">
-          <button className="icon" onClick={() => nav(-1)} aria-label="رجوع"><Icon name="back" size={20} /></button>
+          <BackButton />
           <div><h1>ترتيب الدارسين</h1><div className="muted">{monthName(month)}{current ? ' • الترتيب بيتصفّر أول الشهر الجاي' : ''}</div></div>
         </div>
       </div></header>

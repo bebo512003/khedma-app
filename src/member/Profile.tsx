@@ -5,6 +5,7 @@ import { GRADES } from '../data/logic';
 import { cancelled, shrinkPhoto } from '../data/photo';
 import { useView } from './Layout';
 import { useSaveProfile } from './session';
+import { BackButton } from '../ui/back';
 
 /** The member's own photo and details. */
 export default function MemberProfile() {
@@ -38,7 +39,7 @@ export default function MemberProfile() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/me/profile" className="icon" aria-label="رجوع">→</Link><h1>بياناتي</h1>
+        <BackButton /><h1>بياناتي</h1>
       </div></header>
       <main className="main gutter">
         <div className="row" style={{ gap: 14 }}>

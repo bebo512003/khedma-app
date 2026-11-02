@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { formatDay, formatTime, isoDate } from '../data/logic';
 import PushToggle from '../screens/PushToggle';
 import Icon from '../ui/Icon';
 import { useNotes } from './Layout';
+import { BackButton } from '../ui/back';
 
 const ICON = { review: 'mic', summary: 'clock', note: 'heart' } as const;
 
 /** The member's notifications: servant replies on recitations, session summaries and notes. Opening it clears the counter. */
 export default function MemberNotifications() {
   const { notes, seen, markSeen } = useNotes();
-  const nav = useNavigate();
   // Keep what was new when the screen opened highlighted while the member reads it.
   const [before] = useState(seen);
   useEffect(() => { markSeen(); }, [notes.length]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -18,7 +18,7 @@ export default function MemberNotifications() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <button className="icon" onClick={() => nav(-1)} aria-label="رجوع"><Icon name="back" size={20} /></button>
+        <BackButton />
         <div><h1>الإشعارات</h1><div className="muted">ردود الخدام وملخصات الحصص في آخر شهر</div></div>
       </div></header>
       <main className="main gutter">

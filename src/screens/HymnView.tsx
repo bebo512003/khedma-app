@@ -1,17 +1,17 @@
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useData, useCan } from '../data/store';
 import { bookOf, entryPages, pagesLabel } from '../data/books';
 import { currentTerm, curriculumKey, safeUrl } from '../data/logic';
 import HymnText from './HymnText';
 import BookPages from './BookPages';
 import Icon from '../ui/Icon';
+import { BackButton } from '../ui/back';
 
 /** A hymn as a servant reads or prays it: text, booklet pages and recording. Editing is behind the edit button. */
 export default function HymnView() {
   const { hymnId } = useParams();
   const [data] = useData();
   const edit = useCan('curriculum');
-  const nav = useNavigate();
   const h = data.hymns.find(x => x.id === hymnId);
   if (!h) return <main className="main gutter"><div className="card">اللحن ده مش موجود. <Link to="/library">ارجع للمكتبة</Link></div></main>;
   const term = currentTerm(data);
@@ -25,7 +25,7 @@ export default function HymnView() {
     <>
       <header className="top gutter"><div className="row between">
         <div className="row grow">
-          <button className="icon" onClick={() => nav(-1)} aria-label="رجوع"><Icon name="back" size={20} /></button>
+          <BackButton />
           <div className="grow"><h1>{h.nameAr}</h1>{h.nameCoptic && <div className="muted coptic-font">{h.nameCoptic}</div>}</div>
         </div>
         {edit ? <Link to={`/hymns/${h.id}/edit`} className="icon" aria-label="تعديل"><Icon name="edit" size={20} /></Link> : <span />}

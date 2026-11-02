@@ -1,3 +1,4 @@
+import { BackButton } from '../ui/back';
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
@@ -119,7 +120,7 @@ export default function ImportMembers() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/members" className="icon" aria-label="رجوع">→</Link><h1>إضافة مخدومين من Excel</h1>
+        <BackButton /><h1>إضافة مخدومين من Excel</h1>
       </div></header>
       <main className="main gutter wide">
         {done && (

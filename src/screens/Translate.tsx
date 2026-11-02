@@ -6,6 +6,7 @@ import CopticKeys from '../ui/CopticKeys';
 import { loadTranslator, loadVerses, translate, type Match, type Translator, type WordResult } from '../data/translator';
 import { arabize } from '../data/arabize';
 import { loadArabicLexicon, originOf, toCoptic, type ArabicLexicon, type CWord } from '../data/toCoptic';
+import { BackButton } from '../ui/back';
 
 const EXAMPLE = 'Ⲡⲓⲭⲣⲓⲥⲧⲟⲥ ⲁϥⲙⲓⲥⲓ ϧⲉⲛ Ⲃⲏⲑⲗⲉⲉⲙ';
 const EXAMPLE_AR = 'قام المسيح من الأموات';
@@ -53,7 +54,7 @@ export default function Translate({ base = '' }: { base?: string }) {
   return (
     <>
       <header className="top gutter">
-        <div className="row"><Link to={base || '/'} className="icon" aria-label="رجوع">→</Link><div><h1>ترجمة جملة</h1>
+        <div className="row"><BackButton /><div><h1>ترجمة جملة</h1>
           <div className="muted">{script === 'arabic' ? 'عربي ← قبطي بحيري' : script === 'coptic' ? 'قبطي بحيري ← عربي' : 'قبطي بحيري ⇄ عربي'}</div></div></div>
         <div className="seg" role="tablist">
           <button role="tab" aria-pressed={false} onClick={() => nav(`${base}/dictionary`)}>كلمة</button>

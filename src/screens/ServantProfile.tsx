@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../data/store';
 import { cancelled, shrinkPhoto } from '../data/photo';
 import { RANKS, SERVANT_PROFILE_KEYS, type Servant } from '../data/types';
+import { BackButton, goTo } from '../ui/back';
 
 type Profile = Pick<Servant, typeof SERVANT_PROFILE_KEYS[number]>;
 
@@ -24,26 +25,27 @@ export default function ServantProfile() {
   const save = async () => {
     if (!p.name?.trim()) { setError('اكتب اسمك.'); return; }
     if (p.phone?.trim() && !/^\+?[\d\s-]{8,15}$/.test(p.phone.trim())) { setError('رقم الموبايل مش مظبوط.'); return; }
+    if (p.since?.trim() && !/^(19|20)\d\d$/.test(p.since.trim())) { setError('اكتب سنة الخدمة 4 أرقام، زي 2018.'); return; }
     setBusy(true); setError('');
     try {
       const [{ servantFb }, { updateDoc, deleteField }, paths] = await Promise.all([import('../firebase/app'), import('firebase/firestore'), import('../firebase/paths')]);
       // Empty fields are removed, so the rules see only the keys a servant may change.
       const clean = Object.fromEntries(SERVANT_PROFILE_KEYS.map(k => [k, typeof p[k] === 'string' && p[k]!.trim() ? p[k]!.trim() : deleteField()]));
       await updateDoc(paths.ref(servantFb().db, 'servants', servant.uid), clean);
-      nav(-1);
+      goTo(nav, '/settings');
     } catch { setError('مقدرناش نحفظ دلوقتي. اتأكد إن معاك نت وجرّب تاني.'); }
     setBusy(false);
   };
-  const field = (key: 'name' | 'phone' | 'birthdate', label: string, type = 'text') => (
+  const field = (key: 'name' | 'phone' | 'birthdate' | 'since' | 'work' | 'favHymn', label: string, type = 'text', placeholder?: string) => (
     <label className="field" htmlFor={key}><span>{label}</span>
       <input id={key} className="input" type={type} dir={type === 'tel' ? 'ltr' : undefined} inputMode={type === 'tel' ? 'tel' : undefined}
-        value={p[key] ?? ''} onChange={e => set({ [key]: e.target.value })} /></label>
+        placeholder={placeholder} value={p[key] ?? ''} onChange={e => set({ [key]: e.target.value })} /></label>
   );
 
   return (
     <>
       <header className="top gutter"><div className="row">
-        <button className="icon" onClick={() => nav(-1)} aria-label="رجوع">→</button><h1>بروفايلي</h1>
+        <BackButton /><h1>بروفايلي</h1>
       </div></header>
       <main className="main gutter">
         <div className="row" style={{ gap: 14 }}>
@@ -58,10 +60,18 @@ export default function ServantProfile() {
         </div>
         {field('name', 'اسمك')}
         {field('phone', 'موبايلك (واتساب)', 'tel')}
-        {field('birthdate', 'تاريخ ميلادك', 'date')}
-        <div className="field"><span>الرتبة (اختياري)</span><div className="chips">
-          {RANKS.map(r => <button key={r} className="chip" aria-pressed={p.rank === r} onClick={() => set({ rank: p.rank === r ? undefined : r })}>{r}</button>)}
+        <div className="field"><span>النوع</span><div className="chips">
+          <button className="chip" aria-pressed={p.gender !== 'f'} onClick={() => set({ gender: 'm' })}>خادم</button>
+          {/* Girls have no deacon rank, so choosing خادمة clears it. */}
+          <button className="chip" aria-pressed={p.gender === 'f'} onClick={() => set({ gender: 'f', rank: undefined })}>خادمة</button>
         </div></div>
+        {field('birthdate', 'تاريخ ميلادك', 'date')}
+        {p.gender !== 'f' && <div className="field"><span>الرتبة (اختياري)</span><div className="chips">
+          {RANKS.map(r => <button key={r} className="chip" aria-pressed={p.rank === r} onClick={() => set({ rank: p.rank === r ? undefined : r })}>{r}</button>)}
+        </div></div>}
+        {field('since', 'بتخدم من سنة (اختياري)', 'text', 'مثلاً: 2018')}
+        {field('work', 'بتدرس أو بتشتغل إيه؟ (اختياري)', 'text', 'مثلاً: هندسة، أو مدرّس')}
+        {field('favHymn', 'لحنك المفضل (اختياري)', 'text', 'مثلاً: أبؤورو')}
         <label className="field" htmlFor="about"><span>نبذة (اختياري)</span>
           <textarea id="about" style={{ minHeight: 80 }} maxLength={300} placeholder="مثلاً: بخدم ألحان شباب، ومسؤول عن الافتقاد" value={p.about ?? ''} onChange={e => set({ about: e.target.value })} /></label>
         <div className="note">الفريق كله بيشوف صورتك واسمك وموبايلك ونبذتك في صفحة الفريق. المستويات والصلاحيات بيحددها الخادم المسؤول.</div>
@@ -69,7 +79,7 @@ export default function ServantProfile() {
         {servant.login && <ChangePassword />}
       </main>
       <div className="bar gutter"><div>
-        <button className="btn" onClick={() => nav(-1)}>إلغاء</button>
+        <button className="btn" onClick={() => goTo(nav, '/settings')}>إلغاء</button>
         <button className="btnp grow" onClick={save} disabled={busy}>احفظ</button>
       </div></div>
     </>

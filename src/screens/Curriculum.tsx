@@ -7,6 +7,7 @@ import PageImg from './PageImg';
 import PackCard from './PackCard';
 import type { Term } from '../data/types';
 import Duplicates from './Duplicates';
+import { BackButton } from '../ui/back';
 
 export default function Curriculum() {
   const [data, update] = useData();
@@ -44,7 +45,7 @@ export default function Curriculum() {
     <>
       <header className="top gutter">
         <div className="row between">
-          <div className="row"><Link to="/library" className="icon" aria-label="رجوع">→</Link><h1>المنهج</h1></div>
+          <div className="row"><BackButton /><h1>المنهج</h1></div>
           <div className="row" style={{ gap: 6 }}><Link to="/books" className="btn" style={{ minHeight: 40 }}>الكتب</Link><Link to="/levels" className="btn" style={{ minHeight: 40 }}>المستويات</Link></div>
         </div>
         <div className="chips">

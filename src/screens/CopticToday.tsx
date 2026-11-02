@@ -43,8 +43,10 @@ export default function CopticToday({ plain = false }: { plain?: boolean }) {
           {t.fast && <span className="ctag">{t.fast}</span>}
         </div>
         <div className="sub csynax">
-          <b>السنكسار: </b>{synax?.titles.length ? synax.titles.join(' • ') : 'تذكارات النهارده'}{' '}
-          <a href={synax?.url ?? SYNAX_PAGE} target="_blank" rel="noopener">السيرة ↗</a>
+          <b>السنكسار</b>
+          {/* One remembrance per line, then the link to read them in full. */}
+          {(synax?.titles.length ? synax.titles : ['تذكارات النهارده']).map(t => <div key={t}>• {t}</div>)}
+          <a href={synax?.url ?? SYNAX_PAGE} target="_blank" rel="noopener">اقرا السيرة ↗</a>
         </div>
       </div>
       {next && <div className="sub cnext">الجاي: <b>{next.occasion.name}</b> {inDays(next.days)} ({formatDay(isoDate(next.occasion.start))})</div>}

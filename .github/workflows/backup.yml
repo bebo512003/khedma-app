@@ -1,0 +1,38 @@
+name: Weekly backup
+
+# Every Friday night (Cairo): a full copy of the school's data, kept 90 days as this run's artifact (private to the repo).
+on:
+  schedule:
+    - cron: '0 21 * * 5'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: scripts/notify
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/notify
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: scripts/notify/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Copy the data
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo "::error::No FIREBASE_SERVICE_ACCOUNT secret."; exit 1; fi
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json" node backup.mjs
+          rm -f "$RUNNER_TEMP/sa.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backup
+          path: scripts/notify/out/*.json
+          retention-days: 90

@@ -8,6 +8,7 @@ import Practice from '../ui/Practice';
 import { loadRecording } from '../firebase/recordings';
 import { formatDay } from '../data/logic';
 import Submit from './Submit';
+import { BackButton } from '../ui/back';
 
 export default function MemberHymn() {
   const { hymnId } = useParams();
@@ -19,7 +20,7 @@ export default function MemberHymn() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/me/home" className="icon" aria-label="رجوع">→</Link>
+        <BackButton />
         <div><h1>{h.nameAr}</h1>{h.nameCoptic && <div className="muted">{h.nameCoptic}</div>}</div>
       </div></header>
       <main className="main gutter">

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { useData, useStore } from '../data/store';
 import { hashPin, newPin, titled } from '../data/logic';
 import type { Member } from '../data/types';
 import logo from '../logo.png';
+import { BackButton } from '../ui/back';
 
 /** The QR opens the member login with the code filled in. It holds the code only; the PIN is still needed. */
 export const loginUrl = (code: string) => `${location.origin}${location.pathname}#/me?code=${code}`;
@@ -108,7 +109,7 @@ export default function Cards() {
     <>
       <header className="top gutter no-print">
         <div className="row between">
-          <div className="row"><Link to={one ? `/members/${one}` : '/members'} className="icon" aria-label="رجوع">→</Link><h1>كروت QR</h1></div>
+          <div className="row"><BackButton to={one ? `/members/${one}` : '/members'} /><h1>كروت QR</h1></div>
           <div className="row">
             <button className="btn" style={{ minHeight: 44 }} onClick={saveImages} disabled={!members.length || !!saving}>{saving ? `${saving.n} من ${saving.total}` : one ? 'نزّله صورة' : 'نزّل كل كارت صورة'}</button>
             <button className="btnp" style={{ minHeight: 44 }} onClick={() => window.print()} disabled={!members.length}>اطبع</button>

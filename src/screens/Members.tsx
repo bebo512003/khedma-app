@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData, useCan, useIsLead, useStore } from '../data/store';
 import { absenceStreak, birthdayWhen, count, fold, needsFollowUp, upcomingBirthdays, titled } from '../data/logic';
 import { forgetLogins } from '../data/forgetLogins';
+import { BackButton } from '../ui/back';
 
 const people = (n: number) => count(n, 'مخدوم', 'مخدومين', 'مخدومين');
 
@@ -44,7 +45,7 @@ export default function Members() {
     <>
       <header className="top gutter">
         <div className="row between">
-          <div className="row"><Link to="/" className="icon" aria-label="رجوع">→</Link><div><h1>المخدومين</h1><div className="muted">{data.members.length} مخدوم</div></div></div>
+          <div className="row"><BackButton /><div><h1>المخدومين</h1><div className="muted">{data.members.length} مخدوم</div></div></div>
           {edit && <div className="row" style={{ gap: 6 }}>
             <button className="btn" style={{ minHeight: 44 }} aria-pressed={picking} onClick={() => picking ? stop() : setPicking(true)}>{picking ? 'إلغاء' : 'تحديد'}</button>
             {!picking && <Link to="/members/new" className="btnp" style={{ minHeight: 44, whiteSpace: 'nowrap' }}>+ مخدوم</Link>}

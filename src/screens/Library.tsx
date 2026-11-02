@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useData, useCan } from '../data/store';
 import { currentTerm, curriculumKey } from '../data/logic';
 import Duplicates from './Duplicates';
+import { BackButton } from '../ui/back';
 
 export default function Library() {
   const [data] = useData();
@@ -20,7 +21,7 @@ export default function Library() {
     <>
       <header className="top gutter">
         <div className="row between">
-          <div className="row"><Link to="/" className="icon" aria-label="رجوع">→</Link><h1>مكتبة الألحان</h1></div>
+          <div className="row"><BackButton /><h1>مكتبة الألحان</h1></div>
           <div className="row" style={{ gap: 6 }}><Link to="/books" className="btn" style={{ minHeight: 40 }}>الكتب</Link><Link to="/curriculum" className="btn" style={{ minHeight: 40 }}>المنهج</Link></div>
         </div>
         <input className="input" type="search" placeholder="دوّر على لحن" value={q} onChange={e => setQ(e.target.value)} aria-label="بحث" />

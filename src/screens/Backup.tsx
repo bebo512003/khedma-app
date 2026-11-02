@@ -4,6 +4,7 @@ import { useData, useIsLead } from '../data/store';
 import { STATUS_LABELS, CRITERIA, type AppData } from '../data/types';
 import { formatTime, sessionRecordings, todayISO } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
+import { BackButton } from '../ui/back';
 
 const ATT = { p: 'حضر', e: 'اعتذر', a: 'غاب' } as const;
 const LISTS = ['levels', 'members', 'hymns', 'books', 'terms', 'sessions'] as const;
@@ -97,6 +98,14 @@ export default function Backup() {
   // Everything, as the app keeps it (recordings and book pages stay online; they're too big for this file).
   const full = () => download(new Blob([JSON.stringify(data)], { type: 'application/json' }), `نسخة كاملة ${todayISO()}.json`);
 
+  /** On phones: the share sheet, where «Drive» saves the file straight into Google Drive. */
+  const canShare = (() => { try { return !!navigator.canShare?.({ files: [new File(['{}'], 'x.json', { type: 'application/json' })] }); } catch { return false; } })();
+  const toDrive = async () => {
+    const file = new File([JSON.stringify(data)], `backup-${todayISO()}.json`, { type: 'application/json' });
+    try { await navigator.share({ files: [file], title: `نسخة كاملة ${todayISO()}` }); }
+    catch (e) { if ((e as Error).name !== 'AbortError') full(); }
+  };
+
   const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; e.target.value = '';
     if (!f) return;
@@ -118,7 +127,7 @@ export default function Backup() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/" className="icon" aria-label="رجوع">→</Link><h1>نسخة احتياطية</h1>
+        <BackButton /><h1>نسخة احتياطية</h1>
       </div></header>
       <main className="main gutter">
         <div className="card">
@@ -130,7 +139,13 @@ export default function Backup() {
         <div className="card">
           <h2>نسخة كاملة</h2>
           <div className="note">ملف فيه كل حاجة زي ما التطبيق شايلها، عشان لو احتجنا نرجّع البيانات. احفظه في مكان أمين (فيه أرقام موبايلات وعناوين). التسجيلات الصوتية وصفحات الكتب مش فيه لأنها كبيرة، وهي متخزنة أونلاين.</div>
+          {canShare && <button className="btnp" onClick={toDrive}>احفظها على جوجل درايف</button>}
+          {canShare && <div className="muted">هيفتحلك قايمة المشاركة، اختار منها «Drive».</div>}
           <button className="btn" onClick={full}>نزّل النسخة الكاملة</button>
+        </div>
+        <div className="card">
+          <h2>نسخة تلقائية كل أسبوع</h2>
+          <div className="note">كل جمعة بالليل بتتعمل نسخة كاملة لوحدها على السيرفر وبتتحفظ 3 شهور، حتى لو محدش فتح الأبلكيشن. لو احتجتها، اطلبها من اللي بيدير الأبلكيشن (Claude) وهو يجيبهالك.</div>
         </div>
         <div className="card">
           <h2>استرجاع نسخة</h2>
@@ -146,7 +161,7 @@ export default function Backup() {
           )}
           {msg && <div className="note">{msg}</div>}
         </div>
-        <div className="note">نصيحة: نزّل نسخة كل شهر، أو قبل أي تغيير كبير زي بداية ترم جديد.</div>
+        <div className="note">نصيحة: احفظ نسخة على درايف قبل أي تغيير كبير زي بداية ترم جديد.</div>
       </main>
     </>
   );

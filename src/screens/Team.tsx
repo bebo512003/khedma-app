@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useData, useStore } from '../data/store';
 import { DEFAULT_PERMS, PERMS, ROLE_LABELS, type Invite, type Perm, type Role, type Servant } from '../data/types';
 import { waLink } from '../data/logic';
+import { BackButton } from '../ui/back';
 
 /** Alphabetical by the name itself, so تاسوني and أبونا don't all bunch together. */
 const byName = (n: string) => n.trim().replace(/^(تاسوني|أبونا|ابونا|القمص|القس)\s+/, '');
@@ -132,7 +133,7 @@ export default function Team() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/" className="icon" aria-label="رجوع">→</Link><h1>الفريق</h1>
+        <BackButton /><h1>الفريق</h1>
       </div></header>
       <main className="main gutter">
         <div className="card"><h2>الخدام</h2><div className="list">
@@ -141,8 +142,9 @@ export default function Team() {
               <span className="av">{s.photo ? <img src={s.photo} alt="" /> : s.name[0]}</span>
               <div className="grow">
                 <b>{s.name}{s.uid === me.uid ? ' (أنت)' : ''}</b>
-                <div className="muted">{[ROLE_LABELS[s.role] ?? 'خادم', s.rank, levelNames(s.levelIds), permNames(s)].filter(Boolean).join(' • ')}</div>
+                <div className="muted">{[ROLE_LABELS[s.role] ?? 'خادم', s.gender === 'f' ? undefined : s.rank, levelNames(s.levelIds), permNames(s)].filter(Boolean).join(' • ')}</div>
                 {s.about && <div className="muted">{s.about}</div>}
+                {(s.since || s.work || s.favHymn) && <div className="muted">{[s.since && `بيخدم من ${s.since}`, s.work, s.favHymn && `لحنه المفضل: ${s.favHymn}`].filter(Boolean).join(' • ')}</div>}
               </div>
               <div className="row li-actions">
               {s.phone && s.uid !== me.uid && <a className="btn" style={{ minHeight: 36 }} href={waLink(s.phone, '')} target="_blank" rel="noopener noreferrer">واتساب</a>}

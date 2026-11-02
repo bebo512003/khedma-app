@@ -5,6 +5,7 @@ import { CRITERIA, STATUS_LABELS } from '../data/types';
 import { currentTerm, hymnsCount, isoDate, sessionsCount, titled } from '../data/logic';
 import { buildReport, round1, type MemberRow } from '../data/report';
 import { download, xlsxBlob } from '../data/xlsx';
+import { BackButton } from '../ui/back';
 
 type Period = 'month' | 'last' | 'term';
 type Sort = 'name' | 'rate' | 'avg' | 'points';
@@ -51,7 +52,7 @@ export default function Reports() {
   return (
     <>
       <header className="top gutter">
-        <div className="row"><Link to="/" className="icon" aria-label="رجوع">→</Link><div><h1>التقارير</h1><div className="muted">{level?.name} • {range.label}</div></div></div>
+        <div className="row"><BackButton /><div><h1>التقارير</h1><div className="muted">{level?.name} • {range.label}</div></div></div>
         <div className="chips">{levels.map(l => <button key={l.id} className="chip" aria-pressed={levelId === l.id} onClick={() => setLevelId(l.id)}>{l.name}</button>)}</div>
         <div className="seg">
           <button aria-pressed={period === 'month'} onClick={() => setPeriod('month')}>الشهر ده</button>

@@ -8,6 +8,7 @@ import { currentTerm, safeUrl, uid } from '../data/logic';
 import type { Hymn } from '../data/types';
 import HymnText from './HymnText';
 import { unifyCoptic } from '../data/unicodeCoptic';
+import { BackButton, goTo } from '../ui/back';
 
 const PRAYERS = ['القداس', 'التسبحة', 'رفع البخور', 'الأجبية', 'الدورات', 'المناسبات'];
 
@@ -31,7 +32,7 @@ export default function HymnForm() {
     update(d => existing
       ? { ...d, hymns: d.hymns.map(x => x.id === clean.id ? clean : x) }
       : { ...d, hymns: [...d.hymns, clean] });
-    nav(existing ? `/hymns/${clean.id}` : '/library', { replace: true });
+    goTo(nav, existing ? `/hymns/${clean.id}` : '/library');
   };
   const remove = () => {
     update(d => ({
@@ -40,7 +41,7 @@ export default function HymnForm() {
       curricula: Object.fromEntries(Object.entries(d.curricula).map(([k, ids]) => [k, ids.filter(id => id !== h.id)])),
       books: d.books.map(b => b.entries.some(e => e.hymnId === h.id) ? { ...b, entries: b.entries.filter(e => e.hymnId !== h.id) } : b),
     }));
-    nav('/library', { replace: true });
+    goTo(nav, '/library');
   };
 
   const text = (key: 'nameAr' | 'nameCoptic' | 'when' | 'occasion', label: string, placeholder = '') => (
@@ -64,7 +65,7 @@ export default function HymnForm() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to={existing ? `/hymns/${h.id}` : '/library'} replace className="icon" aria-label="رجوع">→</Link><h1>{existing ? `تعديل ${h.nameAr}` : 'لحن جديد'}</h1>
+        <BackButton /><h1>{existing ? `تعديل ${h.nameAr}` : 'لحن جديد'}</h1>
       </div></header>
       <main className="main gutter">
         {inBook && <Link to={`/books/${inBook.book.id}`} className="note" style={{ textDecoration: 'none' }}>📖 في كتاب {inBook.book.title}{inBook.entry.from ? ` • ${pagesLabel(inBook.entry)}` : ''}</Link>}

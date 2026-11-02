@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useStore } from '../data/store';
 import PushToggle from './PushToggle';
 import Icon from '../ui/Icon';
 import { useServantNotes } from './servantNotes';
+import { BackButton } from '../ui/back';
 
 /** The servant's bell: every alert in one list, urgent ones first. Opening it clears the counter. */
 export default function ServantNotifications() {
   const { notes, seen, markSeen } = useServantNotes();
   const { cloud } = useStore();
-  const nav = useNavigate();
   // Keep what was new when the screen opened highlighted while the servant reads it.
   const [before] = useState(seen);
   useEffect(() => { markSeen(); }, [notes.length]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -18,7 +18,7 @@ export default function ServantNotifications() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <button className="icon" onClick={() => nav(-1)} aria-label="رجوع"><Icon name="back" size={20} /></button>
+        <BackButton />
         <div><h1>الإشعارات</h1><div className="muted">كل اللي مستنيك في مستوياتك</div></div>
       </div></header>
       <main className="main gutter">

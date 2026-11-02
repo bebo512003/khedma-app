@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useData, useStore } from '../data/store';
 import { DAY_NAMES, DEFAULT_NOTIFY, HYMNS_TAG, hourLabel, newReminder, withDefaults, type CustomReminder, type NotifySettings, type Reminder } from '../data/notify';
 import { todayISO } from '../data/logic';
 import PushToggle from './PushToggle';
+import { BackButton } from '../ui/back';
 
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 7);
 
@@ -12,7 +12,6 @@ export default function Notify() {
   const { servant } = useStore();
   const [data] = useData();
   const levels = [...(data?.levels ?? [])].sort((a, b) => a.order - b.order);
-  const nav = useNavigate();
   const lead = !servant || servant.role === 'lead' || servant.role === 'admin';
   const [s, setS] = useState<NotifySettings | null>(null);
   const [log, setLog] = useState<Record<string, string>>({});
@@ -90,7 +89,7 @@ export default function Notify() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <button className="icon" onClick={() => nav(-1)} aria-label="رجوع">→</button><h1>التنبيهات</h1>
+        <BackButton /><h1>التنبيهات</h1>
       </div></header>
       <main className="main gutter wide">
         <PushToggle who="servant" always />

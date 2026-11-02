@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useCan } from '../data/store';
 import { STATUS_LABELS, type HymnStatus } from '../data/types';
 import {
   absenceStreak, contact, formatTime, isLate, lateBy, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, pointsWhy, ranking, sessionPoints,
   sessionAverage, todayISO, waLink, yearsCount, MONTHS, titled } from '../data/logic';
 import Icon from '../ui/Icon';
+import { BackButton } from '../ui/back';
 
 const age = (birthdate: string) => {
   const [y, m, d] = birthdate.split('-').map(Number);
@@ -20,7 +21,6 @@ export default function MemberProfile() {
   const { memberId } = useParams();
   const [data, update] = useData();
   const can = useCan('members'), allowed = useAllowedLevel();
-  const nav = useNavigate();
   const [tab, setTab] = useState<Tab>('hymns');
   const m = data.members.find(x => x.id === memberId);
   if (!m) return <main className="main gutter"><div className="card">المخدوم ده مش موجود. <Link to="/members">ارجع للمخدومين</Link></div></main>;
@@ -48,7 +48,7 @@ export default function MemberProfile() {
     <>
       <header className="top gutter">
         <div className="row between">
-          <button className="icon" onClick={() => nav(-1)} aria-label="رجوع"><Icon name="back" size={20} /></button>
+          <BackButton />
           <div className="row" style={{ gap: 8 }}>
             {c.phone && <a className="icon" href={waLink(c.phone, '')} target="_blank" rel="noopener noreferrer" aria-label="واتساب"><Icon name="whatsapp" size={20} /></a>}
             <Link to={`/cards?member=${m.id}`} className="icon" aria-label="كارت QR"><Icon name="qr" size={20} /></Link>

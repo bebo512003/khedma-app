@@ -6,8 +6,11 @@ import App from './App';
 import { StoreProvider } from './data/store';
 import Crash from './screens/Crash';
 import { applyTheme, loadTheme } from './theme';
+import { applySize, loadSize, openStartPage } from './prefs';
 
 applyTheme(loadTheme());
+applySize(loadSize());
+openStartPage();
 registerSW({ immediate: true });
 
 // Emulator only: lets automated tests sign in as a Google servant without a real Google popup.

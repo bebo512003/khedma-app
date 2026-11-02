@@ -7,6 +7,7 @@ const photos = (n: number) => n === 1 ? 'صورة واحدة' : count(n, 'صور
 import { matchName } from '../data/matchName';
 import { cropSquare } from '../ui/Cropper';
 import { cancelled } from '../data/photo';
+import { BackButton } from '../ui/back';
 
 const OUT = 256;
 
@@ -74,7 +75,7 @@ export default function MemberPhotos() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/members" className="icon" aria-label="رجوع">→</Link><h1>صور المخدومين</h1>
+        <BackButton /><h1>صور المخدومين</h1>
       </div></header>
       <main className="main gutter wide">
         {done > 0 && <div className="card span"><h2>✓ اتحطت {photos(done)}</h2><Link to="/members" className="btn">المخدومين</Link></div>}

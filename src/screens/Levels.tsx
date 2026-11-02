@@ -1,15 +1,19 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useState, type PointerEvent } from 'react';
 import { useData, useIsLead } from '../data/store';
 import { uid } from '../data/logic';
 import type { Level } from '../data/types';
+import { BackButton } from '../ui/back';
 
 export default function Levels() {
   const [data, update] = useData();
-  const levels = [...data.levels].sort((a, b) => a.order - b.order);
+  const sorted = [...data.levels].sort((a, b) => a.order - b.order);
+  /** While dragging: the order on screen, saved when the finger lifts. */
+  const [dragOrder, setDragOrder] = useState<string[] | null>(null);
+  const [dragging, setDragging] = useState('');
+  const listRef = useRef<HTMLDivElement>(null);
+  const levels = dragOrder ? dragOrder.map(id => sorted.find(l => l.id === id)!).filter(Boolean) : sorted;
   const [editing, setEditing] = useState<Level | null>(null);
   const lead = useIsLead();
-  const nav = useNavigate();
 
   const save = () => {
     if (!editing || !editing.name.trim()) return;
@@ -34,19 +38,44 @@ export default function Levels() {
     setEditing(null); setSure(false);
   };
 
+  const startDrag = (e: PointerEvent, id: string) => {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setDragging(id); setDragOrder(sorted.map(l => l.id));
+  };
+  const moveDrag = (e: PointerEvent) => {
+    if (!dragging || !dragOrder || !listRef.current) return;
+    const rows = [...listRef.current.querySelectorAll<HTMLElement>('[data-level]')];
+    const to = rows.findIndex(r => { const b = r.getBoundingClientRect(); return e.clientY < b.top + b.height / 2; });
+    const next = dragOrder.filter(x => x !== dragging);
+    const at = to < 0 ? next.length : Math.min(to, next.length);
+    next.splice(at, 0, dragging);
+    if (next.join() !== dragOrder.join()) setDragOrder(next);
+  };
+  const endDrag = () => {
+    if (dragOrder && dragOrder.join() !== sorted.map(l => l.id).join())
+      update(d => ({ ...d, levels: d.levels.map(l => ({ ...l, order: dragOrder.indexOf(l.id) + 1 })) }));
+    setDragging(''); setDragOrder(null);
+  };
+
   return (
     <>
       <header className="top gutter"><div className="row">
-        <button className="icon" onClick={() => nav(-1)} aria-label="رجوع">→</button><h1>المستويات</h1>
+        <BackButton /><h1>المستويات</h1>
       </div></header>
       <main className="main gutter">
-        <div className="card"><div className="list">
+        <div className="card"><div className="list" ref={listRef}>
           {levels.map(l => (
-            <button key={l.id} className="li" style={{ background: 'none', border: 0, borderBottom: '1px solid var(--line)', textAlign: 'right' }} onClick={() => lead && setEditing(l)}>
-              <div className="grow"><b>{l.name}</b><div className="muted">{l.grades} • {count(l.id)} مخدوم</div></div>{lead && <span className="muted">تعديل</span>}
-            </button>
+            <div key={l.id} data-level className={`li${dragging === l.id ? ' dragging' : ''}`} style={{ borderBottom: '1px solid var(--line)' }}>
+              {lead && <span className="drag" aria-label={`اسحب ${l.name} لفوق أو لتحت`} role="button"
+                onPointerDown={e => startDrag(e, l.id)} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>⋮⋮</span>}
+              <button className="grow" style={{ background: 'none', border: 0, textAlign: 'right', color: 'inherit', padding: 0, font: 'inherit' }} onClick={() => lead && setEditing(l)}>
+                <b>{l.name}</b><div className="muted">{l.grades} • {count(l.id)} مخدوم</div></button>
+              {lead && <button className="btn" style={{ minHeight: 36 }} onClick={() => setEditing(l)}>تعديل</button>}
+            </div>
           ))}
         </div></div>
+        {lead && levels.length > 1 && <div className="note">اسحب من ⋮⋮ عشان ترتّب المستويات. الترتيب ده بيبان في كل الأبلكيشن. أكواد المخدومين الموجودين مش بتتغير، بس المخدومين الجداد بياخدوا رقم المستوى في مكانه الجديد.</div>}
         {!lead && <div className="note">المستويات بيعدّلها الخادم المسؤول.</div>}
         {editing && (
           <div className="card">

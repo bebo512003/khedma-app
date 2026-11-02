@@ -1,8 +1,9 @@
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { monthName, monthReport, shiftMonth, thisMonth } from '../data/monthReport';
 import { medal, sessionsCount, titled } from '../data/logic';
 import Icon from '../ui/Icon';
+import { BackButton } from '../ui/back';
 
 
 /** The month in review for each of the servant's levels: what the bell opens on the 1st and before the ranking resets. */
@@ -12,7 +13,6 @@ export default function MonthReport() {
   const month = asked && /^\d{4}-(0[1-9]|1[0-2])$/.test(asked) ? asked : shiftMonth(thisMonth(), -1);
   const [data] = useData();
   const allowed = useAllowedLevel();
-  const nav = useNavigate();
   const levels = [...data.levels].sort((a, b) => a.order - b.order).filter(l => allowed(l.id));
   const current = month === thisMonth();
 
@@ -20,7 +20,7 @@ export default function MonthReport() {
     <>
       <header className="top gutter"><div className="row between">
         <div className="row">
-          <button className="icon" onClick={() => nav(-1)} aria-label="رجوع"><Icon name="back" size={20} /></button>
+          <BackButton />
           <div><h1>تقرير {monthName(month)}</h1><div className="muted">{current ? 'الشهر لسه ما خلصش، والترتيب بيتصفّر أول الشهر الجاي' : 'ملخص الشهر لكل مستوى'}</div></div>
         </div>
         <div className="row" style={{ gap: 6 }}>

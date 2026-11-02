@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { memberSignedIn } from '../member/session';
 import { useStore } from '../data/store';
 import logo from '../logo.png';
 import DeskNav from './DeskNav';
 import MobileNav from './MobileNav';
-import { OpenDoor, SCHOOL } from './Open';
+import { OpenDoor, OpenHome, SCHOOL } from './Open';
 import Icon from '../ui/Icon';
 import PhoneSignIn from './PhoneSignIn';
 import { useEmulator } from '../firebase/config';
@@ -16,6 +16,7 @@ export default function Gate({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [byPhone, setByPhone] = useState(false);
+  const { pathname } = useLocation();
   const run = (fn: () => Promise<void>) => async () => {
     setBusy(true); setError('');
     try { await fn(); } catch (e) { setError(navigator.onLine ? `حصلت مشكلة: ${(e as Error).message}` : 'محتاج نت للخطوة دي.'); }
@@ -30,6 +31,7 @@ export default function Gate({ children }: { children: ReactNode }) {
       {syncError && <div className="note" dir="ltr">{syncError}</div>}
     </>;
     if (phase === 'signedOut' && memberSignedIn()) return <Navigate to="/me/home" replace />;
+    if (phase === 'signedOut' && pathname === '/') return 'open';
     if (phase === 'signedOut') return byPhone ? <PhoneSignIn onBack={() => setByPhone(false)} /> : (
       <>
         <fieldset style={{ width: '100%', border: '1.5px dashed var(--muted)', borderRadius: 16, padding: 12, margin: 0, display: 'grid', gap: 8 }}>
@@ -60,6 +62,9 @@ export default function Gate({ children }: { children: ReactNode }) {
       </>
     );
   })();
+
+  // Visitors without an account are most of the people opening the app: the front page is the open Coptic corner.
+  if (body === 'open') return <OpenHome />;
 
   return (
     <main className="login gutter">

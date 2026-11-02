@@ -1,3 +1,5 @@
+import CopticToday from './CopticToday';
+import VerseToday from './VerseToday';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import logo from '../logo.png';
@@ -7,6 +9,7 @@ import PageImg from './PageImg';
 import { safeUrl } from '../data/logic';
 import HymnText from './HymnText';
 import Icon from '../ui/Icon';
+import { BackButton } from '../ui/back';
 
 /**
  * Open to anyone, no sign-in: the dictionary, the translator and the hymn library (read only).
@@ -57,6 +60,7 @@ export function OpenHome() {
         <h1>ركن اللغة القبطية والألحان</h1>
         <div className="muted">مفتوح لأي حد بيحب يتعلم، من غير حساب ولا تسجيل</div>
       </div>
+      <Link to="/login" className="btn" style={{ width: '100%' }}>دخول الخدام والدارسين</Link>
       <nav className="doors" aria-label="الأدوات">
         {DOORS.map(d => (
           <Link key={d.to} to={d.to} className="door">
@@ -66,8 +70,10 @@ export function OpenHome() {
           </Link>
         ))}
       </nav>
+      {/* Today in the Coptic calendar and a praise verse: something new for visitors every day. */}
+      <div style={{ width: '100%', display: 'grid', gap: 12, textAlign: 'start' }}><CopticToday /><VerseToday /></div>
       <Contact />
-      <Link to="/" className="muted">أنت خادم أو دارس؟ ادخل من هنا</Link>
+      <Link to="/install" className="muted">إزاي أنزّل التطبيق؟</Link>
     </main>
   );
 }
@@ -75,7 +81,7 @@ export function OpenHome() {
 /** On the sign-in screens: the way into the open tools. */
 export function OpenDoor() {
   return (
-    <Link to="/open" className="door door-soft">
+    <Link to="/" className="door door-soft">
       <span className="door-i"><Icon name="dict" size={22} /></span>
       <span className="grow"><b>القاموس والمترجم ومكتبة الألحان</b><span>متاحين لأي حد، من غير تسجيل</span></span>
       <span className="door-go" aria-hidden>←</span>
@@ -94,7 +100,7 @@ export function OpenLibrary() {
   return (
     <>
       <header className="top gutter">
-        <div className="row"><Link to="/open" className="icon" aria-label="رجوع">→</Link><h1>مكتبة الألحان</h1></div>
+        <div className="row"><BackButton /><h1>مكتبة الألحان</h1></div>
         <input className="input" type="search" placeholder="دوّر على لحن" value={q} onChange={e => setQ(e.target.value)} aria-label="بحث" />
         {prayers.length > 1 && (
           <div className="chips">
@@ -137,7 +143,7 @@ export function OpenHymn() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/open/library" className="icon" aria-label="رجوع">→</Link>
+        <BackButton />
         <div className="grow"><h1>{h?.nameAr ?? 'لحن'}</h1>{h?.nameCoptic && <div className="muted coptic-font">{h.nameCoptic}</div>}</div>
       </div></header>
       <main className="main gutter">
@@ -193,7 +199,7 @@ export function OpenBooks() {
   ].filter(g => g.books.length) : [];
   return (
     <>
-      <header className="top gutter"><div className="row"><Link to="/open" className="icon" aria-label="رجوع">→</Link><div><h1>مكتبة الكتب</h1><div className="muted">كتب المدرسة، تتقري من الموبايل</div></div></div></header>
+      <header className="top gutter"><div className="row"><BackButton /><div><h1>مكتبة الكتب</h1><div className="muted">كتب المدرسة، تتقري من الموبايل</div></div></div></header>
       <main className="main gutter">
         {failed && <div className="card alert"><div className="alert-t">المكتبة مش راضية تفتح</div><div className="note">غالبًا النت فاصل. اتأكد منه وجرّب تاني.</div></div>}
         {!d && !failed && <div className="note">لحظة، بنجهّز الكتب…</div>}
@@ -223,7 +229,7 @@ export function OpenBook() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/open/books" className="icon" aria-label="رجوع">→</Link>
+        <BackButton />
         <div className="grow"><h1>{b?.title ?? 'كتاب'}</h1>{b?.pageCount ? <div className="muted">{b.pageCount} صفحة</div> : null}</div>
       </div></header>
       <main className="main gutter">

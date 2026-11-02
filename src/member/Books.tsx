@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { safeUrl } from '../data/logic';
 import PageImg from '../screens/PageImg';
 import { useView } from './Layout';
+import { BackButton } from '../ui/back';
 
 /** The level's booklets, to read on the phone. */
 export function MemberBooks() {
@@ -33,7 +34,7 @@ export function MemberBook() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/me/books" className="icon" aria-label="رجوع">→</Link>
+        <BackButton />
         <div><h1>{b.title}</h1>{b.term && <div className="muted">ترم {b.term}</div>}</div>
       </div></header>
       <main className="main gutter">

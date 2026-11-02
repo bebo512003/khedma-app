@@ -53,10 +53,12 @@ service cloud.firestore {
         allow update: if admin() || (servant() && request.auth.uid == uid && church().ownerUid == uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']) && request.resource.data.role == 'admin')
           || (servant() && request.auth.uid == uid
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photo', 'phone', 'birthdate', 'rank', 'about'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photo', 'phone', 'birthdate', 'rank', 'about', 'gender', 'since', 'work', 'favHymn'])
           && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
           && img(request.resource.data, 'photo') && phone(request.resource.data, 'phone') && day(request.resource.data, 'birthdate')
-          && str(request.resource.data, 'rank', 30) && str(request.resource.data, 'about', 300));
+          && str(request.resource.data, 'rank', 30) && str(request.resource.data, 'about', 300)
+          && (!('gender' in request.resource.data) || request.resource.data.gender in ['m', 'f'])
+          && str(request.resource.data, 'since', 4) && str(request.resource.data, 'work', 80) && str(request.resource.data, 'favHymn', 80));
         allow delete: if admin();
       }
 

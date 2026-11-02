@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData, useStore } from '../data/store';
 import { formatDay, isoDate, formatTime } from '../data/logic';
 import { STATUS_LABELS, type HymnStatus, type Submission } from '../data/types';
 import { loadRecording } from '../firebase/recordings';
 import { VoiceNote } from '../ui/Voice';
+import { BackButton } from '../ui/back';
 
 /** Members' recordings from home waiting for a servant: listen, set their level in the hymn, and leave a note. */
 export default function Reviews() {
@@ -20,7 +20,7 @@ export default function Reviews() {
   return (
     <>
       <header className="top gutter"><div className="row">
-        <Link to="/" className="icon" aria-label="رجوع">→</Link>
+        <BackButton />
         <div><h1>التسميع</h1><div className="muted">تسجيلات المخدومين من البيت</div></div>
       </div></header>
       <main className="main gutter">
