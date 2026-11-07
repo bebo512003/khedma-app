@@ -51,7 +51,7 @@ export function mergeDuplicates(d: AppData, groups = duplicateGroups(d)): AppDat
     books: d.books.map(b => ({ ...b, entries: b.entries.filter((e, i, all) => all.findIndex(x => map(x.hymnId) === map(e.hymnId)) === i).map(e => ({ ...e, hymnId: map(e.hymnId) })) })),
     progress: Object.fromEntries(Object.entries(d.progress).map(([m, p]) => {
       const out: typeof p = {};
-      for (const [h, s] of Object.entries(p)) out[map(h)] = Math.max(out[map(h)] ?? 0, s) as typeof s;
+      for (const [k, s] of Object.entries(p)) { const i = k.indexOf(':'), h = i < 0 ? map(k) : map(k.slice(0, i)) + k.slice(i); out[h] = Math.max(out[h] ?? 0, s) as typeof s; }
       return [m, out];
     })),
     sessions: d.sessions.map(s => s.hymnIds.some(id => to.has(id)) ? { ...s, hymnIds: uniq(s.hymnIds) } : s),

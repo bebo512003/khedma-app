@@ -40,6 +40,7 @@ import Notify from './screens/Notify';
 import MemberLayout from './member/Layout';
 import MemberHome from './member/Home';
 import MemberHymn from './member/Hymn';
+import MemberRecite from './member/Recite';
 import MemberProfile from './member/Profile';
 import MemberRatings from './member/Ratings';
 import MemberRank from './member/Rank';
@@ -112,6 +113,7 @@ export default function App() {
           <Route path="/me" element={<MemberLayout />}>
             <Route path="home" element={<MemberHome />} />
             <Route path="hymn/:hymnId" element={<MemberHymn />} />
+            <Route path="recite" element={<MemberRecite />} />
             <Route path="ratings" element={<MemberRatings />} />
             <Route path="profile" element={<MemberMe />} />
             <Route path="profile/edit" element={<MemberProfile />} />

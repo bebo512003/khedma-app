@@ -65,6 +65,7 @@ export default function MemberLayout() {
       <Outlet />
       <nav className="mtabs member" aria-label="تطبيق المخدوم"><div>
         <NavLink to="/me/home" className="badged"><Icon name="home" />الرئيسية{notes.unread > 0 && <span className="count">{notes.unread > 9 ? '9+' : notes.unread}</span>}</NavLink>
+        <NavLink to="/me/recite"><Icon name="mic" />التسميع</NavLink>
         <NavLink to="/me/sessions"><Icon name="clock" />الحصص</NavLink>
         <NavLink to="/me/books"><Icon name="books" />الكتب</NavLink>
         <NavLink to="/me/rank"><Icon name="chart" />الترتيب</NavLink>

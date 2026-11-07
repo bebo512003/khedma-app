@@ -9,7 +9,7 @@ import { useNotes, useView } from './Layout';
 const MAX_MS = 5 * 60_000;
 
 /** «سمّع للخادم»: the member records the hymn at home and a servant listens and replies with a level and a note. */
-export default function Submit({ hymnId, hymnName }: { hymnId: string; hymnName: string }) {
+export default function Submit({ hymnId, hymnName, parts, part, onPart }: { hymnId: string; hymnName: string; parts?: { id: string; name: string }[]; part?: string; onPart?: (id?: string) => void }) {
   const v = useView();
   const { subs: mine } = useNotes();
   const [take, setTake] = useState<{ blob: Blob; ms: number } | null>(null);
@@ -18,14 +18,16 @@ export default function Submit({ hymnId, hymnName }: { hymnId: string; hymnName:
 
   if (!cloudEnabled) return null;
 
-  const here = mine.filter(s => s.hymnId === hymnId);
+  // A split hymn is recited part by part (or all of it at the end).
+  const p = parts?.find(x => x.id === part);
+  const here = mine.filter(s => s.hymnId === hymnId && (s.partId ?? '') === (p?.id ?? ''));
   const waiting = here.find(s => s.pending);
   const send = async () => {
     if (!take) return;
     setBusy(true); setError('');
     try {
       const { sendSubmission } = await import('../firebase/submissions');
-      await sendSubmission({ memberId: v.memberId, memberName: v.name, levelId: v.levelId ?? '', hymnId, hymnName }, take.blob, take.ms);
+      await sendSubmission({ memberId: v.memberId, memberName: v.name, levelId: v.levelId ?? '', hymnId, hymnName, ...(p ? { partId: p.id, partName: p.name } : {}) }, take.blob, take.ms);
       setTake(null);
     } catch { setError('مقدرناش نبعت التسجيل. اتأكد إن معاك نت وجرّب تاني.'); }
     setBusy(false);
@@ -34,8 +36,11 @@ export default function Submit({ hymnId, hymnName }: { hymnId: string; hymnName:
   return (
     <div className="card">
       <h2>سمّع للخادم</h2>
+      {parts && parts.length > 0 && onPart && <div className="field"><span>هتسمّع إيه؟</span>
+        <div className="chips">{parts.map(x => <button key={x.id} className="chip" aria-pressed={p?.id === x.id} onClick={() => { onPart(x.id); setTake(null); }}>{x.name}</button>)}
+          <button className="chip" aria-pressed={!p} onClick={() => { onPart(undefined); setTake(null); }}>اللحن كله</button></div></div>}
       {waiting
-        ? <div className="note">بعت تسميع يوم {formatDay(isoDate(new Date(waiting.at)))}، والخادم هيسمعه ويرد عليك هنا.</div>
+        ? <div className="note">بعت تسميع {p ? `«${p.name}» ` : ''}يوم {formatDay(isoDate(new Date(waiting.at)))}، والخادم هيسمعه ويرد عليك هنا.</div>
         : take
           ? <>
             <VoiceNote id="take" ms={take.ms} getBlob={async () => take.blob} />

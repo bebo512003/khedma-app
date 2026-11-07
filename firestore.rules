@@ -186,11 +186,12 @@ service cloud.firestore {
         allow read: if servant() || (member() && resource.data.memberId == mine());
         allow create: if member() && request.resource.data.memberId == mine()
           && id.matches(mine() + '_[0-9]+') && request.resource.data.levelId == levelOf(mine())
-          && request.resource.data.keys().hasOnly(['id', 'memberId', 'memberName', 'levelId', 'hymnId', 'hymnName', 'recording', 'at', 'pending'])
+          && request.resource.data.keys().hasOnly(['id', 'memberId', 'memberName', 'levelId', 'hymnId', 'hymnName', 'partId', 'partName', 'recording', 'at', 'pending'])
           && request.resource.data.pending == true && request.resource.data.id == id
           && request.resource.data.at is int && request.resource.data.at <= request.time.toMillis() + 600000
           && str(request.resource.data, 'memberName', 80) && str(request.resource.data, 'hymnName', 120)
           && str(request.resource.data, 'levelId', 40) && str(request.resource.data, 'hymnId', 80)
+          && str(request.resource.data, 'partId', 20) && str(request.resource.data, 'partName', 80)
           && request.resource.data.recording.id.matches('sub_' + mine() + '_[a-z0-9]+')
           && request.resource.data.recording.parts is int && request.resource.data.recording.parts <= 3;
         allow update: if can('sessions') && canLevel(resource.data.levelId)

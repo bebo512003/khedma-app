@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { POINTS, safeUrl } from '../data/logic';
 import { STATUS_LABELS } from '../data/types';
 import { useView } from './Layout';
@@ -13,6 +14,8 @@ import { BackButton } from '../ui/back';
 export default function MemberHymn() {
   const { hymnId } = useParams();
   const h = useView().hymns.find(x => x.id === hymnId);
+  const [q] = useSearchParams();
+  const [part, setPart] = useState<string | undefined>(() => q.get('part') ?? undefined);
   if (!h) return <main className="main gutter"><div className="card">اللحن ده مش موجود. <Link to="/me/home">ارجع</Link></div></main>;
   const next = h.status < 2 ? POINTS.memorized : h.status === 2 ? POINTS.solo : 0;
   const place: [string, string | undefined][] = [['الصلاة', h.prayer], ['بيتقال إمتى', h.when], ['المناسبة', h.occasion]];
@@ -33,6 +36,11 @@ export default function MemberHymn() {
           <div className="row between"><h2>أنت وصلت لفين</h2>{next > 0 && <span className="muted">+{next} نقط لو وصلت للي بعده</span>}</div>
           <div className="chips">{STATUS_LABELS.slice(1).map((l, i) =>
             <span key={l} className={`pill ${h.status >= i + 1 ? `st${i + 1}` : 'st0'}`} style={{ display: 'inline-flex', alignItems: 'center' }}>{l}{h.status === i + 1 ? ' ✓' : ''}</span>)}</div>
+          {h.parts?.length ? <div className="list" style={{ marginTop: 6 }}>{h.parts.map(p => {
+            const s = h.partStatus?.[p.id] ?? 0;
+            return <button key={p.id} className="li" aria-pressed={part === p.id} style={{ outline: part === p.id ? '2px solid var(--gold)' : undefined, borderRadius: 10 }} onClick={() => setPart(p.id)}>
+              <b className="grow" style={{ textAlign: 'start' }}>{p.name}</b><span className={`pill st${s}`}>{STATUS_LABELS[s]}</span></button>;
+          })}</div> : null}
           <div className="note">اسمعه كل يوم وقوله مع التسجيل، والخادم هيسمعه منك في الحصة.</div>
         </div>
 
@@ -41,16 +49,16 @@ export default function MemberHymn() {
             <h2>اتدرّب عليه</h2>
             {h.recordings!.map(r => (
               <div key={r.id} className="vrow">
-                <b>{r.title ?? 'تسجيل الحصة'} <span className="muted">• {formatDay(r.date)}</span></b>
+                <b>{r.title ?? 'تسجيل الحصة'}{r.part ? ` • ${r.part}` : ''} <span className="muted">• {formatDay(r.date)}</span></b>
                 <Practice ms={r.ms} getBlob={() => loadRecording(r)} />
               </div>
             ))}
           </div>
         )}
 
-        <Submit hymnId={h.id} hymnName={h.nameAr} />
+        <Submit hymnId={h.id} hymnName={h.nameAr} parts={h.parts} part={part} onPart={setPart} />
 
-        <HymnText hymn={h} dictLink="/me/dictionary" />
+        <HymnText hymn={h} dictLink="/me/dictionary" part={part} onPart={setPart} />
         <BookPages book={h.book} />
 
         <div className="card">

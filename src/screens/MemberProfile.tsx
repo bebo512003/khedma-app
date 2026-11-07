@@ -1,3 +1,4 @@
+import { partKey, withPartStatus } from '../data/parts';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useCan } from '../data/store';
@@ -96,6 +97,13 @@ export default function MemberProfile() {
                     {STATUS_LABELS.map((l, i) =>
                       <button key={l} className={`st${i}`} aria-pressed={s === i} disabled={!edit && s !== i} onClick={() => setStatus(h.id, i as HymnStatus)}>{l}</button>)}
                   </div>
+                  {h.parts?.map(p => (ps => (
+                    <div key={p.id} className="row between" style={{ paddingInlineStart: 12, gap: 6 }}>
+                      <span className="muted">{p.name}</span>
+                      <button className={`pill st${ps}`} disabled={!edit} aria-label={`${h.nameAr}، ${p.name}: ${STATUS_LABELS[ps]}`}
+                        onClick={() => update(d => ({ ...d, progress: { ...d.progress, [m.id]: withPartStatus(h, d.progress[m.id], p.id, ((ps + 1) % 4) as HymnStatus) } }))}>{STATUS_LABELS[ps]}</button>
+                    </div>
+                  ))(status(partKey(h.id, p.id))))}
                 </div>
               );
             })}

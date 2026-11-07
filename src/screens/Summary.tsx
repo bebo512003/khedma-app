@@ -1,3 +1,4 @@
+import { hymnLabel } from '../data/parts';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useCan } from '../data/store';
@@ -45,7 +46,7 @@ export default function Summary() {
         <div className="row between">
           {!fresh && <BackButton />}
           <div className="grow"><h1>{fresh ? 'اتحفظت الحصة' : `حصة ${level?.name ?? ''}`}</h1>
-            <div className="muted">{fresh ? `${level?.name} • ` : ''}{formatDay(s.date)}{hymn ? ` • ${hymn.nameAr}` : ''}</div></div>
+            <div className="muted">{fresh ? `${level?.name} • ` : ''}{formatDay(s.date)}{hymn ? ` • ${hymnLabel(hymn, s.partId)}` : ''}</div></div>
           {edit && <Link to={`/sessions/${s.id}/edit`} className="icon" aria-label="تعديل الحصة"><Icon name="edit" size={20} /></Link>}
         </div>
       </header>

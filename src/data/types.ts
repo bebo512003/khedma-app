@@ -101,6 +101,16 @@ export interface Hymn {
   packEditions?: Record<string, number>;
   /** Where the hymn's text and recordings come from, shown under it. */
   source?: string;
+  /** A long hymn taught over several sessions; each part has its own status and recitations. */
+  parts?: HymnPart[];
+}
+
+/** A piece of a hymn: lines from..to (1-based, as the hymn text counts them), both optional. */
+export interface HymnPart {
+  id: string;
+  name: string;
+  from?: number;
+  to?: number;
 }
 
 /** A hymn's place in a book: the pages it spans. */
@@ -141,6 +151,8 @@ export interface Session {
   levelId: string;
   termId: string;
   hymnIds: string[];
+  /** The part of the hymn this session took, when the hymn is split. */
+  partId?: string;
   attendance: Record<string, Attendance>;
   ratings: Record<string, Rating>;
   /** Hymns that reached حافظه / بيقوله لوحده during this session, per member (drives milestone points). */
@@ -182,6 +194,9 @@ export interface Submission {
   levelId: string;
   hymnId: string;
   hymnName: string;
+  /** The part recited, when the hymn is split. */
+  partId?: string;
+  partName?: string;
   recording: Recording;
   at: number;
   /** True until a servant reviews it. */

@@ -5,6 +5,7 @@ import { STATUS_LABELS, type HymnStatus, type Submission } from '../data/types';
 import { loadRecording } from '../firebase/recordings';
 import { VoiceNote } from '../ui/Voice';
 import { BackButton } from '../ui/back';
+import { partKey, withPartStatus } from '../data/parts';
 
 /** Members' recordings from home waiting for a servant: listen, set their level in the hymn, and leave a note. */
 export default function Reviews() {
@@ -35,7 +36,10 @@ export default function Reviews() {
 function Review({ s }: { s: Submission }) {
   const [data, update] = useData();
   const { servant } = useStore();
-  const [status, setStatus] = useState<HymnStatus>(() => (data.progress[s.memberId]?.[s.hymnId] ?? 1) as HymnStatus);
+  // A recitation of one part sets that part's level; the hymn's own follows its parts.
+  const hymn = data.hymns.find(h => h.id === s.hymnId);
+  const part = s.partId ? hymn?.parts?.find(p => p.id === s.partId) : undefined;
+  const [status, setStatus] = useState<HymnStatus>(() => (data.progress[s.memberId]?.[part ? partKey(s.hymnId, part.id) : s.hymnId] ?? 1) as HymnStatus);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const m = data.members.find(x => x.id === s.memberId);
@@ -44,7 +48,9 @@ function Review({ s }: { s: Submission }) {
     setBusy(true);
     const { reviewSubmission } = await import('../firebase/submissions');
     // The level counts like one set from the member's profile: no points, those come from sessions.
-    update(d => ({ ...d, progress: { ...d.progress, [s.memberId]: { ...(d.progress[s.memberId] ?? {}), [s.hymnId]: status } } }));
+    update(d => ({ ...d, progress: { ...d.progress, [s.memberId]: hymn && part
+      ? withPartStatus(hymn, d.progress[s.memberId], part.id, status)
+      : { ...(d.progress[s.memberId] ?? {}), [s.hymnId]: status } } }));
     await reviewSubmission(s.id, { status, note: note.trim() || undefined, by: servant?.uid ?? '', byName: servant?.name ?? 'الخادم' }).catch(() => setBusy(false));
   };
 
@@ -52,10 +58,10 @@ function Review({ s }: { s: Submission }) {
     <div className="card">
       <div className="row">
         <span className="av">{m?.photo ? <img src={m.photo} alt="" /> : (m?.name ?? s.memberName)[0]}</span>
-        <div className="grow"><b>{m?.name ?? s.memberName}</b><div className="muted">{s.hymnName} • {formatDay(isoDate(new Date(s.at)))} {formatTime(s.at)}</div></div>
+        <div className="grow"><b>{m?.name ?? s.memberName}</b><div className="muted">{s.hymnName}{s.partName ? ` (${s.partName})` : ''} • {formatDay(isoDate(new Date(s.at)))} {formatTime(s.at)}</div></div>
       </div>
       <VoiceNote id={s.recording.id} ms={s.recording.ms} getBlob={() => loadRecording(s.recording)} />
-      <div className="field"><span>وصل لفين في اللحن؟</span>
+      <div className="field"><span>وصل لفين في {s.partName ? 'الجزء ده' : 'اللحن'}؟</span>
         <div className="lvl" role="group" aria-label="المستوى">
           {STATUS_LABELS.map((l, i) => <button key={l} className={`st${i}`} aria-pressed={status === i} onClick={() => setStatus(i as HymnStatus)}>{l}</button>)}
         </div></div>

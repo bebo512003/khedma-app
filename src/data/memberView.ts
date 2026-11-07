@@ -1,5 +1,6 @@
 import type { Attendance, AppData, Hymn, HymnStatus, MemberEdit, Rating, Recording } from './types';
 import { currentTerm, curriculumKey, lateBy, pointsWhy, sessionPoints, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO, titled } from './logic';
+import { partKey, partOf, sessionHymnLabel } from './parts';
 import { bookOf, entryPages, hasPages, pageUrl, pagesLabel } from './books';
 
 /**
@@ -22,7 +23,7 @@ export interface MemberView {
   gap: number;
   breakdown: ReturnType<typeof monthBreakdown>;
   top: { id: string; name: string; photo?: string; points: number; place: number; why?: string }[];
-  hymns: (Hymn & { status: HymnStatus; levels: string[]; book?: { title: string; label: string; pages: string[] }; recordings?: (Recording & { date: string })[] })[];
+  hymns: (Hymn & { status: HymnStatus; levels: string[]; book?: { title: string; label: string; pages: string[] }; recordings?: (Recording & { date: string; part?: string })[]; partStatus?: Record<string, HymnStatus> })[];
   ratings: { id: string; date: string; r: Rating; avg: number; memorized: number; solo: number; note?: string }[];
   attendanceRate: number | null;
   /** The level's recent sessions: what was covered, the voice summary, and whether this member came. */
@@ -54,7 +55,8 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
       status: (data.progress[m.id]?.[h.id] ?? 0) as HymnStatus,
       // Recordings from this level's sessions on this hymn, newest first, to practise with.
       recordings: data.sessions.filter(s => s.levelId === m.levelId && s.hymnIds[0] === h.id).sort((a, b) => b.date.localeCompare(a.date))
-        .flatMap(s => sessionRecordings(s).map(r => ({ ...r, date: s.date }))).slice(0, 6),
+        .flatMap(s => sessionRecordings(s).map(r => ({ ...r, date: s.date, part: partOf(h, s.partId)?.name }))).slice(0, 6),
+      partStatus: h.parts?.length ? Object.fromEntries(h.parts.map(p => [p.id, (data.progress[m.id]?.[partKey(h.id, p.id)] ?? 0) as HymnStatus])) : undefined,
       levels: data.levels.filter(l => (data.curricula[curriculumKey(term?.id, l.id)] ?? []).includes(h.id)).map(l => l.name),
     }));
   const ratings = data.sessions
@@ -68,7 +70,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
     .filter(s => s.levelId === m.levelId || s.attendance[m.id] !== undefined)
     .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12)
     .map(s => ({
-      id: s.id, date: s.date, hymn: data.hymns.find(h => h.id === s.hymnIds[0])?.nameAr, summary: s.summary, summaryAt: s.summaryAt, recordings: sessionRecordings(s),
+      id: s.id, date: s.date, hymn: sessionHymnLabel(data, s), summary: s.summary, summaryAt: s.summaryAt, recordings: sessionRecordings(s),
       att: s.attendance[m.id], arrived: s.arrivals?.[m.id], late: lateBy(s, m.id) ?? undefined,
       before: s.attendance[m.id] === undefined && !!since && s.date < since ? true : undefined,
       pts: sessionPoints(s, m.id),

@@ -1,3 +1,4 @@
+import { hymnLabel, splitKey } from '../data/parts';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData, useIsLead } from '../data/store';
@@ -57,7 +58,7 @@ export default function Backup() {
 
   const level = (id?: string) => data.levels.find(l => l.id === id)?.name ?? '';
   const term = (id?: string) => data.terms.find(t => t.id === id)?.name ?? '';
-  const hymn = (id?: string) => data.hymns.find(h => h.id === id)?.nameAr ?? '';
+  const hymn = (id?: string, partId?: string) => { const k = splitKey(id ?? ''); return hymnLabel(data.hymns.find(h => h.id === k.hymnId), partId ?? k.partId); };
   const member = (id: string) => data.members.find(m => m.id === id);
   const sessions = [...data.sessions].sort((a, b) => a.date.localeCompare(b.date));
 
@@ -70,7 +71,7 @@ export default function Backup() {
       ['التاريخ', 'المستوى', 'الترم', 'لحن الحصة', 'حضر', 'اعتذر', 'غاب', 'البداية', 'الملخص', 'تسجيلات'],
       ...sessions.map(s => {
         const v = Object.values(s.attendance);
-        return [s.date, level(s.levelId), term(s.termId), hymn(s.hymnIds[0]), v.filter(x => x === 'p').length, v.filter(x => x === 'e').length, v.filter(x => x === 'a').length,
+        return [s.date, level(s.levelId), term(s.termId), hymn(s.hymnIds[0], s.partId), v.filter(x => x === 'p').length, v.filter(x => x === 'e').length, v.filter(x => x === 'a').length,
           s.startedAt ? formatTime(s.startedAt) : '', s.summary, sessionRecordings(s).length || ''];
       }),
     ] },

@@ -39,7 +39,13 @@ const SAMAN = 'مكتبة ألحان كنيسة الشهيد العظيم مار
 /** The source written under a hymn: what the servant typed, or the Nazlet El Seman library for hymns that came from it. */
 export const hymnSource = (h: Hymn) => h.source?.trim() || ([h.audioUrl, h.pdfUrl].some(u => u?.includes('stgeorgesaman')) || h.packKey ? SAMAN : '');
 
-export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: string }) {
+/** part: the part to open on (controlled from outside when onPart is given); the reader can switch parts above the text. */
+export default function HymnText({ hymn, dictLink, part: partProp, onPart }: { hymn: Hymn; dictLink: string; part?: string; onPart?: (id?: string) => void }) {
+  const [ownPart, setOwnPart] = useState<string | undefined>(partProp);
+  const partId = onPart ? partProp : ownPart;
+  const pickPart = (id?: string) => onPart ? onPart(id) : setOwnPart(id);
+  const ranged = (hymn.parts ?? []).filter(p => p.from || p.to);
+  const part = ranged.find(p => p.id === partId);
   // Old-font or Greek-lettered Coptic shows as Unicode, so every word can be looked up.
   const rows = { cop: lines(hymn.copticText && unifyCoptic(hymn.copticText, true)), arCop: lines(hymn.arabicCoptic), ar: lines(hymn.meaning) };
   const present = COLS.filter(([c]) => rows[c].length > 0);
@@ -93,10 +99,14 @@ export default function HymnText({ hymn, dictLink }: { hymn: Hymn; dictLink: str
           <button className="btn" style={{ minHeight: 36 }} onClick={() => { setStyleState(DEFAULT_STYLE); try { localStorage.removeItem(STYLE_KEY); } catch { /* private mode */ } }}>رجّع الشكل الأصلي</button>
         </div>
       )}
+      {ranged.length > 0 && <div className="chips" role="group" aria-label="جزء من اللحن">
+        <button className="chip" aria-pressed={!part} onClick={() => pickPart(undefined)}>اللحن كله</button>
+        {ranged.map(p => <button key={p.id} className="chip" aria-pressed={part?.id === p.id} onClick={() => pickPart(p.id)}>{p.name}</button>)}
+      </div>}
       {hymn.notes && <div className="note pre">{hymn.notes}</div>}
       {rows.cop.length > 0 && <div className="muted" style={{ fontSize: 12 }}>دوس على أي كلمة قبطي تعرف معناها.</div>}
       <ol className="verses">
-        {Array.from({ length: n }, (_, i) => section(i) !== undefined ? <li key={i} className="sec">{section(i)}</li> : (
+        {Array.from({ length: n }, (_, i) => part && (i + 1 < (part.from ?? 1) || i + 1 > (part.to ?? n)) ? null : section(i) !== undefined ? <li key={i} className="sec">{section(i)}</li> : (
           <li key={i}>
             {shown.includes('cop') && rows.cop[i] && <div className="cop coptic-font" dir="ltr" style={css('cop', style)}>
               {display(rows.cop[i]).split(/(\s+)/).map((w, j) => /\s/.test(w) || scriptOf(w) !== 'coptic'

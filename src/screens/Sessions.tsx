@@ -1,3 +1,4 @@
+import { hymnLabel } from '../data/parts';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAllowedLevel, useCan, useData } from '../data/store';
@@ -64,7 +65,7 @@ export default function Sessions() {
             return (
               <Link key={s.id} to={`/summary/${s.id}`} className="li">
                 <div className="grow"><b>{formatDay(s.date)}</b>
-                  <div className="muted">{data.levels.find(l => l.id === s.levelId)?.name}{hymn ? ` • ${hymn.nameAr}` : ''}</div></div>
+                  <div className="muted">{data.levels.find(l => l.id === s.levelId)?.name}{hymn ? ` • ${hymnLabel(hymn, s.partId)}` : ''}</div></div>
                 <div style={{ textAlign: 'center' }}><b>{present.length}/{ids.length}</b><div className="muted">حضروا</div></div>
                 {late > 0 && <span className="tag tag-alert">{late} اتأخروا</span>}
               </Link>

@@ -9,6 +9,7 @@ import type { Hymn } from '../data/types';
 import HymnText from './HymnText';
 import { unifyCoptic } from '../data/unicodeCoptic';
 import { BackButton, goTo } from '../ui/back';
+import { partName, splitBySections, splitEven, textRows } from '../data/parts';
 
 const PRAYERS = ['القداس', 'التسبحة', 'رفع البخور', 'الأجبية', 'الدورات', 'المناسبات'];
 
@@ -23,12 +24,15 @@ export default function HymnForm() {
   const [h, setH] = useState<Hymn>(existing ?? { id: uid(), nameAr: '' });
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [evenN, setEvenN] = useState(7);
   const set = (p: Partial<Hymn>) => setH(x => ({ ...x, ...p }));
 
   const save = () => {
     if (!h.nameAr.trim()) { setError('اكتب اسم اللحن.'); return; }
     for (const u of [h.pdfUrl, h.audioUrl]) if (u?.trim() && !safeUrl(u)) { setError('اللينك لازم يبدأ بـ https://'); return; }
-    const clean: Hymn = { ...h, copticText: h.copticText && unifyCoptic(h.copticText, true), nameAr: h.nameAr.trim(), pdfUrl: safeUrl(h.pdfUrl), audioUrl: safeUrl(h.audioUrl) };
+    const parts = (h.parts ?? []).map((p, i) => ({ ...p, name: p.name.trim() || partName(i) }));
+    if (parts.some(p => p.from && p.to && p.from > p.to)) { setError('في جزء أول سطر فيه بعد آخر سطر.'); return; }
+    const clean: Hymn = { ...h, parts: parts.length ? parts : undefined, copticText: h.copticText && unifyCoptic(h.copticText, true), nameAr: h.nameAr.trim(), pdfUrl: safeUrl(h.pdfUrl), audioUrl: safeUrl(h.audioUrl) };
     update(d => existing
       ? { ...d, hymns: d.hymns.map(x => x.id === clean.id ? clean : x) }
       : { ...d, hymns: [...d.hymns, clean] });
@@ -93,6 +97,7 @@ export default function HymnForm() {
         {area('meaning', 'المعنى بالعربي')}
         {new Set(counts).size > 1 && <div className="note">عدد السطور مش متساوي في الخانات ({counts.join(' / ')}). اتأكد إن كل سطر قصاده سطره.</div>}
         {counts.length > 0 && <HymnText hymn={h} dictLink="/dictionary" />}
+        <PartsEditor h={h} set={set} evenN={evenN} setEvenN={setEvenN} />
         {inBook && <BookPages book={{ title: inBook.book.title, label: pagesLabel(inBook.entry), pages: entryPages(inBook.book, inBook.entry) }} />}
         {error && <div className="alert-t" role="alert">{error}</div>}
         {existing && (confirmDelete
@@ -104,5 +109,40 @@ export default function HymnForm() {
         <button className="btnp grow" onClick={save}>احفظ</button>
       </div></div>
     </>
+  );
+}
+
+/** Splitting a long hymn over several sessions, each part with its own status and recitations. */
+function PartsEditor({ h, set, evenN, setEvenN }: { h: Hymn; set: (p: Partial<Hymn>) => void; evenN: number; setEvenN: (n: number) => void }) {
+  const parts = h.parts ?? [];
+  const rows = textRows(h);
+  const bySections = splitBySections(h);
+  const put = (i: number, p: Partial<NonNullable<Hymn['parts']>[number]>) => set({ parts: parts.map((x, j) => j === i ? { ...x, ...p } : x) });
+  const num = (v: string) => { const n = parseInt(v, 10); return n > 0 ? Math.min(n, rows || 999) : undefined; };
+  return (
+    <div className="card">
+      <h2>تقسيم اللحن على حصص</h2>
+      <div className="note">لو اللحن طويل (زي السبع طرائق) قسّمه أجزاء: كل حصة بتاخد جزء، وكل جزء ليه حالة وتسميع لوحده، واللحن كله بيتحسب حافظه لما كل أجزاءه تبقى حافظها. النقط بتتحسب مرة واحدة على اللحن كله.{rows > 0 ? ` النص فيه ${rows} سطر، وتقدر تحدد كل جزء من سطر كام لسطر كام عشان الدارس يشوف جزءه بس.` : ''}</div>
+      {parts.map((p, i) => (
+        <div key={p.id} className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+          <input className="input grow" aria-label={`اسم الجزء ${i + 1}`} value={p.name} placeholder={partName(i)} onChange={e => put(i, { name: e.target.value })} style={{ minWidth: 140 }} />
+          {rows > 0 && <>
+            <input className="input" style={{ width: 72 }} inputMode="numeric" aria-label="من سطر" placeholder="من" value={p.from ?? ''} onChange={e => put(i, { from: num(e.target.value) })} />
+            <input className="input" style={{ width: 72 }} inputMode="numeric" aria-label="لسطر" placeholder="لـ" value={p.to ?? ''} onChange={e => put(i, { to: num(e.target.value) })} />
+          </>}
+          <button className="icon" aria-label={`امسح ${p.name || partName(i)}`} onClick={() => set({ parts: parts.filter((_, j) => j !== i) })}>✕</button>
+        </div>
+      ))}
+      <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+        <button className="btn" onClick={() => set({ parts: [...parts, { id: Math.random().toString(36).slice(2, 8), name: partName(parts.length) }] })}>+ جزء</button>
+        {bySections.length > 1 && <button className="btn" onClick={() => set({ parts: bySections })}>قسّمه على عناوين النص ({bySections.length})</button>}
+        <span className="row" style={{ gap: 4 }}>
+          <button className="btn" onClick={() => set({ parts: splitEven(h, evenN) })}>قسّمه بالتساوي على</button>
+          <input className="input" style={{ width: 60 }} inputMode="numeric" aria-label="عدد الأجزاء" value={evenN} onChange={e => setEvenN(Math.max(2, Math.min(20, parseInt(e.target.value, 10) || 2)))} />
+          <span>حصص</span>
+        </span>
+        {parts.length > 0 && <button className="btn" onClick={() => set({ parts: [] })}>شيل التقسيم</button>}
+      </div>
+    </div>
   );
 }
