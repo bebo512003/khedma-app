@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { CRITERIA, STATUS_LABELS, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
-import { POINTS, hymnPoints, LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
+import { POINTS, hymnPointsOn, LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
 import Scanner from './Scanner';
 import { nextPart, partKey, partOf, partPointsOn, wholeStatus } from '../data/parts';
 import { milestoneKey } from '../data/awards';
@@ -35,7 +35,9 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
 
   // One hymn per session: the servant picks it, and its status and the ratings belong to it. Other hymns are set from each member's profile.
   const lastHymn = [...data.sessions].filter(s => s.levelId === levelId).sort((a, b) => b.date.localeCompare(a.date))[0]?.hymnIds?.[0];
-  const [hymnId, setHymnId] = useState<string | undefined>(() => editing ? editing.hymnIds[0] : hymnIds.includes(lastHymn ?? '') ? lastHymn : hymnIds[0]);
+  // This month's hymn first (when the lead gave hymns months), then the last session's, then the first.
+  const monthHymn = hymns.find(h => h.month === todayISO().slice(0, 7))?.id;
+  const [hymnId, setHymnId] = useState<string | undefined>(() => editing ? editing.hymnIds[0] : monthHymn ?? (hymnIds.includes(lastHymn ?? '') ? lastHymn : hymnIds[0]));
   const hymn = hymns.find(h => h.id === hymnId);
   // A split hymn: the session takes one part, by default the one after the last session's.
   const [partId, setPartId] = useState<string | undefined>(() => editing ? editing.partId : nextPart(data, levelId, hymns.find(h => h.id === hymnId)));
@@ -107,17 +109,19 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
       let memorized = was?.memorized ?? 0, solo = was?.solo ?? 0;
       let mPts = was?.mPts ?? memorized * POINTS.memorized, sPts = was?.sPts ?? solo * POINTS.solo;
       const keys = [...(was?.keys ?? [])];
+      // Parts are counted apart from whole hymns, so the points' reason reads «حافظ 2 أجزاء».
+      const pp = { m: 0, s: 0, mPts: 0, sPts: 0, ...was?.parts };
       // The whole hymn gives its points; a split hymn's part gives its own when the lead set some, and the
       // whole hymn's come once all its parts get there.
       const credit = (partId: string | undefined, before: number, after: number, pts: { memorized: number; solo: number }) => {
-        if (before < 2 && after >= 2 && pts.memorized > 0) { memorized++; mPts += pts.memorized; keys.push(milestoneKey(hymn!.id, partId, 'm')); }
-        if (before < 3 && after === 3 && pts.solo > 0) { solo++; sPts += pts.solo; keys.push(milestoneKey(hymn!.id, partId, 's')); }
+        if (before < 2 && after >= 2 && pts.memorized > 0) { if (partId) { pp.m++; pp.mPts += pts.memorized; } else { memorized++; mPts += pts.memorized; } keys.push(milestoneKey(hymn!.id, partId, 'm')); }
+        if (before < 3 && after === 3 && pts.solo > 0) { if (partId) { pp.s++; pp.sPts += pts.solo; } else { solo++; sPts += pts.solo; } keys.push(milestoneKey(hymn!.id, partId, 's')); }
       };
       if (hymn) {
         if (part && key) credit(part.id, data.progress[m.id]?.[key] ?? 0, hs(m.id, key), partPointsOn(part, date));
-        credit(undefined, data.progress[m.id]?.[hymn.id] ?? 0, memberHym(m.id)[hymn.id] ?? 0, hymnPoints(hymn));
+        credit(undefined, data.progress[m.id]?.[hymn.id] ?? 0, memberHym(m.id)[hymn.id] ?? 0, hymnPointsOn(hymn, date));
       }
-      if (memorized || solo) milestones[m.id] = { memorized, solo, mPts, sPts, ...(keys.length ? { keys } : {}) };
+      if (memorized || solo || pp.m || pp.s) milestones[m.id] = { memorized, solo, mPts, sPts, ...(keys.length ? { keys } : {}), ...(pp.m || pp.s ? { parts: pp } : {}) };
     });
     const session: Session = {
       ...editing,
@@ -138,7 +142,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
 
   const picker = hymns.length > 0 && (
     <div className="field"><span>لحن الحصة</span>
-      <div className="chips">{hymns.map(h => <button key={h.id} className="chip" aria-pressed={hymnId === h.id} onClick={() => pickHymn(h.id)}>{h.nameAr}{h.parts?.length ? ` • ${h.parts.length} أجزاء` : ''}</button>)}</div>
+      <div className="chips">{hymns.map(h => <button key={h.id} className="chip" aria-pressed={hymnId === h.id} onClick={() => pickHymn(h.id)}>{h.nameAr}{h.month === todayISO().slice(0, 7) ? ' • الشهر ده' : ''}{h.parts?.length ? ` • ${h.parts.length} أجزاء` : ''}</button>)}</div>
       {hymn?.parts?.length ? <>
         <span>الجزء اللي في الحصة دي</span>
         <div className="chips">{hymn.parts.map(p => <button key={p.id} className="chip" aria-pressed={partId === p.id} onClick={() => setPartId(p.id)}>{p.name}</button>)}

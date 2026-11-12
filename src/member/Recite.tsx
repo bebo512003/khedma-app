@@ -30,7 +30,7 @@ export default function Recite() {
           {v.hymns.map(h => (
             <div key={h.id}>
               <button className="li" style={h.parts?.length ? { borderBottom: 0 } : undefined} onClick={() => pick(h.id, h.parts?.length ? (h.parts.find(p => p.month === thisMonth) ?? h.parts.find(p => (h.partStatus?.[p.id] ?? 0) < 2) ?? h.parts[0]).id : undefined)}>
-                <b className="grow" style={{ textAlign: 'start' }}>{h.nameAr}{h.parts?.length ? <span className="muted"> • {h.parts.length} أجزاء</span> : null}</b>
+                <b className="grow" style={{ textAlign: 'start' }}>{h.nameAr}{h.month === thisMonth ? <span className="muted"> • الشهر ده</span> : null}{h.parts?.length ? <span className="muted"> • {h.parts.length} أجزاء</span> : null}</b>
                 <span className={`pill st${h.status}`}>{STATUS_LABELS[h.status]}</span>
               </button>
               {h.parts?.length ? <div className="chips parts">{h.parts.map(p => {

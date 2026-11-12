@@ -4,6 +4,8 @@ export const POINTS = { attendance: 2, memorized: 5, solo: 12 } as const;
 
 /** A hymn's milestone points: the lead's own for it, else the usual ones. */
 export const hymnPoints = (h?: Pick<Hymn, 'points'>) => ({ memorized: h?.points?.memorized ?? POINTS.memorized, solo: h?.points?.solo ?? POINTS.solo });
+/** A hymn with a month gives its points only when reached within that month (the lead's choice: months don't mix). */
+export const hymnPointsOn = (h: Pick<Hymn, 'points' | 'month'> | undefined, date: string) => h?.month && date.slice(0, 7) !== h.month ? { memorized: 0, solo: 0 } : hymnPoints(h);
 
 /** Consecutive absences counting back from the latest session of the member's level. Excused breaks the streak. */
 export function absenceStreak(data: AppData, member: Member, extra?: Session): number {
@@ -54,23 +56,25 @@ export function sessionAverage(s: Session, memberId: string): number | null {
  * and milestone points recorded on the session when a hymn reached حافظه or بيقوله لوحده.
  */
 export function monthBreakdown(data: AppData, memberId: string, month: string) {
-  const b = { attended: 0, attendance: 0, rating: 0, memorized: 0, solo: 0, memorizedPts: 0, soloPts: 0, total: 0 };
+  const b = { attended: 0, attendance: 0, rating: 0, memorized: 0, solo: 0, memorizedPts: 0, soloPts: 0, partsM: 0, partsS: 0, partsMPts: 0, partsSPts: 0, total: 0 };
   for (const s of data.sessions) {
     if (!s.date.startsWith(month)) continue;
     if (s.attendance[memberId] === 'p') { b.attended++; b.attendance += POINTS.attendance; }
     b.rating += sessionAverage(s, memberId) ?? 0;
     const ms = s.milestones?.[memberId];
-    if (ms) { b.memorized += ms.memorized; b.solo += ms.solo; b.memorizedPts += ms.mPts ?? ms.memorized * POINTS.memorized; b.soloPts += ms.sPts ?? ms.solo * POINTS.solo; }
+    if (ms) { b.memorized += ms.memorized; b.solo += ms.solo; b.memorizedPts += ms.mPts ?? ms.memorized * POINTS.memorized; b.soloPts += ms.sPts ?? ms.solo * POINTS.solo;
+      if (ms.parts) { b.partsM += ms.parts.m; b.partsS += ms.parts.s; b.partsMPts += ms.parts.mPts; b.partsSPts += ms.parts.sPts; } }
   }
   // Milestones reached outside sessions: a live recitation, or a reply to one sent from home.
   for (const a of data.members.find(m => m.id === memberId)?.awards ?? []) {
     if (!a.date.startsWith(month)) continue;
-    if (a.kind === 'm') { b.memorized++; b.memorizedPts += a.pts; } else { b.solo++; b.soloPts += a.pts; }
+    if (a.partId) { if (a.kind === 'm') { b.partsM++; b.partsMPts += a.pts; } else { b.partsS++; b.partsSPts += a.pts; } }
+    else if (a.kind === 'm') { b.memorized++; b.memorizedPts += a.pts; } else { b.solo++; b.soloPts += a.pts; }
   }
   // Points use whole numbers; the ranking breaks ties on the exact ratings (exactRating), so rounding never hides a difference.
   const exactRating = b.rating;
   b.rating = Math.round(b.rating);
-  b.total = b.attendance + b.rating + b.memorizedPts + b.soloPts;
+  b.total = b.attendance + b.rating + b.memorizedPts + b.soloPts + b.partsMPts + b.partsSPts;
   return { ...b, exactRating };
 }
 
@@ -80,7 +84,7 @@ export function sessionPoints(s: Session, memberId: string) {
   const att = s.attendance[memberId] === 'p' ? POINTS.attendance : 0;
   const rating = Math.round((sessionAverage(s, memberId) ?? 0) * 10) / 10;
   const ms = s.milestones?.[memberId];
-  const memorized = ms?.mPts ?? (ms?.memorized ?? 0) * POINTS.memorized, solo = ms?.sPts ?? (ms?.solo ?? 0) * POINTS.solo;
+  const memorized = (ms?.mPts ?? (ms?.memorized ?? 0) * POINTS.memorized) + (ms?.parts?.mPts ?? 0), solo = (ms?.sPts ?? (ms?.solo ?? 0) * POINTS.solo) + (ms?.parts?.sPts ?? 0);
   return { att, rating, memorized, solo, total: Math.round((att + rating + memorized + solo) * 10) / 10 };
 }
 
@@ -113,10 +117,12 @@ export function ranking(data: AppData, levelId: string, month: string) {
 }
 
 /** Where a month's points came from, written out: «حضور 4 حصص (8) + تقييم الحصص (7) + حافظ لحنين (10) = 25». */
-export function pointsWhy(b: { attended: number; attendance: number; rating: number; memorized: number; solo: number; memorizedPts: number; soloPts: number; total: number }) {
+export function pointsWhy(b: { attended: number; attendance: number; rating: number; memorized: number; solo: number; memorizedPts: number; soloPts: number; partsM?: number; partsS?: number; partsMPts?: number; partsSPts?: number; total: number }) {
   const parts = [`حضور ${sessionsCount(b.attended)} (${b.attendance})`, `تقييم الحصص (${b.rating})`];
   if (b.memorized) parts.push(`حافظ ${hymnsCount(b.memorized)} (${b.memorizedPts})`);
   if (b.solo) parts.push(`بيقول ${hymnsCount(b.solo)} لوحده (${b.soloPts})`);
+  if (b.partsM) parts.push(`حافظ ${partsCount(b.partsM)} (${b.partsMPts})`);
+  if (b.partsS) parts.push(`بيقول ${partsCount(b.partsS)} لوحده (${b.partsSPts})`);
   return `${parts.join(' + ')} = ${b.total}`;
 }
 
@@ -207,6 +213,7 @@ export function count(n: number, one: string, two: string, few: string) {
   return n >= 3 && n <= 10 ? `${n} ${few}` : `${n} ${one}`;
 }
 export const hymnsCount = (n: number) => count(n, 'لحن', 'لحنين', 'ألحان');
+export const partsCount = (n: number) => count(n, 'جزء', 'جزئين', 'أجزاء');
 export const pointsCount = (n: number) => n === 1 ? 'نقطة واحدة' : count(n, 'نقطة', 'نقطتين', 'نقط');
 export const pagesCount = (n: number) => n === 1 ? 'صفحة واحدة' : count(n, 'صفحة', 'صفحتين', 'صفحات');
 /** Searches match whatever hamza or ta marbuta spelling was typed. */

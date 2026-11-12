@@ -111,7 +111,13 @@ export default function HymnForm() {
                     onChange={e => { const n = parseInt(e.target.value.replace(/\D/g, ''), 10); const p = { ...h.points, [k]: n >= 0 ? Math.min(n, 500) : undefined }; set({ points: p.memorized === undefined && p.solo === undefined ? undefined : p }); }} /></label>
               ))}
             </div>
-          </> : <div className="note">حافظه = {hymnPoints(h).memorized} نقطة، بيقوله لوحده = {hymnPoints(h).solo} نقطة. الخادم المسؤول بس اللي يغيرهم.</div>}
+            <label className="field" htmlFor="hmonth"><span>شهر اللحن (اختياري)</span>
+              <select id="hmonth" className="input" value={h.month ?? ''} onChange={e => set({ month: e.target.value || undefined })}>
+                <option value="">من غير شهر</option>
+                {[...new Set([...termMonths(data), ...(h.month ? [h.month] : [])])].map(m => <option key={m} value={m}>{monthName(m)}</option>)}
+              </select></label>
+            <div className="note">لو حددت شهر، الحصة بتفتح على اللحن ده في شهره، ونقطه بتتحسب بس لو الدارس وصلها جوه الشهر ده. لو اتأخر، حالته بتتسجل من غير نقط.</div>
+          </> : <div className="note">{h.month ? `شهره: ${monthName(h.month)}. ` : ''}حافظه = {hymnPoints(h).memorized} نقطة، بيقوله لوحده = {hymnPoints(h).solo} نقطة. الخادم المسؤول بس اللي يغيرهم.</div>}
         </div>
         {inBook && <BookPages book={{ title: inBook.book.title, label: pagesLabel(inBook.entry), pages: entryPages(inBook.book, inBook.entry) }} />}
         {error && <div className="alert-t" role="alert">{error}</div>}
@@ -130,14 +136,13 @@ export default function HymnForm() {
 /** Splitting a long hymn over several sessions, each part with its own status and recitations. */
 function PartsEditor({ h, set, evenN, setEvenN, lead }: { h: Hymn; set: (p: Partial<Hymn>) => void; evenN: number; setEvenN: (n: number) => void; lead: boolean }) {
   const [data] = useData();
-  const term = currentTerm(data);
-  // Months to pick from: the current term's, else the next six.
-  const months = (() => {
-    const out: string[] = [];
-    const from = (term?.start ?? todayISO()).slice(0, 7), to = term?.end?.slice(0, 7) ?? '';
-    for (let m = from; out.length < (to ? 24 : 6) && (!to || m <= to);) { out.push(m); const [y, mo] = m.split('-').map(Number); m = mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, '0')}`; }
-    return out;
-  })();
+  const months = termMonths(data);
+  // The hymn's points shared out over its parts (the first parts take any remainder), so the whole hymn then gives none.
+  const share = () => {
+    const hp = hymnPoints(h), n = parts.length;
+    const cut = (t: number, i: number) => Math.floor(t / n) + (i < t % n ? 1 : 0);
+    set({ parts: parts.map((p, i) => ({ ...p, points: { memorized: cut(hp.memorized, i), solo: cut(hp.solo, i) } })), points: { memorized: 0, solo: 0 } });
+  };
   const spread = () => set({ parts: (h.parts ?? []).map((p, i, all) => ({ ...p, month: months[Math.floor(i * months.length / all.length)] })) });
   const setPts = (i: number, k: 'memorized' | 'solo', v: string) => {
     const n = parseInt(v.replace(/\D/g, ''), 10);
@@ -181,8 +186,18 @@ function PartsEditor({ h, set, evenN, setEvenN, lead }: { h: Hymn; set: (p: Part
           <span>حصص</span>
         </span>
         {parts.length > 0 && months.length > 1 && <button className="btn" onClick={spread}>وزّعهم على شهور الترم</button>}
+        {lead && parts.length > 1 && (hymnPoints(h).memorized > 0 || hymnPoints(h).solo > 0) && <button className="btn" onClick={share}>قسّم نقط اللحن ({hymnPoints(h).memorized} و{hymnPoints(h).solo}) على الأجزاء</button>}
         {parts.length > 0 && <button className="btn" onClick={() => set({ parts: [] })}>شيل التقسيم</button>}
       </div>
     </div>
   );
+}
+
+/** Months to pick from: the current term's, else the next six. */
+function termMonths(data: ReturnType<typeof useData>[0]) {
+  const term = currentTerm(data);
+  const out: string[] = [];
+  const from = (term?.start ?? todayISO()).slice(0, 7), to = term?.end?.slice(0, 7) ?? '';
+  for (let m = from; out.length < (to ? 24 : 6) && (!to || m <= to);) { out.push(m); const [y, mo] = m.split('-').map(Number); m = mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, '0')}`; }
+  return out;
 }

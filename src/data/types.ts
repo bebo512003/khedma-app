@@ -136,6 +136,8 @@ export interface Hymn {
   parts?: HymnPart[];
   /** Points for reaching حافظه / بيقوله لوحده in this hymn, set by the lead per its length and difficulty. */
   points?: { memorized?: number; solo?: number };
+  /** The month (YYYY-MM) the hymn is taught in: sessions open on it, and its points count only within it. */
+  month?: string;
 }
 
 /** A piece of a hymn: lines from..to (1-based, as the hymn text counts them), both optional. */
@@ -193,7 +195,7 @@ export interface Session {
   attendance: Record<string, Attendance>;
   ratings: Record<string, Rating>;
   /** Hymns that reached حافظه / بيقوله لوحده during this session, per member (drives milestone points). */
-  milestones?: Record<string, { memorized: number; solo: number; mPts?: number; sPts?: number; keys?: string[] }>;
+  milestones?: Record<string, { memorized: number; solo: number; mPts?: number; sPts?: number; keys?: string[]; parts?: { m: number; s: number; mPts: number; sPts: number } }>;
   durationMs?: number;
   /** When the session was due to start (epoch ms); arrivals after it plus a grace period count as late. */
   startedAt?: number;

@@ -1,5 +1,5 @@
 import type { AppData, Award, Hymn, HymnStatus } from './types';
-import { hymnPoints, todayISO, uid } from './logic';
+import { hymnPointsOn, todayISO, uid } from './logic';
 import { partPointsOn } from './parts';
 
 /** What a milestone is for, as sessions record it in milestones[m].keys: "hymn:m", or "hymn:part:s" for a part. */
@@ -41,7 +41,7 @@ export function withAward(d: AppData, memberId: string, hymn: Hymn | undefined, 
     const p = hymn.parts?.find(x => x.id === part.id);
     if (p) apply(p.id, part.before, part.after, partPointsOn(p, todayISO()));
   }
-  apply(undefined, before, after, hymnPoints(hymn));
+  apply(undefined, before, after, hymnPointsOn(hymn, todayISO()));
   const same = JSON.stringify(awards) === JSON.stringify(m.awards ?? []);
   return same ? d : { ...d, members: d.members.map(x => x.id === memberId ? { ...x, awards: awards.length ? awards : undefined } : x) };
 }

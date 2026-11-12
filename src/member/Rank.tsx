@@ -1,4 +1,4 @@
-import { hymnsCount, medal, pointsCount, pointsWhy, POINTS, sessionsCount } from '../data/logic';
+import { partsCount, hymnsCount, medal, pointsCount, pointsWhy, POINTS, sessionsCount } from '../data/logic';
 import { useView } from './Layout';
 
 const monthName = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { month: 'long' });
@@ -14,6 +14,8 @@ export default function MemberRank() {
     ['تقييم الحصص (متوسط كل حصة)', b.rating],
     [`وصلت "حافظه" في ${hymnsCount(b.memorized)}`, b.memorizedPts],
     [`وصلت "بيقوله لوحده" في ${hymnsCount(b.solo)}`, b.soloPts],
+    [`حفظت ${partsCount(b.partsM)}`, b.partsMPts],
+    [`قلت ${partsCount(b.partsS)} لوحدك`, b.partsSPts],
   ] as [string, number][]).filter(([, pts], i) => i < 2 || pts > 0);
 
   return (
