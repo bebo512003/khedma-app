@@ -12,8 +12,8 @@ export default function MemberRank() {
   const parts = ([
     [`حضور ${sessionsCount(b.attended)}`, b.attendance],
     ['تقييم الحصص (متوسط كل حصة)', b.rating],
-    [`وصلت "حافظه" في ${hymnsCount(b.memorized)}`, b.memorized * POINTS.memorized],
-    [`وصلت "بيقوله لوحده" في ${hymnsCount(b.solo)}`, b.solo * POINTS.solo],
+    [`وصلت "حافظه" في ${hymnsCount(b.memorized)}`, b.memorizedPts],
+    [`وصلت "بيقوله لوحده" في ${hymnsCount(b.solo)}`, b.soloPts],
   ] as [string, number][]).filter(([, pts], i) => i < 2 || pts > 0);
 
   return (
@@ -32,8 +32,15 @@ export default function MemberRank() {
         </div></div>
         {v.place > 1 && v.gap > 0 && (
           <div className="card"><b>عشان تطلع الأول ناقصك {pointsCount(v.gap)}</b>
-            <div className="note">لو حضرت وخدت تقييم كويس، أو قلت لحن لوحدك ({POINTS.solo} نقط)، توصل.</div></div>
+            <div className="note">لو حضرت وخدت تقييم كويس، أو قلت لحن لوحدك (من {POINTS.solo} نقط)، توصل.</div></div>
         )}
+        {v.coupons && <div className="card">
+          <div className="row between"><h2>رصيد الكوبونات</h2><b className="coupon-bal">{v.coupons.balance}</b></div>
+          {(val => val ? <div className="note">لو الشهر خلص وأنت في مركزك ده هتاخد {val} كوبون في رصيدك. الأول {v.coupons.values[0]}، التاني {v.coupons.values[1] ?? 0}، التالت {v.coupons.values[2] ?? 0}.</div>
+            : <div className="note">الأول كل شهر بياخد {v.coupons.values[0]} كوبون، والتاني {v.coupons.values[1] ?? 0}، والتالت {v.coupons.values[2] ?? 0}، وبتتجمع من شهر للتاني وتبدلها بهدايا.</div>)(v.points > 0 ? v.coupons.values[v.place - 1] ?? 0 : 0)}
+          {v.coupons.earned.slice().reverse().slice(0, 6).map(e => <div key={e.month} className="row between"><span>{monthName.format(new Date(`${e.month}-15`))} • المركز {e.place}</span><b>+{e.value}</b></div>)}
+          {v.coupons.spent.slice().reverse().slice(0, 6).map((s, i) => <div key={i} className="row between muted"><span>صرفت{s.note ? ` على ${s.note}` : ''}</span><b>−{s.amount}</b></div>)}
+        </div>}
         <div className="card"><h2>نقطك الشهر ده جت منين</h2>
           {parts.map(([k, val]) => <div key={k} className="row between"><span>{k}</span><b>{val}</b></div>)}
           <div className="row between" style={{ borderTop: '1px solid var(--line)', paddingTop: 8 }}><b>المجموع</b><b>{b.total}</b></div>

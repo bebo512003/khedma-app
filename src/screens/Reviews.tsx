@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useAllowedLevel, useData, useStore } from '../data/store';
+import { useAllowedLevel, useCan, useData, useStore } from '../data/store';
 import { formatDay, isoDate, formatTime } from '../data/logic';
 import { STATUS_LABELS, type HymnStatus, type Submission } from '../data/types';
 import { loadRecording } from '../firebase/recordings';
 import { VoiceNote } from '../ui/Voice';
 import { BackButton } from '../ui/back';
 import { partKey, withPartStatus } from '../data/parts';
+import { withAward } from '../data/awards';
 
 /** Members' recordings from home waiting for a servant: listen, set their level in the hymn, and leave a note. */
 export default function Reviews() {
@@ -36,6 +37,7 @@ export default function Reviews() {
 function Review({ s }: { s: Submission }) {
   const [data, update] = useData();
   const { servant } = useStore();
+  const canMembers = useCan('members');
   // A recitation of one part sets that part's level; the hymn's own follows its parts.
   const hymn = data.hymns.find(h => h.id === s.hymnId);
   const part = s.partId ? hymn?.parts?.find(p => p.id === s.partId) : undefined;
@@ -47,10 +49,13 @@ function Review({ s }: { s: Submission }) {
   const done = async () => {
     setBusy(true);
     const { reviewSubmission } = await import('../firebase/submissions');
-    // The level counts like one set from the member's profile: no points, those come from sessions.
-    update(d => ({ ...d, progress: { ...d.progress, [s.memberId]: hymn && part
-      ? withPartStatus(hymn, d.progress[s.memberId], part.id, status)
-      : { ...(d.progress[s.memberId] ?? {}), [s.hymnId]: status } } }));
+    // Reaching حافظه / بيقوله لوحده from a recitation gives the hymn's points, like a live one.
+    update(d => {
+      const before = (d.progress[s.memberId]?.[s.hymnId] ?? 0) as HymnStatus;
+      const prog = hymn && part ? withPartStatus(hymn, d.progress[s.memberId], part.id, status) : { ...(d.progress[s.memberId] ?? {}), [s.hymnId]: status };
+      const next = { ...d, progress: { ...d.progress, [s.memberId]: prog } };
+      return canMembers ? withAward(next, s.memberId, hymn, before, (prog[s.hymnId] ?? 0) as HymnStatus, 'app') : next;
+    });
     await reviewSubmission(s.id, { status, note: note.trim() || undefined, by: servant?.uid ?? '', byName: servant?.name ?? 'الخادم' }).catch(() => setBusy(false));
   };
 

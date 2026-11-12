@@ -1,10 +1,10 @@
 import { hymnSource } from './HymnText';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useData } from '../data/store';
+import { useData, useIsLead } from '../data/store';
 import { bookOf, entryPages, pagesLabel } from '../data/books';
 import BookPages from './BookPages';
-import { currentTerm, safeUrl, uid } from '../data/logic';
+import { POINTS, currentTerm, hymnPoints, safeUrl, uid } from '../data/logic';
 import type { Hymn } from '../data/types';
 import HymnText from './HymnText';
 import { unifyCoptic } from '../data/unicodeCoptic';
@@ -25,6 +25,7 @@ export default function HymnForm() {
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [evenN, setEvenN] = useState(7);
+  const lead = useIsLead();
   const set = (p: Partial<Hymn>) => setH(x => ({ ...x, ...p }));
 
   const save = () => {
@@ -98,6 +99,19 @@ export default function HymnForm() {
         {new Set(counts).size > 1 && <div className="note">عدد السطور مش متساوي في الخانات ({counts.join(' / ')}). اتأكد إن كل سطر قصاده سطره.</div>}
         {counts.length > 0 && <HymnText hymn={h} dictLink="/dictionary" />}
         <PartsEditor h={h} set={set} evenN={evenN} setEvenN={setEvenN} />
+        <div className="card">
+          <h2>نقط اللحن</h2>
+          {lead ? <>
+            <div className="note">على قد طول اللحن وصعوبته. الأصلي {POINTS.memorized} لـ«حافظه» و{POINTS.solo} لـ«بيقوله لوحده». التغيير بيمشي على اللي جاي بس، والنقط اللي اتاخدت قبل كده بتفضل زي ما هي.</div>
+            <div className="row" style={{ gap: 8 }}>
+              {(['memorized', 'solo'] as const).map(k => (
+                <label key={k} className="field grow" htmlFor={`pts-${k}`}><span>{k === 'memorized' ? 'حافظه' : 'بيقوله لوحده'}</span>
+                  <input id={`pts-${k}`} className="input" inputMode="numeric" placeholder={String(POINTS[k])} value={h.points?.[k] ?? ''}
+                    onChange={e => { const n = parseInt(e.target.value.replace(/\D/g, ''), 10); const p = { ...h.points, [k]: n >= 0 ? Math.min(n, 500) : undefined }; set({ points: p.memorized === undefined && p.solo === undefined ? undefined : p }); }} /></label>
+              ))}
+            </div>
+          </> : <div className="note">حافظه = {hymnPoints(h).memorized} نقطة، بيقوله لوحده = {hymnPoints(h).solo} نقطة. الخادم المسؤول بس اللي يغيرهم.</div>}
+        </div>
         {inBook && <BookPages book={{ title: inBook.book.title, label: pagesLabel(inBook.entry), pages: entryPages(inBook.book, inBook.entry) }} />}
         {error && <div className="alert-t" role="alert">{error}</div>}
         {existing && (confirmDelete

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { CRITERIA, STATUS_LABELS, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
-import { LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
+import { POINTS, hymnPoints, LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
 import Scanner from './Scanner';
 import { nextPart, partKey, partOf, wholeStatus } from '../data/parts';
 
@@ -102,14 +102,17 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
     const milestones: Session['milestones'] = {};
     present.forEach(m => {
       // A correction adds to what the session already counted; progress already holds its earlier changes.
-      let memorized = editing?.milestones?.[m.id]?.memorized ?? 0, solo = editing?.milestones?.[m.id]?.solo ?? 0;
+      const was = editing?.milestones?.[m.id];
+      let memorized = was?.memorized ?? 0, solo = was?.solo ?? 0;
+      let mPts = was?.mPts ?? memorized * POINTS.memorized, sPts = was?.sPts ?? solo * POINTS.solo;
+      const hp = hymnPoints(hymn);
       // Points go with the whole hymn: a split hymn counts once its parts all get there.
       if (hymn) {
         const before = data.progress[m.id]?.[hymn.id] ?? 0, after = memberHym(m.id)[hymn.id] ?? 0;
-        if (before < 2 && after >= 2) memorized++;
-        if (before < 3 && after === 3) solo++;
+        if (before < 2 && after >= 2) { memorized++; mPts += hp.memorized; }
+        if (before < 3 && after === 3) { solo++; sPts += hp.solo; }
       }
-      if (memorized || solo) milestones[m.id] = { memorized, solo };
+      if (memorized || solo) milestones[m.id] = { memorized, solo, mPts, sPts };
     });
     const session: Session = {
       ...editing,

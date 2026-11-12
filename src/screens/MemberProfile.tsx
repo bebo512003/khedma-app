@@ -1,8 +1,9 @@
 import { partKey, withPartStatus } from '../data/parts';
+import { withAward } from '../data/awards';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useCan } from '../data/store';
-import { STATUS_LABELS, type HymnStatus } from '../data/types';
+import { STATUS_LABELS, type Hymn, type HymnStatus } from '../data/types';
 import {
   absenceStreak, contact, formatTime, isLate, lateBy, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, pointsWhy, ranking, sessionPoints,
   sessionAverage, todayISO, waLink, yearsCount, MONTHS, titled } from '../data/logic';
@@ -41,8 +42,17 @@ export default function MemberProfile() {
   const streak = absenceStreak(data, m);
   const rated = mine.filter(s => s.ratings[m.id]);
   const c = contact(m);
-  const setStatus = (hymnId: string, s: HymnStatus) =>
-    update(d => ({ ...d, progress: { ...d.progress, [m.id]: { ...(d.progress[m.id] ?? {}), [hymnId]: s } } }));
+  // A live recitation: the servant sets the level here, and reaching حافظه / بيقوله لوحده gives the hymn's points.
+  const setStatus = (hymnId: string, s: HymnStatus) => update(d => {
+    const before = (d.progress[m.id]?.[hymnId] ?? 0) as HymnStatus;
+    const next = { ...d, progress: { ...d.progress, [m.id]: { ...(d.progress[m.id] ?? {}), [hymnId]: s } } };
+    return withAward(next, m.id, d.hymns.find(h => h.id === hymnId), before, s, 'live');
+  });
+  const setPart = (h: Hymn, partId: string, s: HymnStatus) => update(d => {
+    const before = (d.progress[m.id]?.[h.id] ?? 0) as HymnStatus;
+    const prog = withPartStatus(h, d.progress[m.id], partId, s);
+    return withAward({ ...d, progress: { ...d.progress, [m.id]: prog } }, m.id, h, before, prog[h.id] ?? 0, 'live');
+  });
   const row = (label: string, value?: string) => value ? <div className="kv"><span className="muted">{label}</span><b>{value}</b></div> : null;
 
   return (
@@ -101,14 +111,14 @@ export default function MemberProfile() {
                     <div key={p.id} className="row between" style={{ paddingInlineStart: 12, gap: 6 }}>
                       <span className="muted">{p.name}</span>
                       <button className={`pill st${ps}`} disabled={!edit} aria-label={`${h.nameAr}، ${p.name}: ${STATUS_LABELS[ps]}`}
-                        onClick={() => update(d => ({ ...d, progress: { ...d.progress, [m.id]: withPartStatus(h, d.progress[m.id], p.id, ((ps + 1) % 4) as HymnStatus) } }))}>{STATUS_LABELS[ps]}</button>
+                        onClick={() => setPart(h, p.id, ((ps + 1) % 4) as HymnStatus)}>{STATUS_LABELS[ps]}</button>
                     </div>
                   ))(status(partKey(h.id, p.id))))}
                 </div>
               );
             })}
           </div>
-          <div className="note">تغيير المستوى من هنا مش بيدي نقط. النقط بتيجي من لحن الحصة.</div>
+          <div className="note">لو سمّعلك لايف، غيّر مستواه من هنا: أول ما يوصل «حافظه» أو «بيقوله لوحده» بياخد نقط اللحن في رصيد الشهر ده، ولو رجّعته بترجع.</div>
         </>}
 
         {tab === 'ratings' && (rated.length === 0

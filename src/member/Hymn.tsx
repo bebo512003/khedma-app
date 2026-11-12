@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { POINTS, safeUrl } from '../data/logic';
+import { hymnPoints, safeUrl } from '../data/logic';
 import { STATUS_LABELS } from '../data/types';
 import { useView } from './Layout';
 import HymnText from '../screens/HymnText';
@@ -17,7 +17,8 @@ export default function MemberHymn() {
   const [q] = useSearchParams();
   const [part, setPart] = useState<string | undefined>(() => q.get('part') ?? undefined);
   if (!h) return <main className="main gutter"><div className="card">اللحن ده مش موجود. <Link to="/me/home">ارجع</Link></div></main>;
-  const next = h.status < 2 ? POINTS.memorized : h.status === 2 ? POINTS.solo : 0;
+  const hp = hymnPoints(h);
+  const next = h.status < 2 ? hp.memorized : h.status === 2 ? hp.solo : 0;
   const place: [string, string | undefined][] = [['الصلاة', h.prayer], ['بيتقال إمتى', h.when], ['المناسبة', h.occasion]];
 
   return (

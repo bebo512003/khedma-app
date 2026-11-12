@@ -11,7 +11,7 @@ export function useMenu(): Group[] {
   const canReports = useCan('reports'), canMembers = useCan('members');
   const groups: Group[] = [
     { title: 'الحصص', items: [['/sessions', 'clock', 'سجل الحصص'], ['/reviews', 'mic', 'التسميع'], ['/followup', 'heart', 'الافتقاد']] },
-    { title: 'المخدومين', items: [['/members', 'people', 'المخدومين'], ['/ranking', 'chart', 'الترتيب'], ['/reports', 'chart', 'التقارير'], ['/cards', 'qr', 'كروت QR']] },
+    { title: 'المخدومين', items: [['/members', 'people', 'المخدومين'], ['/ranking', 'chart', 'الترتيب'], ['/coupons', 'heart', 'الكوبونات'], ['/reports', 'chart', 'التقارير'], ['/cards', 'qr', 'كروت QR']] },
     { title: 'الألحان', items: [['/library', 'book', 'المكتبة'], ['/curriculum', 'list', 'المنهج'], ['/books', 'books', 'الكتب']] },
     { title: 'القبطي', items: [['/dictionary', 'dict', 'القاموس'], ['/translate', 'dict', 'ترجمة جملة']] },
   ];

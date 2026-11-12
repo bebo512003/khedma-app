@@ -62,7 +62,7 @@ export function writeDiff(db: Firestore, prev: AppData, next: AppData) {
     if (same(prev.progress[id], next.progress[id])) continue;
     b.op(w => next.progress[id] ? w.set(ref(db, 'progress', id), next.progress[id]) : w.delete(ref(db, 'progress', id)));
   }
-  const pick = (d: AppData) => ({ curricula: d.curricula, templates: d.templates, nextCode: d.nextCode });
+  const pick = (d: AppData) => ({ curricula: d.curricula, templates: d.templates, nextCode: d.nextCode, ...(d.coupons ? { coupons: d.coupons } : {}) });
   if (!same(pick(prev), pick(next))) b.op(w => w.set(ref(db, 'meta', 'app'), pick(next)));
   return b.commit();
 }
@@ -75,9 +75,11 @@ export async function publishViews(db: Firestore, data: AppData, published: Map<
   publishPhones(db, data).catch(() => undefined);
   // One write per view, so a view that is refused doesn't hold back everyone else's, and we can say whose it was.
   const jobs: { id: string; run: () => Promise<void> }[] = [];
+  // Each ended month's coupon winners are worked out once for everyone.
+  const cache = new Map();
   for (const m of data.members) {
     if (!mayLevel(m.levelId)) continue;
-    const v = buildMemberView(data, m.id);
+    const v = buildMemberView(data, m.id, undefined, cache);
     const json = JSON.stringify(v);
     if (published.get(m.id) === json) continue;
     published.set(m.id, json);

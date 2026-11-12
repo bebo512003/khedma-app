@@ -79,7 +79,7 @@ const MAX_MS = 10 * 60_000;
 const MAX_FILE = 8 * 1024 * 1024;
 
 /** Records a voice note in place (or takes an audio file), then hands back the audio and its length. */
-export function Recorder({ onDone, maxMs = MAX_MS, bitrate = 32000, file = true, label = 'سجّل' }: { onDone: (blob: Blob, ms: number) => void; maxMs?: number; bitrate?: number; file?: boolean; label?: string }) {
+export function Recorder({ onDone, maxMs = MAX_MS, bitrate = 32000, file = true, label = 'سجّل', fileLabel = 'اختار ملف صوت', maxBytes = MAX_FILE }: { onDone: (blob: Blob, ms: number) => void; maxMs?: number; bitrate?: number; file?: boolean; label?: string; fileLabel?: string; maxBytes?: number }) {
   const [rec, setRec] = useState<MediaRecorder | null>(null);
   const [start, setStart] = useState(0);
   const [now, setNow] = useState(0);
@@ -116,7 +116,7 @@ export function Recorder({ onDone, maxMs = MAX_MS, bitrate = 32000, file = true,
     const f = e.target.files?.[0];
     e.target.value = '';
     if (!f) return;
-    if (f.size > MAX_FILE) { setError('الملف كبير. اختار تسجيل أقل من 8 ميجا.'); return; }
+    if (f.size > maxBytes) { setError(`الملف كبير (${(f.size / 1048576).toFixed(1)} ميجا). اختار تسجيل أقل من ${Math.floor(maxBytes / 1048576)} ميجا، أو ابعته فويس على واتساب لنفسك ونزّله.`); return; }
     const a = new Audio(); const u = URL.createObjectURL(f);
     const done = (d: number) => { URL.revokeObjectURL(u); onDone(f, Number.isFinite(d) ? Math.round(d * 1000) : 0); };
     a.onloadedmetadata = () => done(a.duration); a.onerror = () => done(0);
@@ -134,7 +134,7 @@ export function Recorder({ onDone, maxMs = MAX_MS, bitrate = 32000, file = true,
     <>
       <div className="row" style={{ gap: 8 }}>
         <button className="btnp grow" onClick={begin}><Icon name="mic" size={18} /> {label}</button>
-        {file && <><label className="btn" htmlFor="voice-file" style={{ cursor: 'pointer' }}>اختار ملف صوت</label>
+        {file && <><label className="btn" htmlFor="voice-file" style={{ cursor: 'pointer' }}>{fileLabel}</label>
         <input id="voice-file" type="file" accept="audio/*" hidden onChange={pick} /></>}
       </div>
       {error && <div className="alert-t" role="alert">{error}</div>}

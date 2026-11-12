@@ -1,6 +1,6 @@
 import ThemeButton from '../ui/ThemeButton';
 import { Link, useNavigate } from 'react-router-dom';
-import { formatDay, isoDate, nextFriday, pointsCount, POINTS } from '../data/logic';
+import { formatDay, isoDate, nextFriday, pointsCount, hymnPoints } from '../data/logic';
 import { STATUS_LABELS } from '../data/types';
 import { Bell, useView } from './Layout';
 import { memberLogout } from './session';
@@ -43,8 +43,8 @@ export default function MemberHome() {
           <div className="card">
             <b>هدف الجمعة الجاية</b>
             <div className="muted">{goal.status === 2
-              ? `لو قلت "${goal.nameAr}" لوحدك تاخد ${POINTS.solo} نقط`
-              : `لو حفظت "${goal.nameAr}" تاخد ${POINTS.memorized} نقط`}</div>
+              ? `لو قلت "${goal.nameAr}" لوحدك تاخد ${hymnPoints(goal).solo} نقط`
+              : `لو حفظت "${goal.nameAr}" تاخد ${hymnPoints(goal).memorized} نقط`}</div>
           </div>
         )}
 

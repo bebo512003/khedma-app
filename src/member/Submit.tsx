@@ -7,6 +7,8 @@ import { Recorder, VoiceNote } from '../ui/Voice';
 import { useNotes, useView } from './Layout';
 
 const MAX_MS = 5 * 60_000;
+/** Recordings are kept in up to 8 pieces of 700 KB (the free plan has no file storage). */
+const MAX_FILE = 5 * 1024 * 1024;
 
 /** «سمّع للخادم»: the member records the hymn at home and a servant listens and replies with a level and a note. */
 export default function Submit({ hymnId, hymnName, parts, part, onPart }: { hymnId: string; hymnName: string; parts?: { id: string; name: string }[]; part?: string; onPart?: (id?: string) => void }) {
@@ -50,8 +52,8 @@ export default function Submit({ hymnId, hymnName, parts, part, onPart }: { hymn
             </div>
           </>
           : <>
-            <div className="note">قول اللحن وسجّله (لحد 5 دقايق)، والخادم هيسمعه ويقولك وصلت لفين.</div>
-            <Recorder onDone={(blob, ms) => setTake({ blob, ms })} maxMs={MAX_MS} bitrate={24000} file={false} label="سجّل تسميعك" />
+            <div className="note">قول اللحن وسجّله (لحد 5 دقايق)، أو ارفع تسجيل كنت عامله قبل كده (لحد 5 ميجا). الخادم هيسمعه ويقولك وصلت لفين.</div>
+            <Recorder onDone={(blob, ms) => setTake({ blob, ms })} maxMs={MAX_MS} bitrate={24000} label="سجّل دلوقتي" fileLabel="ارفع تسجيل عندك" maxBytes={MAX_FILE} />
           </>}
       {error && <div className="alert-t" role="alert">{error}</div>}
       {here.filter(s => !s.pending).slice(0, 5).map(s => (

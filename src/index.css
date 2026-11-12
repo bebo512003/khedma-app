@@ -437,3 +437,27 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
 .recite button.li { width: 100%; background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; font: inherit; color: inherit; text-align: start; cursor: pointer; }
 .recite .pill { display: inline-flex; align-items: center; }
 .recite .parts { padding: 4px 12px 10px 0; margin: 0; border-bottom: 1px solid var(--line); }
+/* Monthly coupons: cards to print (two per row on A4) and the balances list. */
+.coupon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.coupon { border: 2px dashed var(--gold); border-radius: 14px; background: var(--surface); overflow: hidden; break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.coupon .c-head { background: var(--hero); color: var(--on-hero); display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; font-size: 12px; }
+.coupon .c-head b { letter-spacing: .5px; }
+.coupon .c-body { display: flex; align-items: center; gap: 10px; padding: 12px; }
+.coupon .c-medal { font-size: 34px; display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.coupon .c-medal small, .coupon .c-val small { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.coupon .c-main { flex: 1; min-width: 0; }
+.coupon .c-name { font-weight: 700; font-size: 17px; }
+.coupon .c-sub { color: var(--muted); font-size: 12px; }
+.coupon .c-val { display: flex; flex-direction: column; align-items: center; border-inline-start: 2px dashed var(--line); padding-inline-start: 12px; }
+.coupon .c-val b { font-size: 30px; color: var(--act); line-height: 1; }
+.coupon-bal { font-size: 18px; color: var(--act); min-width: 40px; text-align: center; }
+@media print {
+  .main.coupons { padding: 0; max-width: none; }
+  .main.coupons > :not(.coupon-grid) { display: none !important; }
+  .coupon-grid { grid-template-columns: repeat(2, 1fr); gap: 5mm; }
+  .coupon { height: 50mm; display: flex; flex-direction: column; }
+  .coupon .c-body { flex: 1; padding: 6mm; }
+  .coupon .c-name { font-size: 20px; }
+  .coupon .c-val b { font-size: 38px; }
+}
+.coupon .c-foot { font-size: 11px; color: var(--muted); text-align: center; border-top: 1px dashed var(--line); padding: 4px; }

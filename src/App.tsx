@@ -32,6 +32,7 @@ import Settings from './screens/Settings';
 import Changes from './screens/Changes';
 import { HistoryTracker } from './ui/back';
 import Ranking from './screens/Ranking';
+import Coupons from './screens/Coupons';
 import MemberLogin from './member/Login';
 import { OpenBook, OpenBooks, OpenHome, OpenHymn, OpenLibrary } from './screens/Open';
 import Install from './screens/Install';
@@ -100,6 +101,7 @@ export default function App() {
           <Route path="/dictionary" element={s(<Dictionary />)} />
           <Route path="/translate" element={s(<Translate />)} />
           <Route path="/ranking" element={s(<Ranking />)} />
+          <Route path="/coupons" element={s(<Coupons />)} />
           <Route path="/reports" element={n('reports', <Reports />)} />
           <Route path="/install" element={<Install />} />
           <Route path="/open" element={<OpenHome />} />

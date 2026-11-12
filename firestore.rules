@@ -174,10 +174,10 @@ service cloud.firestore {
         allow read: if servant();
         allow get: if member() && (!id.matches('sub_.*') || id.matches('sub_' + get(doc('accounts', request.auth.uid)).data.memberId + '_.*'));
         allow write: if can('sessions');
-        allow create: if member() && id.matches('sub_' + get(doc('accounts', request.auth.uid)).data.memberId + '_[a-z0-9]+-[0-2]')
+        allow create: if member() && id.matches('sub_' + get(doc('accounts', request.auth.uid)).data.memberId + '_[a-z0-9]+-[0-7]')
           && request.resource.data.keys().hasOnly(['data', 'i', 'parts', 'mime'])
           && request.resource.data.data is bytes && request.resource.data.data.size() <= 700000
-          && request.resource.data.parts is int && request.resource.data.parts <= 3;
+          && request.resource.data.parts is int && request.resource.data.parts <= 8;
       }
 
       // «سمّع للخادم»: a member sends a hymn recording; a servant listens and replies with a level and a note.
@@ -193,20 +193,23 @@ service cloud.firestore {
           && str(request.resource.data, 'levelId', 40) && str(request.resource.data, 'hymnId', 80)
           && str(request.resource.data, 'partId', 20) && str(request.resource.data, 'partName', 80)
           && request.resource.data.recording.id.matches('sub_' + mine() + '_[a-z0-9]+')
-          && request.resource.data.recording.parts is int && request.resource.data.recording.parts <= 3;
+          && request.resource.data.recording.parts is int && request.resource.data.recording.parts <= 8;
         allow update: if can('sessions') && canLevel(resource.data.levelId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pending', 'review', 'reviewAt', 'recording']);
         allow delete: if lead();
       }
 
       // The hymn library is open to anyone (#/open/library), signed in or not.
-      match /hymns/{id} { allow read: if true; allow write: if can('curriculum'); }
+      // A hymn's points are the lead's to set.
+      match /hymns/{id} { allow read: if true; allow delete: if can('curriculum');
+        allow create, update: if can('curriculum') && (lead() || request.resource.data.get('points', null) == (resource == null ? null : resource.data.get('points', null))); }
       match /books/{id} { allow read: if true; allow write: if can('curriculum'); }
       match /progress/{id} { allow read, write: if servant(); }
       // meta also holds the next member code and message templates, which any servant may change; the curriculum needs the permission.
       match /meta/{id} {
         allow read: if servant();
-        allow write: if can('curriculum') || (servant() && resource != null && request.resource.data.get('curricula', null) == resource.data.get('curricula', null));
+        allow write: if (can('curriculum') || (servant() && resource != null && request.resource.data.get('curricula', null) == resource.data.get('curricula', null)))
+          && (lead() || request.resource.data.get('coupons', null) == (resource == null ? null : resource.data.get('coupons', null)));
       }
     }
   }

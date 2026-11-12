@@ -42,6 +42,35 @@ export interface Member {
   example?: boolean;
   /** YYYY-MM-DD the member joined their current level; sessions before it are marked "before you joined". */
   levelSince?: string;
+  /** Milestone points given outside a session: a live recitation to a servant, or a reply to one sent from home. */
+  awards?: Award[];
+  /** Coupons spent on gifts. */
+  spent?: Spend[];
+}
+
+/** حافظه (m) or بيقوله لوحده (s) reached on a hymn outside a session, with the points it gave that day. */
+export interface Award {
+  id: string;
+  date: string;
+  hymnId: string;
+  kind: 'm' | 's';
+  pts: number;
+  /** Who gave it and how: 'live' (recited in person, set from the profile) or 'app' (a recording sent from home). */
+  via?: 'live' | 'app';
+}
+
+/** Coupons taken off a member's balance for a gift. */
+export interface Spend {
+  id: string;
+  date: string;
+  amount: number;
+  note?: string;
+}
+
+/** Monthly coupons: places 1–3 of each level's ranking earn these, from `since` (YYYY-MM) on. */
+export interface Coupons {
+  values: number[];
+  since: string;
 }
 
 /** What a member may change about themselves from the member app. */
@@ -103,6 +132,8 @@ export interface Hymn {
   source?: string;
   /** A long hymn taught over several sessions; each part has its own status and recitations. */
   parts?: HymnPart[];
+  /** Points for reaching حافظه / بيقوله لوحده in this hymn, set by the lead per its length and difficulty. */
+  points?: { memorized?: number; solo?: number };
 }
 
 /** A piece of a hymn: lines from..to (1-based, as the hymn text counts them), both optional. */
@@ -156,7 +187,7 @@ export interface Session {
   attendance: Record<string, Attendance>;
   ratings: Record<string, Rating>;
   /** Hymns that reached حافظه / بيقوله لوحده during this session, per member (drives milestone points). */
-  milestones?: Record<string, { memorized: number; solo: number }>;
+  milestones?: Record<string, { memorized: number; solo: number; mPts?: number; sPts?: number }>;
   durationMs?: number;
   /** When the session was due to start (epoch ms); arrivals after it plus a grace period count as late. */
   startedAt?: number;
@@ -226,6 +257,7 @@ export interface AppData {
   sessions: Session[];
   templates: Templates;
   nextCode: number;
+  coupons?: Coupons;
 }
 
 export const STATUS_LABELS = ['لسه مبدأش', 'بيتعلمه', 'حافظه', 'بيقوله لوحده'] as const;

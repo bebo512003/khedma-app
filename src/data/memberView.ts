@@ -1,6 +1,7 @@
 import type { Attendance, AppData, Hymn, HymnStatus, MemberEdit, Rating, Recording } from './types';
 import { currentTerm, curriculumKey, lateBy, pointsWhy, sessionPoints, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO, titled } from './logic';
 import { partKey, partOf, sessionHymnLabel } from './parts';
+import { couponLedger, type Winner } from './coupons';
 import { bookOf, entryPages, hasPages, pageUrl, pagesLabel } from './books';
 
 /**
@@ -30,6 +31,8 @@ export interface MemberView {
   sessions?: { id: string; date: string; hymn?: string; summary?: string; summaryAt?: number; recordings?: Recording[]; att?: Attendance; arrived?: number; late?: number; before?: boolean; pts?: { att: number; rating: number; memorized: number; solo: number; total: number } }[];
   /** The level's booklets, newest term first. */
   books?: { id: string; title: string; term?: string; current: boolean; pdfUrl?: string; pages: string[]; entries: { hymnId: string; name: string; label: string }[] }[];
+  /** Monthly coupons, when the school uses them: the balance, each ended month's, what was spent, and this month's place value. */
+  coupons?: { balance: number; values: number[]; earned: { month: string; place: number; value: number }[]; spent: { date: string; amount: number; note?: string }[] };
   code?: string;
   gender?: 'm' | 'f';
   grade?: string;
@@ -37,7 +40,7 @@ export interface MemberView {
 
 const clean = <T extends object>(o: T) => JSON.parse(JSON.stringify(o)) as T;
 
-export function buildMemberView(data: AppData, memberId: string, month = todayISO().slice(0, 7)): MemberView | null {
+export function buildMemberView(data: AppData, memberId: string, month = todayISO().slice(0, 7), cache?: Map<string, Winner[]>): MemberView | null {
   const m = data.members.find(x => x.id === memberId);
   if (!m) return null;
   const level = data.levels.find(l => l.id === m.levelId);
@@ -89,7 +92,8 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
     memberId: m.id, name: titled(m, data.levels), photo: m.photo, rank: m.rank,
     profile: { name: m.name, photo: m.photo, birthdate: m.birthdate, phone: m.phone, parentPhone: m.parentPhone, gender: m.gender, grade: m.grade, address: m.address }, levelName: level?.name ?? '', termName: term?.name, month,
     points: breakdown.total, place: pos < 0 ? 0 : rows[pos].place, gap: Math.max(0, (rows[0]?.points ?? 0) - breakdown.total), breakdown, top, hymns, ratings,
-    sessions, books, levelId: m.levelId, code: m.code, gender: m.gender, grade: m.grade,
+    sessions, books, levelId: m.levelId,
+    coupons: data.coupons ? (l => ({ balance: l.balance, values: data.coupons!.values, earned: l.earned.map(e => ({ month: e.month, place: e.place, value: e.value })), spent: l.spent.map(s => ({ date: s.date, amount: s.amount, note: s.note })) }))(couponLedger(data, m.id, cache)) : undefined, code: m.code, gender: m.gender, grade: m.grade,
     attendanceRate: mine.length ? Math.round(100 * mine.filter(s => s.attendance[m.id] === 'p').length / mine.length) : null,
   });
 }
