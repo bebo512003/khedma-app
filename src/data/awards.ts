@@ -1,21 +1,46 @@
 import type { AppData, Award, Hymn, HymnStatus } from './types';
 import { hymnPoints, todayISO, uid } from './logic';
 
+/** What a milestone is for, as sessions record it in milestones[m].keys: "hymn:m", or "hymn:part:s" for a part. */
+export const milestoneKey = (hymnId: string, partId: string | undefined, kind: Award['kind']) => `${hymnId}${partId ? `:${partId}` : ''}:${kind}`;
+
+/** Whether a session already gave this milestone (sessions saved before keys were kept: the session's hymn, whole). */
+function inSession(d: AppData, memberId: string, hymnId: string, partId: string | undefined, kind: Award['kind']) {
+  const key = milestoneKey(hymnId, partId, kind);
+  return d.sessions.some(s => {
+    const ms = s.milestones?.[memberId];
+    if (!ms) return false;
+    if (ms.keys) return ms.keys.includes(key);
+    return !partId && !s.partId && s.hymnIds[0] === hymnId && (kind === 'm' ? ms.memorized : ms.solo) > 0;
+  });
+}
+
 /**
- * A servant moved a member's hymn status outside a session (a live recitation from the profile, or a reply to one
- * sent from home): reaching حافظه / بيقوله لوحده gives the hymn's points once, and moving back down takes them away.
- * A milestone a session already gave for the hymn isn't given twice.
+ * A servant moved a member's status outside a session (a live recitation from the profile, or a reply to one sent
+ * from home): reaching حافظه / بيقوله لوحده gives the points once, and moving back down takes them away. A split
+ * hymn's part gives its own points when the lead set some, and the whole hymn gives the hymn's when all parts get there.
  */
-export function withAward(d: AppData, memberId: string, hymn: Hymn | undefined, before: HymnStatus, after: HymnStatus, via: Award['via']): AppData {
+export function withAward(d: AppData, memberId: string, hymn: Hymn | undefined, before: HymnStatus, after: HymnStatus, via: Award['via'],
+  part?: { id: string; before: HymnStatus; after: HymnStatus }): AppData {
   const m = d.members.find(x => x.id === memberId);
-  if (!m || !hymn || before === after) return d;
-  let awards = (m.awards ?? []).filter(a => a.hymnId !== hymn.id || (a.kind === 'm' ? after >= 2 : after >= 3));
-  const inSession = (k: 'memorized' | 'solo') => d.sessions.some(s => s.hymnIds[0] === hymn.id && (s.milestones?.[memberId]?.[k] ?? 0) > 0);
-  const has = (k: Award['kind']) => awards.some(a => a.hymnId === hymn.id && a.kind === k);
-  const hp = hymnPoints(hymn);
-  const give = (kind: Award['kind'], pts: number) => { awards = [...awards, { id: uid(), date: todayISO(), hymnId: hymn.id, kind, pts, via }]; };
-  if (before < 2 && after >= 2 && !has('m') && !inSession('memorized')) give('m', hp.memorized);
-  if (before < 3 && after === 3 && !has('s') && !inSession('solo')) give('s', hp.solo);
+  if (!m || !hymn) return d;
+  let awards = [...(m.awards ?? [])];
+  const apply = (partId: string | undefined, b: HymnStatus, a: HymnStatus, pts: { memorized: number; solo: number }) => {
+    if (a === b) return;
+    awards = awards.filter(x => x.hymnId !== hymn.id || (x.partId ?? undefined) !== partId || (x.kind === 'm' ? a >= 2 : a >= 3));
+    const has = (k: Award['kind']) => awards.some(x => x.hymnId === hymn.id && x.partId === partId && x.kind === k);
+    const give = (kind: Award['kind'], p: number) => {
+      if (p > 0 && !has(kind) && !inSession(d, memberId, hymn.id, partId, kind))
+        awards.push({ id: uid(), date: todayISO(), hymnId: hymn.id, ...(partId ? { partId } : {}), kind, pts: p, via });
+    };
+    if (b < 2 && a >= 2) give('m', pts.memorized);
+    if (b < 3 && a === 3) give('s', pts.solo);
+  };
+  if (part) {
+    const p = hymn.parts?.find(x => x.id === part.id);
+    if (p) apply(p.id, part.before, part.after, { memorized: p.points?.memorized ?? 0, solo: p.points?.solo ?? 0 });
+  }
+  apply(undefined, before, after, hymnPoints(hymn));
   const same = JSON.stringify(awards) === JSON.stringify(m.awards ?? []);
   return same ? d : { ...d, members: d.members.map(x => x.id === memberId ? { ...x, awards: awards.length ? awards : undefined } : x) };
 }

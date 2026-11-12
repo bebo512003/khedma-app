@@ -98,7 +98,7 @@ export default function HymnForm() {
         {area('meaning', 'المعنى بالعربي')}
         {new Set(counts).size > 1 && <div className="note">عدد السطور مش متساوي في الخانات ({counts.join(' / ')}). اتأكد إن كل سطر قصاده سطره.</div>}
         {counts.length > 0 && <HymnText hymn={h} dictLink="/dictionary" />}
-        <PartsEditor h={h} set={set} evenN={evenN} setEvenN={setEvenN} />
+        <PartsEditor h={h} set={set} evenN={evenN} setEvenN={setEvenN} lead={lead} />
         <div className="card">
           <h2>نقط اللحن</h2>
           {lead ? <>
@@ -127,7 +127,12 @@ export default function HymnForm() {
 }
 
 /** Splitting a long hymn over several sessions, each part with its own status and recitations. */
-function PartsEditor({ h, set, evenN, setEvenN }: { h: Hymn; set: (p: Partial<Hymn>) => void; evenN: number; setEvenN: (n: number) => void }) {
+function PartsEditor({ h, set, evenN, setEvenN, lead }: { h: Hymn; set: (p: Partial<Hymn>) => void; evenN: number; setEvenN: (n: number) => void; lead: boolean }) {
+  const setPts = (i: number, k: 'memorized' | 'solo', v: string) => {
+    const n = parseInt(v.replace(/\D/g, ''), 10);
+    const p = { ...parts[i].points, [k]: n >= 0 ? Math.min(n, 500) : undefined };
+    put(i, { points: p.memorized === undefined && p.solo === undefined ? undefined : p });
+  };
   const parts = h.parts ?? [];
   const rows = textRows(h);
   const bySections = splitBySections(h);
@@ -136,7 +141,7 @@ function PartsEditor({ h, set, evenN, setEvenN }: { h: Hymn; set: (p: Partial<Hy
   return (
     <div className="card">
       <h2>تقسيم اللحن على حصص</h2>
-      <div className="note">لو اللحن طويل (زي السبع طرائق) قسّمه أجزاء: كل حصة بتاخد جزء، وكل جزء ليه حالة وتسميع لوحده، واللحن كله بيتحسب حافظه لما كل أجزاءه تبقى حافظها. النقط بتتحسب مرة واحدة على اللحن كله.{rows > 0 ? ` النص فيه ${rows} سطر، وتقدر تحدد كل جزء من سطر كام لسطر كام عشان الدارس يشوف جزءه بس.` : ''}</div>
+      <div className="note">لو اللحن طويل (زي السبع طرائق) قسّمه أجزاء: كل حصة بتاخد جزء، وكل جزء ليه حالة وتسميع لوحده، واللحن كله بيتحسب حافظه لما كل أجزاءه تبقى حافظها. كل جزء ممكن تحطله نقط (لما يحفظه أو يقوله لوحده)، ونقط اللحن تحت بتتاخد زيادة لما يخلص اللحن كله، فلو عايز النقط على الأجزاء بس خلّي نقط اللحن 0.{rows > 0 ? ` النص فيه ${rows} سطر، وتقدر تحدد كل جزء من سطر كام لسطر كام عشان الدارس يشوف جزءه بس.` : ''}</div>
       {parts.map((p, i) => (
         <div key={p.id} className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
           <input className="input grow" aria-label={`اسم الجزء ${i + 1}`} value={p.name} placeholder={partName(i)} onChange={e => put(i, { name: e.target.value })} style={{ minWidth: 140 }} />
@@ -145,6 +150,11 @@ function PartsEditor({ h, set, evenN, setEvenN }: { h: Hymn; set: (p: Partial<Hy
             <input className="input" style={{ width: 72 }} inputMode="numeric" aria-label="لسطر" placeholder="لـ" value={p.to ?? ''} onChange={e => put(i, { to: num(e.target.value) })} />
           </>}
           <button className="icon" aria-label={`امسح ${p.name || partName(i)}`} onClick={() => set({ parts: parts.filter((_, j) => j !== i) })}>✕</button>
+          {lead ? <div className="row" style={{ gap: 6, width: '100%', paddingBottom: 6, borderBottom: '1px solid var(--line)' }}>
+            <span className="muted" style={{ fontSize: 12 }}>نقط الجزء:</span>
+            <input className="input" style={{ width: 70 }} inputMode="numeric" aria-label={`نقط حافظه في ${p.name || partName(i)}`} placeholder="حافظه" value={p.points?.memorized ?? ''} onChange={e => setPts(i, 'memorized', e.target.value)} />
+            <input className="input" style={{ width: 70 }} inputMode="numeric" aria-label={`نقط بيقوله لوحده في ${p.name || partName(i)}`} placeholder="لوحده" value={p.points?.solo ?? ''} onChange={e => setPts(i, 'solo', e.target.value)} />
+          </div> : (p.points?.memorized || p.points?.solo) ? <div className="muted" style={{ width: '100%', fontSize: 12 }}>نقط الجزء: حافظه {p.points?.memorized ?? 0}، لوحده {p.points?.solo ?? 0}</div> : null}
         </div>
       ))}
       <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>

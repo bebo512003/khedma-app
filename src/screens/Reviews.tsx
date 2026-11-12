@@ -54,7 +54,8 @@ function Review({ s }: { s: Submission }) {
       const before = (d.progress[s.memberId]?.[s.hymnId] ?? 0) as HymnStatus;
       const prog = hymn && part ? withPartStatus(hymn, d.progress[s.memberId], part.id, status) : { ...(d.progress[s.memberId] ?? {}), [s.hymnId]: status };
       const next = { ...d, progress: { ...d.progress, [s.memberId]: prog } };
-      return canMembers ? withAward(next, s.memberId, hymn, before, (prog[s.hymnId] ?? 0) as HymnStatus, 'app') : next;
+      const pb = (part ? d.progress[s.memberId]?.[partKey(s.hymnId, part.id)] ?? 0 : 0) as HymnStatus;
+      return canMembers ? withAward(next, s.memberId, hymn, before, (prog[s.hymnId] ?? 0) as HymnStatus, 'app', part ? { id: part.id, before: pb, after: status } : undefined) : next;
     });
     await reviewSubmission(s.id, { status, note: note.trim() || undefined, by: servant?.uid ?? '', byName: servant?.name ?? 'الخادم' }).catch(() => setBusy(false));
   };

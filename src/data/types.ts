@@ -53,6 +53,8 @@ export interface Award {
   id: string;
   date: string;
   hymnId: string;
+  /** Set when the points were for one part of a split hymn. */
+  partId?: string;
   kind: 'm' | 's';
   pts: number;
   /** Who gave it and how: 'live' (recited in person, set from the profile) or 'app' (a recording sent from home). */
@@ -140,6 +142,8 @@ export interface Hymn {
 export interface HymnPart {
   id: string;
   name: string;
+  /** Points for reaching حافظه / بيقوله لوحده in this part, set by the lead; none means the part gives no points of its own. */
+  points?: { memorized?: number; solo?: number };
   from?: number;
   to?: number;
 }
@@ -187,7 +191,7 @@ export interface Session {
   attendance: Record<string, Attendance>;
   ratings: Record<string, Rating>;
   /** Hymns that reached حافظه / بيقوله لوحده during this session, per member (drives milestone points). */
-  milestones?: Record<string, { memorized: number; solo: number; mPts?: number; sPts?: number }>;
+  milestones?: Record<string, { memorized: number; solo: number; mPts?: number; sPts?: number; keys?: string[] }>;
   durationMs?: number;
   /** When the session was due to start (epoch ms); arrivals after it plus a grace period count as late. */
   startedAt?: number;

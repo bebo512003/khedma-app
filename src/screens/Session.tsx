@@ -5,6 +5,7 @@ import { CRITERIA, STATUS_LABELS, type Attendance, type HymnStatus, type Rating,
 import { POINTS, hymnPoints, LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
 import Scanner from './Scanner';
 import { nextPart, partKey, partOf, wholeStatus } from '../data/parts';
+import { milestoneKey } from '../data/awards';
 
 type Mode = 'att' | 'rate' | 'hym';
 const fmt = (ms: number) => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
@@ -105,14 +106,18 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
       const was = editing?.milestones?.[m.id];
       let memorized = was?.memorized ?? 0, solo = was?.solo ?? 0;
       let mPts = was?.mPts ?? memorized * POINTS.memorized, sPts = was?.sPts ?? solo * POINTS.solo;
-      const hp = hymnPoints(hymn);
-      // Points go with the whole hymn: a split hymn counts once its parts all get there.
+      const keys = [...(was?.keys ?? [])];
+      // The whole hymn gives its points; a split hymn's part gives its own when the lead set some, and the
+      // whole hymn's come once all its parts get there.
+      const credit = (partId: string | undefined, before: number, after: number, pts: { memorized: number; solo: number }) => {
+        if (before < 2 && after >= 2 && pts.memorized > 0) { memorized++; mPts += pts.memorized; keys.push(milestoneKey(hymn!.id, partId, 'm')); }
+        if (before < 3 && after === 3 && pts.solo > 0) { solo++; sPts += pts.solo; keys.push(milestoneKey(hymn!.id, partId, 's')); }
+      };
       if (hymn) {
-        const before = data.progress[m.id]?.[hymn.id] ?? 0, after = memberHym(m.id)[hymn.id] ?? 0;
-        if (before < 2 && after >= 2) { memorized++; mPts += hp.memorized; }
-        if (before < 3 && after === 3) { solo++; sPts += hp.solo; }
+        if (part && key) credit(part.id, data.progress[m.id]?.[key] ?? 0, hs(m.id, key), { memorized: part.points?.memorized ?? 0, solo: part.points?.solo ?? 0 });
+        credit(undefined, data.progress[m.id]?.[hymn.id] ?? 0, memberHym(m.id)[hymn.id] ?? 0, hymnPoints(hymn));
       }
-      if (memorized || solo) milestones[m.id] = { memorized, solo, mPts, sPts };
+      if (memorized || solo) milestones[m.id] = { memorized, solo, mPts, sPts, ...(keys.length ? { keys } : {}) };
     });
     const session: Session = {
       ...editing,

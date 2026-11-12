@@ -50,8 +50,9 @@ export default function MemberProfile() {
   });
   const setPart = (h: Hymn, partId: string, s: HymnStatus) => update(d => {
     const before = (d.progress[m.id]?.[h.id] ?? 0) as HymnStatus;
+    const pb = (d.progress[m.id]?.[partKey(h.id, partId)] ?? 0) as HymnStatus;
     const prog = withPartStatus(h, d.progress[m.id], partId, s);
-    return withAward({ ...d, progress: { ...d.progress, [m.id]: prog } }, m.id, h, before, prog[h.id] ?? 0, 'live');
+    return withAward({ ...d, progress: { ...d.progress, [m.id]: prog } }, m.id, h, before, prog[h.id] ?? 0, 'live', { id: partId, before: pb, after: s });
   });
   const row = (label: string, value?: string) => value ? <div className="kv"><span className="muted">{label}</span><b>{value}</b></div> : null;
 

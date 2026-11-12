@@ -34,6 +34,13 @@ export default function MemberHome() {
           {v.place === 1 && v.points > 0 && <div style={{ color: 'var(--gold)' }}>أنت الأول الشهر ده، حافظ عليها</div>}
         </Link>
 
+        {v.coupons && <Link to="/me/rank" className="card coupon-home" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="row between">
+            <div><b>🎟️ رصيد الكوبونات</b><div className="muted">{(val => val ? `لو فضلت في مركزك لآخر الشهر هتاخد ${val} كوبون كمان` : `الأول كل شهر بياخد ${v.coupons.values[0]} كوبون، وتبدلها بهدايا`)(v.points > 0 ? v.coupons.values[v.place - 1] ?? 0 : 0)}</div></div>
+            <b className="coupon-bal" style={{ fontSize: 28 }}>{v.coupons.balance}</b>
+          </div>
+        </Link>}
+
         <PushToggle who="member" />
 
         <CopticToday plain />
