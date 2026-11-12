@@ -144,6 +144,8 @@ export interface HymnPart {
   name: string;
   /** Points for reaching حافظه / بيقوله لوحده in this part, set by the lead; none means the part gives no points of its own. */
   points?: { memorized?: number; solo?: number };
+  /** The month (YYYY-MM) this part is taught in: sessions and recitations open on it, and its points count only within it. */
+  month?: string;
   from?: number;
   to?: number;
 }

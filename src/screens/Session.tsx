@@ -4,7 +4,7 @@ import { useAllowedLevel, useData } from '../data/store';
 import { CRITERIA, STATUS_LABELS, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
 import { POINTS, hymnPoints, LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
 import Scanner from './Scanner';
-import { nextPart, partKey, partOf, wholeStatus } from '../data/parts';
+import { nextPart, partKey, partOf, partPointsOn, wholeStatus } from '../data/parts';
 import { milestoneKey } from '../data/awards';
 
 type Mode = 'att' | 'rate' | 'hym';
@@ -114,7 +114,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
         if (before < 3 && after === 3 && pts.solo > 0) { solo++; sPts += pts.solo; keys.push(milestoneKey(hymn!.id, partId, 's')); }
       };
       if (hymn) {
-        if (part && key) credit(part.id, data.progress[m.id]?.[key] ?? 0, hs(m.id, key), { memorized: part.points?.memorized ?? 0, solo: part.points?.solo ?? 0 });
+        if (part && key) credit(part.id, data.progress[m.id]?.[key] ?? 0, hs(m.id, key), partPointsOn(part, date));
         credit(undefined, data.progress[m.id]?.[hymn.id] ?? 0, memberHym(m.id)[hymn.id] ?? 0, hymnPoints(hymn));
       }
       if (memorized || solo) milestones[m.id] = { memorized, solo, mPts, sPts, ...(keys.length ? { keys } : {}) };

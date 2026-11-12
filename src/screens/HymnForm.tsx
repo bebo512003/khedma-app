@@ -4,7 +4,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData, useIsLead } from '../data/store';
 import { bookOf, entryPages, pagesLabel } from '../data/books';
 import BookPages from './BookPages';
-import { POINTS, currentTerm, hymnPoints, safeUrl, uid } from '../data/logic';
+import { POINTS, currentTerm, hymnPoints, safeUrl, todayISO, uid } from '../data/logic';
+import { monthName } from '../data/monthReport';
 import type { Hymn } from '../data/types';
 import HymnText from './HymnText';
 import { unifyCoptic } from '../data/unicodeCoptic';
@@ -128,6 +129,16 @@ export default function HymnForm() {
 
 /** Splitting a long hymn over several sessions, each part with its own status and recitations. */
 function PartsEditor({ h, set, evenN, setEvenN, lead }: { h: Hymn; set: (p: Partial<Hymn>) => void; evenN: number; setEvenN: (n: number) => void; lead: boolean }) {
+  const [data] = useData();
+  const term = currentTerm(data);
+  // Months to pick from: the current term's, else the next six.
+  const months = (() => {
+    const out: string[] = [];
+    const from = (term?.start ?? todayISO()).slice(0, 7), to = term?.end?.slice(0, 7) ?? '';
+    for (let m = from; out.length < (to ? 24 : 6) && (!to || m <= to);) { out.push(m); const [y, mo] = m.split('-').map(Number); m = mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, '0')}`; }
+    return out;
+  })();
+  const spread = () => set({ parts: (h.parts ?? []).map((p, i, all) => ({ ...p, month: months[Math.floor(i * months.length / all.length)] })) });
   const setPts = (i: number, k: 'memorized' | 'solo', v: string) => {
     const n = parseInt(v.replace(/\D/g, ''), 10);
     const p = { ...parts[i].points, [k]: n >= 0 ? Math.min(n, 500) : undefined };
@@ -141,7 +152,7 @@ function PartsEditor({ h, set, evenN, setEvenN, lead }: { h: Hymn; set: (p: Part
   return (
     <div className="card">
       <h2>تقسيم اللحن على حصص</h2>
-      <div className="note">لو اللحن طويل (زي السبع طرائق) قسّمه أجزاء: كل حصة بتاخد جزء، وكل جزء ليه حالة وتسميع لوحده، واللحن كله بيتحسب حافظه لما كل أجزاءه تبقى حافظها. كل جزء ممكن تحطله نقط (لما يحفظه أو يقوله لوحده)، ونقط اللحن تحت بتتاخد زيادة لما يخلص اللحن كله، فلو عايز النقط على الأجزاء بس خلّي نقط اللحن 0.{rows > 0 ? ` النص فيه ${rows} سطر، وتقدر تحدد كل جزء من سطر كام لسطر كام عشان الدارس يشوف جزءه بس.` : ''}</div>
+      <div className="note">لو اللحن طويل (زي السبع طرائق) قسّمه أجزاء: كل حصة بتاخد جزء، وكل جزء ليه حالة وتسميع لوحده، واللحن كله بيتحسب حافظه لما كل أجزاءه تبقى حافظها. ولو حددت لكل جزء شهره، الحصة والتسميع بيفتحوا على جزء الشهر ده لوحدهم، ونقط الجزء بتتحسب بس لو وصلها جوه شهره عشان الشهور ماتدخلش في بعض. كل جزء ممكن تحطله نقط (لما يحفظه أو يقوله لوحده)، ونقط اللحن تحت بتتاخد زيادة لما يخلص اللحن كله، فلو عايز النقط على الأجزاء بس خلّي نقط اللحن 0.{rows > 0 ? ` النص فيه ${rows} سطر، وتقدر تحدد كل جزء من سطر كام لسطر كام عشان الدارس يشوف جزءه بس.` : ''}</div>
       {parts.map((p, i) => (
         <div key={p.id} className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
           <input className="input grow" aria-label={`اسم الجزء ${i + 1}`} value={p.name} placeholder={partName(i)} onChange={e => put(i, { name: e.target.value })} style={{ minWidth: 140 }} />
@@ -150,6 +161,10 @@ function PartsEditor({ h, set, evenN, setEvenN, lead }: { h: Hymn; set: (p: Part
             <input className="input" style={{ width: 72 }} inputMode="numeric" aria-label="لسطر" placeholder="لـ" value={p.to ?? ''} onChange={e => put(i, { to: num(e.target.value) })} />
           </>}
           <button className="icon" aria-label={`امسح ${p.name || partName(i)}`} onClick={() => set({ parts: parts.filter((_, j) => j !== i) })}>✕</button>
+          <select className="input" style={{ width: 'auto' }} aria-label={`شهر ${p.name || partName(i)}`} value={p.month ?? ''} onChange={e => put(i, { month: e.target.value || undefined })}>
+            <option value="">من غير شهر</option>
+            {[...new Set([...months, ...(p.month ? [p.month] : [])])].map(m => <option key={m} value={m}>{monthName(m)}</option>)}
+          </select>
           {lead ? <div className="row" style={{ gap: 6, width: '100%', paddingBottom: 6, borderBottom: '1px solid var(--line)' }}>
             <span className="muted" style={{ fontSize: 12 }}>نقط الجزء:</span>
             <input className="input" style={{ width: 70 }} inputMode="numeric" aria-label={`نقط حافظه في ${p.name || partName(i)}`} placeholder="حافظه" value={p.points?.memorized ?? ''} onChange={e => setPts(i, 'memorized', e.target.value)} />
@@ -165,6 +180,7 @@ function PartsEditor({ h, set, evenN, setEvenN, lead }: { h: Hymn; set: (p: Part
           <input className="input" style={{ width: 60 }} inputMode="numeric" aria-label="عدد الأجزاء" value={evenN} onChange={e => setEvenN(Math.max(2, Math.min(20, parseInt(e.target.value, 10) || 2)))} />
           <span>حصص</span>
         </span>
+        {parts.length > 0 && months.length > 1 && <button className="btn" onClick={spread}>وزّعهم على شهور الترم</button>}
         {parts.length > 0 && <button className="btn" onClick={() => set({ parts: [] })}>شيل التقسيم</button>}
       </div>
     </div>

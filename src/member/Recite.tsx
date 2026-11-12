@@ -14,6 +14,7 @@ export default function Recite() {
   const [part, setPart] = useState<string | undefined>(() => q.get('part') ?? undefined);
   const pick = (id: string, p?: string) => { setPart(p); setQ(p ? { h: id, part: p } : { h: id }, { replace: true }); };
   const waiting = subs.filter(s => s.pending).length;
+  const thisMonth = new Date().toISOString().slice(0, 7);
 
   return (
     <>
@@ -28,13 +29,13 @@ export default function Recite() {
           <div className="muted" style={{ paddingTop: 8 }}>اختار اللحن اللي هتسمّعه</div>
           {v.hymns.map(h => (
             <div key={h.id}>
-              <button className="li" style={h.parts?.length ? { borderBottom: 0 } : undefined} onClick={() => pick(h.id, h.parts?.length ? h.parts.find(p => (h.partStatus?.[p.id] ?? 0) < 2)?.id ?? h.parts[0].id : undefined)}>
+              <button className="li" style={h.parts?.length ? { borderBottom: 0 } : undefined} onClick={() => pick(h.id, h.parts?.length ? (h.parts.find(p => p.month === thisMonth) ?? h.parts.find(p => (h.partStatus?.[p.id] ?? 0) < 2) ?? h.parts[0]).id : undefined)}>
                 <b className="grow" style={{ textAlign: 'start' }}>{h.nameAr}{h.parts?.length ? <span className="muted"> • {h.parts.length} أجزاء</span> : null}</b>
                 <span className={`pill st${h.status}`}>{STATUS_LABELS[h.status]}</span>
               </button>
               {h.parts?.length ? <div className="chips parts">{h.parts.map(p => {
                 const s = h.partStatus?.[p.id] ?? 0;
-                return <button key={p.id} className={`chip st${s}`} onClick={() => pick(h.id, p.id)} aria-label={`${p.name}: ${STATUS_LABELS[s]}`}>{p.name}{s >= 2 ? ' ✓' : ''}</button>;
+                return <button key={p.id} className={`chip st${s}`} onClick={() => pick(h.id, p.id)} aria-label={`${p.name}: ${STATUS_LABELS[s]}`}>{p.name}{p.month === thisMonth ? ' • الشهر ده' : ''}{s >= 2 ? ' ✓' : ''}</button>;
               })}</div> : null}
             </div>
           ))}

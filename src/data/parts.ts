@@ -1,4 +1,5 @@
 import type { AppData, Hymn, HymnPart, HymnStatus, Session } from './types';
+import { todayISO } from './logic';
 
 /**
  * A long hymn (السبع طرائق…) can be taught over several sessions: each part has its own status and recitations,
@@ -26,6 +27,10 @@ export function withPartStatus(h: Hymn, prog: Record<string, HymnStatus> | undef
   return next;
 }
 
+/** A part with a month gives its points only when reached within that month, so months don't mix. */
+export const partPointsOn = (p: HymnPart | undefined, date: string) =>
+  !p || (p.month && date.slice(0, 7) !== p.month) ? { memorized: 0, solo: 0 } : { memorized: p.points?.memorized ?? 0, solo: p.points?.solo ?? 0 };
+
 /** "اسم اللحن (الجزء)" for a session or a recitation. */
 export const hymnLabel = (h: Hymn | undefined, partId?: string, fallback = '') => {
   const p = partOf(h, partId);
@@ -34,9 +39,15 @@ export const hymnLabel = (h: Hymn | undefined, partId?: string, fallback = '') =
 export const sessionHymnLabel = (data: AppData, s: Session) => hymnLabel(data.hymns.find(h => h.id === s.hymnIds[0]), s.partId) || undefined;
 
 /** The part the next session of this level probably takes: the one after the last session's part on this hymn. */
-export function nextPart(data: AppData, levelId: string, h: Hymn | undefined): string | undefined {
+export function nextPart(data: AppData, levelId: string, h: Hymn | undefined, date = todayISO()): string | undefined {
   const parts = h?.parts ?? [];
   if (!h || !parts.length) return undefined;
+  // Parts given a month: this month's own (the first of them, past the ones sessions already took).
+  const mine = parts.filter(p => p.month === date.slice(0, 7));
+  if (mine.length) {
+    const taken = new Set(data.sessions.filter(s => s.levelId === levelId && s.hymnIds[0] === h.id).map(s => s.partId));
+    return (mine.find(p => !taken.has(p.id)) ?? mine[mine.length - 1]).id;
+  }
   const last = data.sessions.filter(s => s.levelId === levelId && s.hymnIds[0] === h.id && s.partId)
     .sort((a, b) => b.date.localeCompare(a.date) || (b.savedAt ?? 0) - (a.savedAt ?? 0))[0];
   const i = last ? parts.findIndex(p => p.id === last.partId) : -1;
