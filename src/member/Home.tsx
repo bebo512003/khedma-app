@@ -1,8 +1,7 @@
 import ThemeButton from '../ui/ThemeButton';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDay, isoDate, nextFriday, pointsCount, hymnPoints } from '../data/logic';
-import { STATUS_LABELS } from '../data/types';
-import { Bell, useView } from './Layout';
+import { Bell, useG, useStatus, useView } from './Layout';
 import { memberLogout } from './session';
 import CopticToday from '../screens/CopticToday';
 import VerseToday from '../screens/VerseToday';
@@ -10,6 +9,7 @@ import PushToggle from '../screens/PushToggle';
 
 export default function MemberHome() {
   const v = useView();
+  const g = useG(), st = useStatus();
   const nav = useNavigate();
   const memorized = v.hymns.filter(h => h.status >= 2).length;
   const goal = v.hymns.find(h => h.status === 2) ?? v.hymns.find(h => h.status < 2);
@@ -30,13 +30,13 @@ export default function MemberHome() {
             <div><div className="big">#{v.place || '–'}</div><div>ترتيبك في {v.levelName}</div></div>
             <div style={{ textAlign: 'left' }}><div className="big">{v.points}</div><div>نقطة الشهر ده</div></div>
           </div>
-          {v.place > 1 && v.gap > 0 && <div style={{ color: 'var(--gold)' }}>{pointsCount(v.gap)} وتبقى الأول</div>}
-          {v.place === 1 && v.points > 0 && <div style={{ color: 'var(--gold)' }}>أنت الأول الشهر ده، حافظ عليها</div>}
+          {v.place > 1 && v.gap > 0 && <div style={{ color: 'var(--gold)' }}>{pointsCount(v.gap)} {g('وتبقى الأول', 'وتبقي الأولى')}</div>}
+          {v.place === 1 && v.points > 0 && <div style={{ color: 'var(--gold)' }}>{g('أنت الأول الشهر ده، حافظ عليها', 'انتي الأولى الشهر ده، حافظي عليها')}</div>}
         </Link>
 
         {v.coupons && <Link to="/me/rank" className="card coupon-home" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="row between">
-            <div><b>🎟️ رصيد الكوبونات</b><div className="muted">{(val => val ? `لو فضلت في مركزك لآخر الشهر هتاخد ${val} كوبون كمان` : `الأول كل شهر بياخد ${v.coupons.values[0]} كوبون، وتبدلها بهدايا`)(v.points > 0 ? v.coupons.values[v.place - 1] ?? 0 : 0)}</div></div>
+            <div><b>🎟️ رصيد الكوبونات</b><div className="muted">{(val => val ? `${g('لو فضلت في مركزك لآخر الشهر هتاخد', 'لو فضلتي في مركزك لآخر الشهر هتاخدي')} ${val} كوبون كمان` : `الأول كل شهر بياخد ${v.coupons.values[0]} كوبون، ${g('وتبدلها', 'وتبدليها')} بهدايا`)(v.points > 0 ? v.coupons.values[v.place - 1] ?? 0 : 0)}</div></div>
             <b className="coupon-bal" style={{ fontSize: 28 }}>{v.coupons.balance}</b>
           </div>
         </Link>}
@@ -50,17 +50,17 @@ export default function MemberHome() {
           <div className="card">
             <b>هدف الجمعة الجاية</b>
             <div className="muted">{goal.status === 2
-              ? `لو قلت "${goal.nameAr}" لوحدك تاخد ${hymnPoints(goal).solo} نقط`
-              : `لو حفظت "${goal.nameAr}" تاخد ${hymnPoints(goal).memorized} نقط`}</div>
+              ? `${g('لو قلت', 'لو قولتي')} "${goal.nameAr}" ${g('لوحدك تاخد', 'لوحدك تاخدي')} ${hymnPoints(goal).solo} نقط`
+              : `${g('لو حفظت', 'لو حفظتي')} "${goal.nameAr}" ${g('تاخد', 'تاخدي')} ${hymnPoints(goal).memorized} نقط`}</div>
           </div>
         )}
 
         <div className="card">
-          <div className="row between"><h2>ألحاني الترم ده</h2><span className="muted">{memorized} من {v.hymns.length} حافظهم</span></div>
+          <div className="row between"><h2>ألحاني الترم ده</h2><span className="muted">{memorized} من {v.hymns.length} {g('حافظهم', 'حافظاهم')}</span></div>
           <div className="list">
             {v.hymns.map(h => (
               <Link key={h.id} to={`/me/hymn/${h.id}`} className="li">
-                <b className="grow">{h.nameAr}</b><span className={`pill st${h.status}`} style={{ display: 'inline-flex', alignItems: 'center' }}>{STATUS_LABELS[h.status]}</span>
+                <b className="grow">{h.nameAr}</b><span className={`pill st${h.status}`} style={{ display: 'inline-flex', alignItems: 'center' }}>{st(h.status)}</span>
               </Link>
             ))}
             {v.hymns.length === 0 && <div className="note">لسه الخدام ما حطوش ألحان الترم.</div>}

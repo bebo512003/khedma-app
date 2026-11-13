@@ -1,3 +1,4 @@
+import { toFem } from '../data/logic';
 import { useState } from 'react';
 import { useData } from '../data/store';
 import { birthdayWhen, contact, DEFAULT_BIRTHDAY, MONTHS, monthBirthdays, yearsCount, fillTemplate, upcomingBirthdays, waLink, titled } from '../data/logic';
@@ -28,7 +29,7 @@ export default function Birthdays({ levelIds }: { levelIds?: (id: string) => boo
             <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
             <div className="grow"><b>{titled(m, data.levels)}</b><div className="muted">{birthdayWhen(daysAway)} • {m.gender === 'f' ? 'هتتم' : 'هيتم'} {yearsCount(age)}{contact(m).who ? '' : ' • مفيش رقم'}</div></div>
             <a className={daysAway === 0 ? 'btnp' : 'btn'} style={{ minHeight: 44 }} target="_blank" rel="noopener noreferrer"
-              href={waLink(contact(m).phone, fillTemplate(tpl, { 'الاسم': titled({ ...m, name: m.name.split(' ')[0] }, data.levels), 'السن': age, 'طيب': m.gender === 'f' ? 'طيبة' : 'طيب' }))}>هنّي</a>
+              href={waLink(contact(m).phone, fillTemplate(m.gender === 'f' ? toFem(tpl) : tpl, { 'الاسم': titled({ ...m, name: m.name.split(' ')[0] }, data.levels), 'السن': age, 'طيب': m.gender === 'f' ? 'طيبة' : 'طيب' }))}>هنّي</a>
           </div>
         ))}
       </div>
@@ -41,7 +42,7 @@ export default function Birthdays({ levelIds }: { levelIds?: (id: string) => boo
               <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
               <div className="grow"><b>{titled(m, data.levels)}</b><div className="muted">مولود في {MONTHS[m.birthMonth! - 1]}{contact(m).who ? '' : ' • مفيش رقم'}</div></div>
               <a className="btn" style={{ minHeight: 44 }} target="_blank" rel="noopener noreferrer"
-                href={waLink(contact(m).phone, fillTemplate(tpl, { 'الاسم': titled({ ...m, name: m.name.split(' ')[0] }, data.levels), 'السن': '', 'طيب': m.gender === 'f' ? 'طيبة' : 'طيب' }))}>هنّي</a>
+                href={waLink(contact(m).phone, fillTemplate(m.gender === 'f' ? toFem(tpl) : tpl, { 'الاسم': titled({ ...m, name: m.name.split(' ')[0] }, data.levels), 'السن': '', 'طيب': m.gender === 'f' ? 'طيبة' : 'طيب' }))}>هنّي</a>
             </div>
           ))}
         </div>

@@ -1,3 +1,4 @@
+import { toFem, fx } from '../data/logic';
 import { useState } from 'react';
 import { useData } from '../data/store';
 import { absenceStreak, contact, fillTemplate, waLink, titled } from '../data/logic';
@@ -15,16 +16,16 @@ export default function FollowUpList({ members }: { members: Member[] }) {
       <label className="field" htmlFor="tpl"><span>نص الرسالة</span>
         <textarea id="tpl" value={tpl} onChange={e => setTpl(e.target.value)} onBlur={save} />
       </label>
-      <div className="note">الخانات: {'{الاسم}'} و{'{الغياب}'}. التعديل هنا بيتحفظ كقالب للمرات الجاية.</div>
+      <div className="note">الخانات: {'{الاسم}'} و{'{الغياب}'}. التعديل هنا بيتحفظ كقالب للمرات الجاية. للبنات الرسالة بتتحول لصيغة المؤنث لوحدها (تكون ← تكوني، وحشتنا ← وحشتينا).</div>
       <div className="list">
         {members.map(m => {
           const streak = absenceStreak(data, m);
-          const text = fillTemplate(tpl, { 'الاسم': titled(m, data.levels), 'الغياب': streak });
+          const text = fillTemplate(m.gender === 'f' ? toFem(tpl) : tpl, { 'الاسم': titled(m, data.levels), 'الغياب': streak });
           const to = contact(m);
           return (
             <div key={m.id} className="li">
               <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
-              <div className="grow"><b>{titled(m, data.levels)}</b><div className="muted">غاب {streak} مرات • {to.who === 'self' ? 'على موبايله' : to.who === 'parent' ? 'لولي الأمر' : 'مفيش رقم'}</div></div>
+              <div className="grow"><b>{titled(m, data.levels)}</b><div className="muted">{fx(m, 'غاب', 'غابت')} {streak} مرات • {to.who === 'self' ? 'على موبايله' : to.who === 'parent' ? 'لولي الأمر' : 'مفيش رقم'}</div></div>
               <a className="btn" style={{ minHeight: 44 }} href={waLink(to.phone, text)} target="_blank" rel="noopener">واتساب</a>
             </div>
           );

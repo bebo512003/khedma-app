@@ -34,7 +34,7 @@ export function watchList(data: AppData, allowed: (levelId: string) => boolean) 
     const reasons: string[] = [];
     const recent = mine.slice(0, 4);
     const missed = recent.filter(s => s.attendance[m.id] === 'a').length;
-    if (recent.length >= 3 && missed >= 2) reasons.push(`غاب ${missed} من آخر ${recent.length} حصص`);
+    if (recent.length >= 3 && missed >= 2) reasons.push(`${fx(m, 'غاب', 'غابت')} ${missed} من آخر ${recent.length} حصص`);
     // Present for the last three sessions on the same hymn and still hasn't memorized it.
     const present = mine.filter(s => s.attendance[m.id] === 'p').slice(0, 3);
     const h = present[0]?.hymnIds[0];
@@ -117,12 +117,13 @@ export function ranking(data: AppData, levelId: string, month: string) {
 }
 
 /** Where a month's points came from, written out: «حضور 4 حصص (8) + تقييم الحصص (7) + حافظ لحنين (10) = 25». */
-export function pointsWhy(b: { attended: number; attendance: number; rating: number; memorized: number; solo: number; memorizedPts: number; soloPts: number; partsM?: number; partsS?: number; partsMPts?: number; partsSPts?: number; total: number }) {
+export function pointsWhy(b: { attended: number; attendance: number; rating: number; memorized: number; solo: number; memorizedPts: number; soloPts: number; partsM?: number; partsS?: number; partsMPts?: number; partsSPts?: number; total: number }, female = false) {
+  const hafez = female ? 'حافظة' : 'حافظ', bi = female ? 'بتقول' : 'بيقول', alone = female ? 'لوحدها' : 'لوحده';
   const parts = [`حضور ${sessionsCount(b.attended)} (${b.attendance})`, `تقييم الحصص (${b.rating})`];
-  if (b.memorized) parts.push(`حافظ ${hymnsCount(b.memorized)} (${b.memorizedPts})`);
-  if (b.solo) parts.push(`بيقول ${hymnsCount(b.solo)} لوحده (${b.soloPts})`);
-  if (b.partsM) parts.push(`حافظ ${partsCount(b.partsM)} (${b.partsMPts})`);
-  if (b.partsS) parts.push(`بيقول ${partsCount(b.partsS)} لوحده (${b.partsSPts})`);
+  if (b.memorized) parts.push(`${hafez} ${hymnsCount(b.memorized)} (${b.memorizedPts})`);
+  if (b.solo) parts.push(`${bi} ${hymnsCount(b.solo)} ${alone} (${b.soloPts})`);
+  if (b.partsM) parts.push(`${hafez} ${partsCount(b.partsM)} (${b.partsMPts})`);
+  if (b.partsS) parts.push(`${bi} ${partsCount(b.partsS)} ${alone} (${b.partsSPts})`);
   return `${parts.join(' + ')} = ${b.total}`;
 }
 
@@ -219,6 +220,12 @@ export const pagesCount = (n: number) => n === 1 ? 'صفحة واحدة' : count
 /** Searches match whatever hamza or ta marbuta spelling was typed. */
 export const fold = (s: string) => s.trim().toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/[ً-ْ]/g, '').replace(/\s+/g, ' ');
 export const sessionsCount = (n: number) => n === 1 ? 'حصة واحدة' : count(n, 'حصة', 'حصتين', 'حصص');
+
+/** He or she: fx(m, 'غاب', 'غابت'). */
+export const fx = (m: { gender?: string } | undefined, male: string, female: string) => m?.gender === 'f' ? female : male;
+/** A message the servant wrote for anyone, turned to a girl: the usual words that change. */
+const FEM: [RegExp, string][] = [[/(^|\s)تكون(\s|$)/g, '$1تكوني$2'], [/(^|\s)أنت(\s|$)/g, '$1انتي$2'], [/(^|\s)انت(\s|$)/g, '$1انتي$2'], [/وحشتنا/g, 'وحشتينا'], [/(^|\s)طيب(\s|[!،.]|$)/g, '$1طيبة$2'], [/(^|\s)بتيجي(\s|$)/g, '$1بتيجي$2'], [/(^|\s)خليك(\s|$)/g, '$1خليكي$2'], [/(^|\s)عامل(\s|$)/g, '$1عاملة$2']];
+export const toFem = (text: string) => FEM.reduce((t, [re, to]) => t.replace(re, to), text);
 
 export const DEFAULT_BIRTHDAY = 'كل سنة وأنت {طيب} يا {الاسم}! مدرسة الشهيد اسطفانوس للشمامسة بتتمنالك سنة جديدة مليانة فرح وألحان.';
 

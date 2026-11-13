@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
-import { CRITERIA, STATUS_LABELS, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
-import { POINTS, hymnPointsOn, LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
+import { CRITERIA, statusLabels, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
+import { fx, POINTS, hymnPointsOn, LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
 import Scanner from './Scanner';
 import { nextPart, partKey, partOf, partPointsOn, wholeStatus } from '../data/parts';
 import { milestoneKey } from '../data/awards';
@@ -80,12 +80,12 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
     const m = data.members.find(x => x.code === code);
     if (!m) { setToast({ text: `مفيش مخدوم بالكود ${code}`, bad: true }); return; }
     if (m.levelId !== levelId) { setToast({ text: `${titled(m, data.levels)} مش في ${level?.name}`, bad: true }); return; }
-    if (att[m.id] === 'p' && arrivals[m.id]) { setToast({ text: `${titled(m, data.levels)} متسجل قبل كده` }); return; }
+    if (att[m.id] === 'p' && arrivals[m.id]) { setToast({ text: `${titled(m, data.levels)} ${fx(m, 'متسجل', 'متسجلة')} قبل كده` }); return; }
     const now = Date.now();
     const late = startedAt ? minutesLate(now, startedAt) : 0;
     setAtt(a => ({ ...a, [m.id]: 'p' }));
     setArrivals(a => ({ ...a, [m.id]: now }));
-    setToast(late > LATE_GRACE_MIN ? { text: `✓ ${titled(m, data.levels)} حاضر، متأخر ${late} دقيقة`, bad: true } : { text: `✓ ${titled(m, data.levels)} حاضر` });
+    setToast(late > LATE_GRACE_MIN ? { text: `✓ ${titled(m, data.levels)} ${fx(m, 'حاضر، متأخر', 'حاضرة، متأخرة')} ${late} دقيقة`, bad: true } : { text: `✓ ${titled(m, data.levels)} ${fx(m, 'حاضر', 'حاضرة')}` });
     navigator.vibrate?.(60);
   };
   const cycleAtt = (id: string) => setAtt(a => ({ ...a, [id]: (a[id] ?? 'a') === 'a' ? 'p' : a[id] === 'p' ? 'e' : 'a' }));
@@ -187,7 +187,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
                 <button key={m.id} className={`kid ${s === 'p' ? 'p' : s === 'e' ? 'e' : ''}`} onClick={() => cycleAtt(m.id)} aria-pressed={s === 'p'}>
                   <span className="ph">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
                   <span className="nm">{titled(m, data.levels)}</span>
-                  <span className="tg">{s === 'p' ? (arrivals[m.id] ? `${formatTime(arrivals[m.id])}${late > LATE_GRACE_MIN ? ' • متأخر' : ''}` : 'حاضر') : s === 'e' ? 'اعتذر' : ''}</span>
+                  <span className="tg">{s === 'p' ? (arrivals[m.id] ? `${formatTime(arrivals[m.id])}${late > LATE_GRACE_MIN ? ` • ${fx(m, 'متأخر', 'متأخرة')}` : ''}` : fx(m, 'حاضر', 'حاضرة')) : s === 'e' ? fx(m, 'اعتذر', 'اعتذرت') : ''}</span>
                 </button>
               );
             })}
@@ -236,7 +236,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
               <div key={m.id} className="li">
                 <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
                 <b className="grow">{titled(m, data.levels)}</b>
-                {hymn && key && (s => <button className={`pill st${s}`} onClick={() => cycleHym(m.id, key)} aria-label={`${label}: ${STATUS_LABELS[s]}`}>{STATUS_LABELS[s]}</button>)(hs(m.id, key))}
+                {hymn && key && (s => <button className={`pill st${s}`} onClick={() => cycleHym(m.id, key)} aria-label={`${label}: ${statusLabels(m)[s]}`}>{statusLabels(m)[s]}</button>)(hs(m.id, key))}
               </div>
             ))}
           </div></div>

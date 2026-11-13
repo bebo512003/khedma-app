@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { STATUS_LABELS } from '../data/types';
 import { formatDay, isoDate } from '../data/logic';
-import { Bell, useNotes, useView } from './Layout';
+import { Bell, useG, useNotes, useStatus, useView } from './Layout';
 import Submit from './Submit';
 
 /** «التسميع»: pick a hymn of this term (and its part, if it's split), record it, and see the servants' replies. */
 export default function Recite() {
   const v = useView();
+  const g = useG(), st = useStatus();
   const { subs } = useNotes();
   const [q, setQ] = useSearchParams();
   const hymn = v.hymns.find(h => h.id === q.get('h'));
@@ -19,23 +19,23 @@ export default function Recite() {
   return (
     <>
       <header className="top gutter"><div className="row between">
-        <div><h1>التسميع</h1><div className="muted">سجّل اللحن من البيت والخادم هيسمعه ويرد عليك</div></div>
+        <div><h1>التسميع</h1><div className="muted">{g('سجّل اللحن من البيت والخادم هيسمعه ويرد عليك', 'سجّلي اللحن من البيت والخادم هيسمعه ويرد عليكي')}</div></div>
         <Bell />
       </div></header>
       <main className="main gutter recite">
         {waiting > 0 && <div className="note">عندك {waiting} تسميع مستني رد الخادم.</div>}
         {v.hymns.length === 0 && <div className="card"><div className="note">مفيش ألحان في منهج الترم لسه.</div></div>}
         {!hymn && v.hymns.length > 0 && <div className="card" style={{ paddingBlock: 4 }}><div className="list">
-          <div className="muted" style={{ paddingTop: 8 }}>اختار اللحن اللي هتسمّعه</div>
+          <div className="muted" style={{ paddingTop: 8 }}>{g('اختار اللحن اللي هتسمّعه', 'اختاري اللحن اللي هتسمّعيه')}</div>
           {v.hymns.map(h => (
             <div key={h.id}>
               <button className="li" style={h.parts?.length ? { borderBottom: 0 } : undefined} onClick={() => pick(h.id, h.parts?.length ? (h.parts.find(p => p.month === thisMonth) ?? h.parts.find(p => (h.partStatus?.[p.id] ?? 0) < 2) ?? h.parts[0]).id : undefined)}>
                 <b className="grow" style={{ textAlign: 'start' }}>{h.nameAr}{h.month === thisMonth ? <span className="muted"> • الشهر ده</span> : null}{h.parts?.length ? <span className="muted"> • {h.parts.length} أجزاء</span> : null}</b>
-                <span className={`pill st${h.status}`}>{STATUS_LABELS[h.status]}</span>
+                <span className={`pill st${h.status}`}>{st(h.status)}</span>
               </button>
               {h.parts?.length ? <div className="chips parts">{h.parts.map(p => {
                 const s = h.partStatus?.[p.id] ?? 0;
-                return <button key={p.id} className={`chip st${s}`} onClick={() => pick(h.id, p.id)} aria-label={`${p.name}: ${STATUS_LABELS[s]}`}>{p.name}{p.month === thisMonth ? ' • الشهر ده' : ''}{s >= 2 ? ' ✓' : ''}</button>;
+                return <button key={p.id} className={`chip st${s}`} onClick={() => pick(h.id, p.id)} aria-label={`${p.name}: ${st(s)}`}>{p.name}{p.month === thisMonth ? ' • الشهر ده' : ''}{s >= 2 ? ' ✓' : ''}</button>;
               })}</div> : null}
             </div>
           ))}
@@ -53,7 +53,7 @@ export default function Recite() {
           <div className="list">{subs.slice(0, 8).map(s => (
             <button key={s.id} className="li" onClick={() => pick(s.hymnId, s.partId)}>
               <div className="grow" style={{ textAlign: 'start' }}><b>{s.hymnName}{s.partName ? ` (${s.partName})` : ''}</b><div className="muted">{formatDay(isoDate(new Date(s.at)))}</div></div>
-              {s.pending ? <span className="tag">مستني الرد</span> : s.review && <span className={`pill st${s.review.status}`}>{STATUS_LABELS[s.review.status]}</span>}
+              {s.pending ? <span className="tag">مستني الرد</span> : s.review && <span className={`pill st${s.review.status}`}>{st(s.review.status)}</span>}
             </button>
           ))}</div>
         </div>}

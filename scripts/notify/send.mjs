@@ -11,6 +11,8 @@ const DEFAULTS = {
   hymn: { on: true, days: [0, 2], hour: 19, title: 'وقت المراجعة 🎶', body: `خد ١٠ دقايق النهاردة وراجع ${HYMNS_TAG}` },
   session: { on: true, days: [4], hour: 21, title: 'بكرة حصة الألحان', body: `متنساش حصة بكرة، وراجع ${HYMNS_TAG} قبلها 🙏` },
 };
+/** The default reminder texts said to a girl. */
+const femBody = t => t.replace('خد ', 'خدي ').replaceAll('وراجع ', 'وراجعي ').replace('متنساش', 'متنسيش');
 /** A reminder that missed its hour (the job was delayed or down) still goes out within this many hours. */
 const LATE = 3;
 
@@ -69,7 +71,7 @@ async function runChurch(church, publicKey, now) {
   const sent0 = log.subAt === undefined ? [] : (await c.collection('submissions').where('at', '>', subAt0).get()).docs.map(d => d.data())
     .filter(x => typeof x.at === 'number' && x.at <= Date.now());
   // The member's name from their record, not the one the phone sent.
-  for (const x of sent0) x.memberName = (await c.collection('members').doc(String(x.memberId)).get()).get('name') ?? x.memberName;
+  for (const x of sent0) { const m = await c.collection('members').doc(String(x.memberId)).get(); x.memberName = m.get('name') ?? x.memberName; x.gender = m.get('gender'); }
   const reviews = log.revAt === undefined ? [] : (await c.collection('submissions').where('reviewAt', '>', revAt0).get()).docs.map(d => d.data())
     .filter(x => typeof x.reviewAt === 'number' && x.reviewAt <= Date.now());
   const subAt = Math.max(subAt0, ...sent0.map(x => x.at)), revAt = Math.max(revAt0, ...reviews.map(x => x.reviewAt));
@@ -91,7 +93,8 @@ async function runChurch(church, publicKey, now) {
     return who.get(uid);
   };
 
-  const sent = { custom: 0, month: 0, hymn: 0, session: 0, test: 0, summary: 0, submission: 0, review: 0 };
+  const sent = { custom: 0, month: 0, hymn: 0, session: 0, test: 0, summary: 0, submission: 0, review: 0, peers: 0 };
+  const peered = [];
   for (const sub of subs) {
     // One bad phone record never stops the rest.
     try {
@@ -102,7 +105,8 @@ async function runChurch(church, publicKey, now) {
       for (const k of due) {
         if (k === 'hymn' && p.kind !== 'member') continue;
         const r = s[k];
-        msgs.push([k, { title: r.title, body: r.body.replaceAll(HYMNS_TAG, p.kind === 'member' ? hymnList(p.view) : 'ألحان الترم'), tag: k, url: p.kind === 'member' ? './#/me/home' : './#/' }]);
+        const fem = p.kind === 'member' && p.view?.gender === 'f' && r.body === DEFAULTS[k]?.body;
+        msgs.push([k, { title: r.title, body: (fem ? femBody(r.body) : r.body).replaceAll(HYMNS_TAG, p.kind === 'member' ? hymnList(p.view) : 'ألحان الترم'), tag: k, url: p.kind === 'member' ? './#/me/home' : './#/' }]);
       }
       for (const r of custom) {
         const levels = r.levelIds ?? [];
@@ -118,9 +122,22 @@ async function runChurch(church, publicKey, now) {
       if (p.kind === 'member') for (const x of reviews.filter(x => x.memberId === p.memberId)) {
         msgs.push(['review', { title: `${x.review?.byName ?? 'الخادم'} سمع تسميعك ✓`, body: `${x.hymnName}${x.review?.note ? `: ${x.review.note.slice(0, 80)}` : ''}`, tag: `review-${x.id}`, url: `./#/me/hymn/${encodeURIComponent(x.hymnId ?? '')}` }]);
       }
+      // Others in the same level sent a recitation: a nudge to send theirs too, at most once a day.
+      if (p.kind === 'member' && log[`peer:${p.memberId}`] !== now.date && !sent0.some(x => x.memberId === p.memberId)) {
+        const peers = sent0.filter(x => x.levelId === p.levelId && x.memberId !== p.memberId);
+        const names = [...new Map(peers.map(x => [x.memberId, x])).values()];
+        if (names.length) {
+          const f = p.view?.gender === 'f', one = names[0];
+          msgs.push(['peers', {
+            title: names.length === 1 ? `${one.memberName} ${one.gender === 'f' ? 'بعتت' : 'بعت'} تسميع «${one.hymnName}» 🎙️` : `${names.length} من زمايلك بعتوا تسميع 🎙️`,
+            body: f ? 'يلا سمّعي انتي كمان وابعتي تسميعك 💪' : 'يلا سمّع انت كمان وابعت تسميعك 💪', tag: 'peers', url: './#/me/recite',
+          }]);
+          peered.push(p.memberId);
+        }
+      }
       const listens = p.kind === 'servant' && (['admin', 'lead'].includes(p.role) || !p.perms || p.perms.includes('sessions'));
       const mine = listens ? sent0.filter(x => (p.levelIds ?? []).some(l => l === '*' || l === x.levelId)) : [];
-      if (mine.length) msgs.push(['submission', { title: mine.length === 1 ? `${mine[0].memberName} سمّع ${mine[0].hymnName}` : `${mine.length} تسميعات جديدة`, body: 'اسمعه وابعتله رأيك', tag: 'submissions', url: './#/reviews' }]);
+      if (mine.length) msgs.push(['submission', { title: mine.length === 1 ? `${mine[0].memberName} ${mine[0].gender === 'f' ? 'سمّعت' : 'سمّع'} ${mine[0].hymnName}` : `${mine.length} تسميعات جديدة`, body: mine.length > 1 ? 'اسمعهم وابعتلهم رأيك' : mine[0].gender === 'f' ? 'اسمعها وابعتلها رأيك' : 'اسمعه وابعتله رأيك', tag: 'submissions', url: './#/reviews' }]);
       if (monthly && p.kind === 'servant') msgs.push(['month', { title: 'تقرير الشهر اللي فات جاهز 📊', body: 'الحضور والأوائل ومين مستواه نزل، قبل ما تبدأ الشهر الجديد', tag: `month-${pastMonth}`, url: `./#/month/${pastMonth}` }]);
       if (test && d.uid === s.testUid) msgs.push(['test', { title: 'تنبيه تجربة', body: 'التنبيهات شغالة على الموبايل ده ✓', tag: 'test', url: './#/notify' }]);
       for (const [k, payload] of msgs) {
@@ -141,6 +158,7 @@ async function runChurch(church, publicKey, now) {
   if (test) next.testAt = s.testAt;
   if (monthly) next.month = pastMonth;
   next.summaryAt = summaryAt;
+  for (const id of peered) next[`peer:${id}`] = now.date;
   next.subAt = subAt;
   next.revAt = revAt;
   await logRef.set(next);

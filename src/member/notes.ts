@@ -1,5 +1,5 @@
 import type { MemberView } from '../data/memberView';
-import { STATUS_LABELS, type Submission } from '../data/types';
+import { statusLabels, type Submission } from '../data/types';
 
 /** One line in the member's notifications list. */
 export type Note = { key: string; at: number; kind: 'review' | 'summary' | 'note'; title: string; body?: string; by?: string; to: string };
@@ -13,7 +13,7 @@ export function buildNotes(v: MemberView, subs: Submission[], now = Date.now()):
   const notes: Note[] = [];
   for (const s of subs) if (s.review && s.reviewAt) notes.push({
     key: `r_${s.id}`, at: s.reviewAt, kind: 'review', by: s.review.byName,
-    title: `${s.review.byName} سمع تسميعك لـ«${s.hymnName}»: ${STATUS_LABELS[s.review.status]}`, body: s.review.note, to: `/me/hymn/${s.hymnId}`,
+    title: `${s.review.byName} سمع تسميعك لـ«${s.hymnName}»: ${statusLabels(v)[s.review.status]}`, body: s.review.note, to: `/me/hymn/${s.hymnId}`,
   });
   for (const s of v.sessions ?? []) if (s.summary || s.recordings?.length) notes.push({
     key: `s_${s.id}_${s.summaryAt ?? 0}`, at: s.summaryAt ?? dayAt(s.date), kind: 'summary',

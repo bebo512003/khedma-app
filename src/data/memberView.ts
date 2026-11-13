@@ -48,7 +48,7 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
   const rows = ranking(data, m.levelId, month);
   const pos = rows.findIndex(r => r.member.id === m.id);
   const breakdown = monthBreakdown(data, m.id, month);
-  const top = rows.filter(r => r.place <= 3).slice(0, 5).map(r => ({ id: r.member.id, name: titled(r.member, data.levels), photo: r.member.photo, points: r.points, place: r.place, why: pointsWhy(monthBreakdown(data, r.member.id, month)) }));
+  const top = rows.filter(r => r.place <= 3).slice(0, 5).map(r => ({ id: r.member.id, name: titled(r.member, data.levels), photo: r.member.photo, points: r.points, place: r.place, why: pointsWhy(monthBreakdown(data, r.member.id, month), r.member.gender === 'f') }));
   const hymns = (data.curricula[curriculumKey(term?.id, m.levelId)] ?? [])
     .map(id => data.hymns.find(h => h.id === id))
     .filter((h): h is Hymn => !!h)

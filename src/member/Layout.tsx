@@ -4,12 +4,16 @@ import type { MemberView } from '../data/memberView';
 import { useMemberView } from './session';
 import Icon from '../ui/Icon';
 import { cloudEnabled } from '../firebase/config';
-import type { Submission } from '../data/types';
+import { statusLabels, type Submission } from '../data/types';
 import { buildNotes, loadSeen, saveSeen, type Note } from './notes';
 
 const ViewCtx = createContext<MemberView | null>(null);
 /** Screens under the layout render only once the view exists. */
 export const useView = () => useContext(ViewCtx)!;
+/** Girls are spoken to in the feminine: g('حضرت', 'حضرتي'). */
+export const useG = () => { const f = useContext(ViewCtx)?.gender === 'f'; return (m: string, fem: string) => f ? fem : m; };
+/** Hymn levels as the member reads them about themselves (حافظاه / بتقوله لوحدها for girls). */
+export const useStatus = () => { const L = statusLabels(useContext(ViewCtx)); return (i: number) => L[i]; };
 
 type Notes = { subs: Submission[]; notes: Note[]; unread: number; seen: number; markSeen: () => void };
 const NotesCtx = createContext<Notes>({ subs: [], notes: [], unread: 0, seen: 0, markSeen: () => {} });

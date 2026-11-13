@@ -3,13 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { MemberEdit } from '../data/types';
 import { GRADES } from '../data/logic';
 import { cancelled, shrinkPhoto } from '../data/photo';
-import { useView } from './Layout';
+import { useG, useView } from './Layout';
 import { useSaveProfile } from './session';
 import { BackButton } from '../ui/back';
 
 /** The member's own photo and details. */
 export default function MemberProfile() {
   const v = useView();
+  const g = useG();
   const nav = useNavigate();
   const save = useSaveProfile();
   const [p, setP] = useState<MemberEdit>({ ...v.profile, name: v.profile?.name ?? v.name, photo: v.profile?.photo ?? v.photo });
@@ -20,14 +21,14 @@ export default function MemberProfile() {
   const onPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    try { set({ photo: await shrinkPhoto(f) }); } catch (e) { if (!cancelled(e)) setError('الصورة دي مش هتنفع، جرّب صورة تانية.'); }
+    try { set({ photo: await shrinkPhoto(f) }); } catch (e) { if (!cancelled(e)) setError(g('الصورة دي مش هتنفع، جرّب صورة تانية.', 'الصورة دي مش هتنفع، جرّبي صورة تانية.')); }
   };
   const submit = async () => {
-    if (!p.name?.trim()) { setError('اكتب اسمك.'); return; }
+    if (!p.name?.trim()) { setError(g('اكتب اسمك.', 'اكتبي اسمك.')); return; }
     for (const ph of [p.phone, p.parentPhone]) if (ph?.trim() && !/^\+?[\d\s-]{8,15}$/.test(ph.trim())) { setError('رقم الموبايل مش مظبوط.'); return; }
     setBusy(true);
     try { await save(v.memberId, p); nav('/me/profile', { replace: true }); }
-    catch { setError('مقدرناش نحفظ دلوقتي. اتأكد إن معاك نت وجرّب تاني.'); }
+    catch { setError(g('مقدرناش نحفظ دلوقتي. اتأكد إن معاك نت وجرّب تاني.', 'مقدرناش نحفظ دلوقتي. اتأكدي إن معاكي نت وجرّبي تاني.')); }
     setBusy(false);
   };
   const field = (key: 'name' | 'phone' | 'parentPhone' | 'birthdate' | 'address', label: string, type = 'text') => (
@@ -47,7 +48,7 @@ export default function MemberProfile() {
             {p.photo ? <img src={p.photo} alt="" /> : 'صورة'}
           </label>
           <input id="photo" type="file" accept="image/*" hidden onChange={onPhoto} />
-          <label className="btn" htmlFor="photo" style={{ cursor: 'pointer' }}>{p.photo ? 'غيّر الصورة' : 'حط صورتك'}</label>
+          <label className="btn" htmlFor="photo" style={{ cursor: 'pointer' }}>{p.photo ? 'غيّر الصورة' : g('حط صورتك', 'حطي صورتك')}</label>
         </div>
         {field('name', 'اسمك')}
         <div className="field"><span>النوع</span>

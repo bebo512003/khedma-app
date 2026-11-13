@@ -1,3 +1,4 @@
+import { fx } from '../data/logic';
 import { useMemo, useSyncExternalStore } from 'react';
 import { absenceStreak, birthdayWhen, needsFollowUp, todayISO, upcomingBirthdays, watchList, titled } from '../data/logic';
 import { useAllowedLevel, useCan, useData, useStore } from '../data/store';
@@ -37,13 +38,13 @@ export function useServantNotes() {
     const notes: ServantNote[] = [];
 
     if (syncError) notes.push({ key: 'sync', kind: 'alert', title: 'في مشكلة في المزامنة', body: syncError, to: '/', urgent: true });
-    for (const s of pending) notes.push({ key: `sub_${s.id}`, kind: 'mic', title: `${data.members.find(m => m.id === s.memberId)?.name ?? s.memberName} سمّع «${s.hymnName}»`, body: 'مستني تسمعه وترد عليه', to: '/reviews', urgent: true });
+    for (const s of pending) notes.push({ key: `sub_${s.id}`, kind: 'mic', title: `${data.members.find(m => m.id === s.memberId)?.name ?? s.memberName} ${fx(data.members.find(m => m.id === s.memberId), 'سمّع', 'سمّعت')} «${s.hymnName}»`, body: fx(data.members.find(m => m.id === s.memberId), 'مستني تسمعه وترد عليه', 'مستنية تسمعها وترد عليها'), to: '/reviews', urgent: true });
     for (const m of mine) {
       const n = absenceStreak(data, m);
-      if (needsFollowUp(n)) notes.push({ key: `fu_${m.id}_${n}`, kind: 'heart', title: `${titled(m, data.levels)} محتاج افتقاد`, body: `غاب ${n} مرات ورا بعض`, to: '/followup', urgent: true });
+      if (needsFollowUp(n)) notes.push({ key: `fu_${m.id}_${n}`, kind: 'heart', title: `${titled(m, data.levels)} ${fx(m, 'محتاج', 'محتاجة')} افتقاد`, body: `${fx(m, 'غاب', 'غابت')} ${n} مرات ورا بعض`, to: '/followup', urgent: true });
     }
     for (const { member: m, daysAway } of upcomingBirthdays(mine, 3))
-      notes.push({ key: `bd_${m.id}_${new Date().getFullYear()}`, kind: 'cake', title: `عيد ميلاد ${titled(m, data.levels)} ${birthdayWhen(daysAway)}`, body: 'ابعتله تهنئة من الرئيسية', to: '/' });
+      notes.push({ key: `bd_${m.id}_${new Date().getFullYear()}`, kind: 'cake', title: `عيد ميلاد ${titled(m, data.levels)} ${birthdayWhen(daysAway)}`, body: fx(m, 'ابعتله تهنئة من الرئيسية', 'ابعتلها تهنئة من الرئيسية'), to: '/' });
     for (const { member: m, reasons } of watchList(data, allowed))
       notes.push({ key: `w_${m.id}_${reasons.join('|')}`, kind: 'eye', title: `خلّي بالك من ${titled(m, data.levels)}`, body: reasons.join(' • '), to: `/members/${m.id}` });
     if (canSessions) for (const s of data.sessions)

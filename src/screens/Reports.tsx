@@ -1,3 +1,4 @@
+import { fx } from '../data/logic';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
@@ -123,9 +124,9 @@ function Row({ r, curriculumSize }: { r: MemberRow; curriculumSize: number }) {
       <span className="av">{r.member.photo ? <img src={r.member.photo} alt="" /> : r.member.name[0]}</span>
       <div className="grow" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <b>{titled(r.member, data.levels)}</b>
-        <div className="muted">{taken ? `حضر ${r.present} من ${taken}${r.excused ? ` • اعتذر ${r.excused}` : ''}` : 'مفيش حضور متسجل'}
+        <div className="muted">{taken ? `${fx(r.member, 'حضر', 'حضرت')} ${r.present} من ${taken}${r.excused ? ` • ${fx(r.member, 'اعتذر', 'اعتذرت')} ${r.excused}` : ''}` : 'مفيش حضور متسجل'}
           {r.criteria && ` • ${CRITERIA.map((c, i) => `${c} ${round1(r.criteria![i])}`).join(' • ')}`}</div>
-        {curriculumSize > 0 && <div className="muted">حافظ {r.hymns[2] + r.hymns[3]} من {hymnsCount(curriculumSize)}{r.hymns[3] ? `، منهم ${r.hymns[3]} بيقولهم لوحده` : ''}</div>}
+        {curriculumSize > 0 && <div className="muted">{fx(r.member, 'حافظ', 'حافظة')} {r.hymns[2] + r.hymns[3]} من {hymnsCount(curriculumSize)}{r.hymns[3] ? `، منهم ${r.hymns[3]} ${fx(r.member, 'بيقولهم لوحده', 'بتقولهم لوحدها')}` : ''}</div>}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
         {r.rate !== null && <span className={`tag ${r.rate < 50 ? 'tag-alert' : 'tag-ex'}`}>{r.rate}%</span>}

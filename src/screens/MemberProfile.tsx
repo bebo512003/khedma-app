@@ -1,9 +1,10 @@
+import { fx } from '../data/logic';
 import { partKey, withPartStatus } from '../data/parts';
 import { withAward } from '../data/awards';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData, useCan } from '../data/store';
-import { STATUS_LABELS, type Hymn, type HymnStatus } from '../data/types';
+import { statusLabels, type Hymn, type HymnStatus } from '../data/types';
 import {
   absenceStreak, contact, formatTime, isLate, lateBy, currentTerm, curriculumKey, formatDay, monthBreakdown, needsFollowUp, pointsWhy, ranking, sessionPoints,
   sessionAverage, todayISO, waLink, yearsCount, MONTHS, titled } from '../data/logic';
@@ -79,11 +80,11 @@ export default function MemberProfile() {
           </div>
         </div>
         <div className="stats">
-          <div className="stat dark"><b>{place ? `#${place}` : '–'}</b><span>ترتيبه في المستوى</span></div>
+          <div className="stat dark"><b>{place ? `#${place}` : '–'}</b><span>{fx(m, 'ترتيبه', 'ترتيبها')} في المستوى</span></div>
           <div className="stat"><b>{points}</b><span className="muted">نقطة الشهر ده</span></div>
           <div className="stat"><b>{rate === null ? '–' : `${rate}%`}</b><span className="muted">حضور</span></div>
         </div>
-        <div className="muted" style={{ fontSize: 13 }}>نقط الشهر: {pointsWhy(mb)}</div>
+        <div className="muted" style={{ fontSize: 13 }}>نقط الشهر: {pointsWhy(mb, m.gender === 'f')}</div>
         <div className="ptabs" role="tablist">
           {([['hymns', 'الألحان'], ['ratings', 'التقييمات'], ['info', 'البيانات']] as const).map(([k, l]) =>
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}
@@ -91,11 +92,11 @@ export default function MemberProfile() {
       </header>
 
       <main className="main gutter">
-        {needsFollowUp(streak) && <div className="card alert"><div className="alert-t">غاب {streak} مرات ورا بعض، ومحتاج افتقاد.</div>
+        {needsFollowUp(streak) && <div className="card alert"><div className="alert-t">{fx(m, 'غاب', 'غابت')} {streak} مرات ورا بعض، ومحتاج افتقاد.</div>
           <Link to="/followup" className="btn">افتح الافتقاد</Link></div>}
 
         {tab === 'hymns' && <>
-          <div className="row between"><b>منهج {term?.name ?? 'الترم'}</b><span className="muted">{done} من {hymns.length} حافظهم أو أكتر</span></div>
+          <div className="row between"><b>منهج {term?.name ?? 'الترم'}</b><span className="muted">{done} من {hymns.length} {fx(m, 'حافظهم', 'حافظاهم')} أو أكتر</span></div>
           {hymns.length > 0 && <div className="progress-bar"><div style={{ width: `${Math.round(100 * done / hymns.length)}%` }} /></div>}
           {hymns.length === 0 && <div className="note">منهج الترم فاضي لـ{level?.name}.</div>}
           <div className="card" style={{ paddingBlock: 4 }}>
@@ -105,21 +106,21 @@ export default function MemberProfile() {
                 <div key={h.id} className="hrow">
                   <Link to={`/hymns/${h.id}`} style={{ color: "inherit" }}><b>{h.nameAr}</b></Link>
                   <div className="lvl" role="group" aria-label={`مستواه في ${h.nameAr}`}>
-                    {STATUS_LABELS.map((l, i) =>
+                    {statusLabels(m).map((l, i) =>
                       <button key={l} className={`st${i}`} aria-pressed={s === i} disabled={!edit && s !== i} onClick={() => setStatus(h.id, i as HymnStatus)}>{l}</button>)}
                   </div>
                   {h.parts?.map(p => (ps => (
                     <div key={p.id} className="row between" style={{ paddingInlineStart: 12, gap: 6 }}>
                       <span className="muted">{p.name}</span>
-                      <button className={`pill st${ps}`} disabled={!edit} aria-label={`${h.nameAr}، ${p.name}: ${STATUS_LABELS[ps]}`}
-                        onClick={() => setPart(h, p.id, ((ps + 1) % 4) as HymnStatus)}>{STATUS_LABELS[ps]}</button>
+                      <button className={`pill st${ps}`} disabled={!edit} aria-label={`${h.nameAr}، ${p.name}: ${statusLabels(m)[ps]}`}
+                        onClick={() => setPart(h, p.id, ((ps + 1) % 4) as HymnStatus)}>{statusLabels(m)[ps]}</button>
                     </div>
                   ))(status(partKey(h.id, p.id))))}
                 </div>
               );
             })}
           </div>
-          <div className="note">لو سمّعلك لايف، غيّر مستواه من هنا: أول ما يوصل «حافظه» أو «بيقوله لوحده» بياخد نقط اللحن في رصيد الشهر ده، ولو رجّعته بترجع.</div>
+          <div className="note">{fx(m, 'لو سمّعلك لايف، غيّر مستواه من هنا: أول ما يوصل «حافظه» أو «بيقوله لوحده» بياخد نقط اللحن في رصيد الشهر ده، ولو رجّعته بترجع.', 'لو سمّعتلك لايف، غيّر مستواها من هنا: أول ما توصل «حافظاه» أو «بتقوله لوحدها» بتاخد نقط اللحن في رصيد الشهر ده، ولو رجّعتها بترجع.')}</div>
         </>}
 
         {tab === 'ratings' && (rated.length === 0
@@ -129,7 +130,7 @@ export default function MemberProfile() {
               <Link key={s.id} to={`/summary/${s.id}`} className="li" style={{ alignItems: 'flex-start' }}>
                 <div className="grow"><b>{formatDay(s.date)}</b>
                   <div className="muted">{s.hymnIds.map(id => data.hymns.find(h => h.id === id)?.nameAr).filter(Boolean).join('، ') || 'من غير لحن محدد'}</div>
-                  {s.arrivals?.[m.id] && <div className="muted">وصل {formatTime(s.arrivals[m.id])}{isLate(s, m.id) ? ` • متأخر ${lateBy(s, m.id)} دقيقة` : ''}</div>}
+                  {s.arrivals?.[m.id] && <div className="muted">{fx(m, 'وصل', 'وصلت')} {formatTime(s.arrivals[m.id])}{isLate(s, m.id) ? ` • ${fx(m, 'متأخر', 'متأخرة')} ${lateBy(s, m.id)} دقيقة` : ''}</div>}
                   {s.notes?.[m.id] && <div className="note">«{s.notes[m.id]}»</div>}
                   <PtsRow p={sessionPoints(s, m.id)} /></div>
                 <b className="score">{sessionAverage(s, m.id)?.toFixed(1)}</b>
@@ -141,11 +142,11 @@ export default function MemberProfile() {
           {m.birthdate && row('تاريخ الميلاد', `${formatDay(m.birthdate)} (${yearsCount(age(m.birthdate))})`)}
           {!m.birthdate && m.birthMonth && row('شهر الميلاد', MONTHS[m.birthMonth - 1])}
           {row('السنة الدراسية', m.grade)}
-          {row('موبايله', m.phone)}
+          {row(fx(m, 'موبايله', 'موبايلها'), m.phone)}
           {row('موبايل ولي الأمر', m.parentPhone)}
           {row('العنوان', m.address)}
           {row('دخول التطبيق', m.account || m.pinHash ? 'معمول له رقم سري' : 'لسه مالوش رقم سري')}
-          {mine[0] && row('آخر حصة', `${formatDay(mine[0].date)} (${mine[0].attendance[m.id] === 'p' ? 'حضر' : mine[0].attendance[m.id] === 'e' ? 'اعتذر' : 'غاب'})`)}
+          {mine[0] && row('آخر حصة', `${formatDay(mine[0].date)} (${mine[0].attendance[m.id] === 'p' ? fx(m, 'حضر', 'حضرت') : mine[0].attendance[m.id] === 'e' ? fx(m, 'اعتذر', 'اعتذرت') : fx(m, 'غاب', 'غابت')})`)}
           {edit && <Link to={`/members/${m.id}/edit`} className="btn">عدّل البيانات</Link>}
         </div>}
       </main>

@@ -60,7 +60,7 @@ export default function Ranking() {
                   <b className="place">{md ? <><span>{md.icon}</span><small>{md.name}</small></> : r.place}</b>
                   <span className="av">{r.member.photo ? <img src={r.member.photo} alt="" /> : r.member.name[0]}</span>
                   <div className="grow"><b>{titled(r.member, data.levels)}</b>
-                    <div className="muted">{pointsWhy(b)}</div></div>
+                    <div className="muted">{pointsWhy(b, r.member.gender === 'f')}</div></div>
                   <b>{r.points}</b>
                 </Link>
               );

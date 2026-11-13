@@ -269,6 +269,9 @@ export interface AppData {
 }
 
 export const STATUS_LABELS = ['لسه مبدأش', 'بيتعلمه', 'حافظه', 'بيقوله لوحده'] as const;
+export const STATUS_LABELS_F = ['لسه مبدأتش', 'بتتعلّمه', 'حافظاه', 'بتقوله لوحدها'] as const;
+/** The status words for this person: girls get the feminine form. */
+export const statusLabels = (p?: { gender?: string } | null): readonly string[] => p?.gender === 'f' ? STATUS_LABELS_F : STATUS_LABELS;
 export const CRITERIA = ['حفظ', 'أداء', 'التزام'] as const;
 export const RANKS = ['أبصالتس', 'أغنسطس', 'إيبودياكون', 'دياكون', 'أرشيدياكون'] as const;
 

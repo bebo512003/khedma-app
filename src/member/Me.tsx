@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDay } from '../data/logic';
-import { STATUS_LABELS } from '../data/types';
 import Icon from '../ui/Icon';
-import { useView } from './Layout';
+import { useG, useStatus, useView } from './Layout';
 import { RatingsBody } from './Ratings';
 import { memberLogout } from './session';
 
@@ -12,6 +11,7 @@ type Tab = 'hymns' | 'ratings' | 'info';
 /** The member's own profile, laid out like the one servants see. Editing is behind the pencil. */
 export default function MemberMe() {
   const v = useView();
+  const g = useG(), st = useStatus();
   const nav = useNavigate();
   const [tab, setTab] = useState<Tab>('hymns');
   const done = v.hymns.filter(h => h.status >= 2).length;
@@ -50,12 +50,12 @@ export default function MemberMe() {
 
       <main className="main gutter">
         {tab === 'hymns' && <>
-          <div className="row between"><b>منهج {v.termName ?? 'الترم'}</b><span className="muted">{done} من {v.hymns.length} حافظهم</span></div>
+          <div className="row between"><b>منهج {v.termName ?? 'الترم'}</b><span className="muted">{done} من {v.hymns.length} {g('حافظهم', 'حافظاهم')}</span></div>
           {v.hymns.length > 0 && <div className="progress-bar"><div style={{ width: `${Math.round(100 * done / v.hymns.length)}%` }} /></div>}
           <div className="card" style={{ paddingBlock: 4 }}><div className="list">
             {v.hymns.map(h => (
               <Link key={h.id} to={`/me/hymn/${h.id}`} className="li">
-                <b className="grow">{h.nameAr}</b><span className={`pill st${h.status}`} style={{ display: 'inline-flex', alignItems: 'center' }}>{STATUS_LABELS[h.status]}</span>
+                <b className="grow">{h.nameAr}</b><span className={`pill st${h.status}`} style={{ display: 'inline-flex', alignItems: 'center' }}>{st(h.status)}</span>
               </Link>
             ))}
             {v.hymns.length === 0 && <div className="note">لسه الخدام ما حطوش ألحان الترم.</div>}

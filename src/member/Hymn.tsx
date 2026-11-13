@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { hymnPoints, safeUrl } from '../data/logic';
-import { STATUS_LABELS } from '../data/types';
-import { useView } from './Layout';
+import { useG, useStatus, useView } from './Layout';
 import HymnText from '../screens/HymnText';
 import BookPages from '../screens/BookPages';
 import Practice from '../ui/Practice';
@@ -14,6 +13,7 @@ import { BackButton } from '../ui/back';
 export default function MemberHymn() {
   const { hymnId } = useParams();
   const h = useView().hymns.find(x => x.id === hymnId);
+  const g = useG(), st = useStatus();
   const [q] = useSearchParams();
   const [part, setPart] = useState<string | undefined>(() => q.get('part') ?? undefined);
   if (!h) return <main className="main gutter"><div className="card">اللحن ده مش موجود. <Link to="/me/home">ارجع</Link></div></main>;
@@ -34,20 +34,20 @@ export default function MemberHymn() {
         </div>
 
         <div className="card">
-          <div className="row between"><h2>أنت وصلت لفين</h2>{next > 0 && <span className="muted">+{next} نقط لو وصلت للي بعده</span>}</div>
-          <div className="chips">{STATUS_LABELS.slice(1).map((l, i) =>
+          <div className="row between"><h2>{g('أنت وصلت لفين', 'انتي وصلتي لفين')}</h2>{next > 0 && <span className="muted">+{next} نقط {g('لو وصلت', 'لو وصلتي')} للي بعده</span>}</div>
+          <div className="chips">{[1, 2, 3].map(n => st(n)).map((l, i) =>
             <span key={l} className={`pill ${h.status >= i + 1 ? `st${i + 1}` : 'st0'}`} style={{ display: 'inline-flex', alignItems: 'center' }}>{l}{h.status === i + 1 ? ' ✓' : ''}</span>)}</div>
           {h.parts?.length ? <div className="list" style={{ marginTop: 6 }}>{h.parts.map(p => {
             const s = h.partStatus?.[p.id] ?? 0;
             return <button key={p.id} className="li" aria-pressed={part === p.id} style={{ outline: part === p.id ? '2px solid var(--gold)' : undefined, borderRadius: 10 }} onClick={() => setPart(p.id)}>
-              <b className="grow" style={{ textAlign: 'start' }}>{p.name}</b><span className={`pill st${s}`}>{STATUS_LABELS[s]}</span></button>;
+              <b className="grow" style={{ textAlign: 'start' }}>{p.name}</b><span className={`pill st${s}`}>{st(s)}</span></button>;
           })}</div> : null}
-          <div className="note">اسمعه كل يوم وقوله مع التسجيل، والخادم هيسمعه منك في الحصة.</div>
+          <div className="note">{g('اسمعه كل يوم وقوله مع التسجيل، والخادم هيسمعه منك في الحصة.', 'اسمعيه كل يوم وقوليه مع التسجيل، والخادم هيسمعه منك في الحصة.')}</div>
         </div>
 
         {(h.recordings?.length ?? 0) > 0 && (
           <div className="card">
-            <h2>اتدرّب عليه</h2>
+            <h2>{g('اتدرّب عليه', 'اتدرّبي عليه')}</h2>
             {h.recordings!.map(r => (
               <div key={r.id} className="vrow">
                 <b>{r.title ?? 'تسجيل الحصة'}{r.part ? ` • ${r.part}` : ''} <span className="muted">• {formatDay(r.date)}</span></b>

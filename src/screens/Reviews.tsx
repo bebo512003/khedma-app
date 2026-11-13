@@ -1,7 +1,8 @@
+import { fx } from '../data/logic';
 import { useEffect, useState } from 'react';
 import { useAllowedLevel, useCan, useData, useStore } from '../data/store';
 import { formatDay, isoDate, formatTime } from '../data/logic';
-import { STATUS_LABELS, type HymnStatus, type Submission } from '../data/types';
+import { statusLabels, type HymnStatus, type Submission } from '../data/types';
 import { loadRecording } from '../firebase/recordings';
 import { VoiceNote } from '../ui/Voice';
 import { BackButton } from '../ui/back';
@@ -67,12 +68,12 @@ function Review({ s }: { s: Submission }) {
         <div className="grow"><b>{m?.name ?? s.memberName}</b><div className="muted">{s.hymnName}{s.partName ? ` (${s.partName})` : ''} • {formatDay(isoDate(new Date(s.at)))} {formatTime(s.at)}</div></div>
       </div>
       <VoiceNote id={s.recording.id} ms={s.recording.ms} getBlob={() => loadRecording(s.recording)} />
-      <div className="field"><span>وصل لفين في {s.partName ? 'الجزء ده' : 'اللحن'}؟</span>
+      <div className="field"><span>{fx(m, 'وصل', 'وصلت')} لفين في {s.partName ? 'الجزء ده' : 'اللحن'}؟</span>
         <div className="lvl" role="group" aria-label="المستوى">
-          {STATUS_LABELS.map((l, i) => <button key={l} className={`st${i}`} aria-pressed={status === i} onClick={() => setStatus(i as HymnStatus)}>{l}</button>)}
+          {statusLabels(m).map((l, i) => <button key={i} className={`st${i}`} aria-pressed={status === i} onClick={() => setStatus(i as HymnStatus)}>{l}</button>)}
         </div></div>
-      <textarea aria-label="ملاحظة للمخدوم" maxLength={300} placeholder="ملاحظة ليه (اختياري): مثلاً ركّز على الربع التاني" value={note} onChange={e => setNote(e.target.value)} style={{ minHeight: 60 }} />
-      <button className="btnp" onClick={done} disabled={busy}>تمام، ابعتله الرد</button>
+      <textarea aria-label="ملاحظة للمخدوم" maxLength={300} placeholder={fx(m, 'ملاحظة ليه (اختياري): مثلاً ركّز على الربع التاني', 'ملاحظة ليها (اختياري): مثلاً ركّزي على الربع التاني')} value={note} onChange={e => setNote(e.target.value)} style={{ minHeight: 60 }} />
+      <button className="btnp" onClick={done} disabled={busy}>{fx(m, 'تمام، ابعتله الرد', 'تمام، ابعتلها الرد')}</button>
     </div>
   );
 }

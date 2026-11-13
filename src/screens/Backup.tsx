@@ -2,7 +2,7 @@ import { hymnLabel, splitKey } from '../data/parts';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData, useIsLead } from '../data/store';
-import { STATUS_LABELS, CRITERIA, type AppData } from '../data/types';
+import { statusLabels, CRITERIA, type AppData } from '../data/types';
 import { formatTime, sessionRecordings, todayISO } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
 import { BackButton } from '../ui/back';
@@ -84,7 +84,7 @@ export default function Backup() {
     ] },
     { name: 'مستوى الألحان', widths: [8, 22, 28, 14], rows: [
       ['الكود', 'الاسم', 'اللحن', 'المستوى'],
-      ...Object.entries(data.progress).flatMap(([id, p]) => Object.entries(p).filter(([, s]) => s > 0).map(([h, s]) => [member(id)?.code, member(id)?.name, hymn(h), STATUS_LABELS[s]])),
+      ...Object.entries(data.progress).flatMap(([id, p]) => Object.entries(p).filter(([, s]) => s > 0).map(([h, s]) => [member(id)?.code, member(id)?.name, hymn(h), statusLabels(member(id))[s]])),
     ] },
     { name: 'المكتبة', widths: [28, 22, 16, 30, 30], rows: [
       ['اللحن', 'بالقبطي', 'الصلاة', 'بيتقال إمتى', 'التسجيل'],
