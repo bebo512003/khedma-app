@@ -26,7 +26,7 @@ export default function MemberSessions() {
             {s.arrived && <div className="muted">{g('وصلت', 'وصلتي')} {formatTime(s.arrived)}{(s.late ?? 0) > 10 ? `، ${g('متأخر', 'متأخرة')} ${s.late} دقيقة` : ''}</div>}
             {s.pts && <div className="pts">
               <b>نقطك في الحصة دي: {s.pts.total}</b>
-              <span>حضور {s.pts.att}</span><span>تقييم {s.pts.rating}</span>
+              <span>حضور {s.pts.att}{s.pts.late ? ` (−${s.pts.late} تأخير)` : ''}</span>{s.pts.rating > 0 && <span>تقييم {s.pts.rating}</span>}
               {s.pts.memorized > 0 && <span>{g('حافظه', 'حافظاه')} {s.pts.memorized}</span>}
               {s.pts.solo > 0 && <span>{g('بيقوله لوحده', 'بتقوله لوحدها')} {s.pts.solo}</span>}
             </div>}

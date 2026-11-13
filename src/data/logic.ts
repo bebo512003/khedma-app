@@ -1,6 +1,19 @@
 import type { AppData, Hymn, Member, Session } from './types';
 
 export const POINTS = { attendance: 2, memorized: 5, solo: 12 } as const;
+/**
+ * From this day (the lead's change, 2026-11-13): no session ratings in points; coming gives 5 points,
+ * less one for every full 10 minutes late (by the QR arrival time). Earlier sessions keep the old rule
+ * (2 for coming + the rating average), so ended months and their coupons don't change.
+ */
+export const NEW_POINTS_FROM = '2026-11-01';
+export const ATTEND_PTS = 5, LATE_STEP_MIN = 10;
+/** Points taken off for arriving late to a session under the new rule. */
+export const lateOff = (s: Session, memberId: string) => s.date >= NEW_POINTS_FROM && s.attendance[memberId] === 'p' ? Math.min(ATTEND_PTS, Math.floor((lateBy(s, memberId) ?? 0) / LATE_STEP_MIN)) : 0;
+/** What coming to a session gave this member. */
+export const attendPts = (s: Session, memberId: string) => s.attendance[memberId] !== 'p' ? 0 : s.date >= NEW_POINTS_FROM ? ATTEND_PTS - lateOff(s, memberId) : POINTS.attendance;
+/** A session's rating counts toward points only before the new rule. */
+const ratingPts = (s: Session, memberId: string) => s.date >= NEW_POINTS_FROM ? 0 : sessionAverage(s, memberId) ?? 0;
 
 /** A hymn's milestone points: the lead's own for it, else the usual ones. */
 export const hymnPoints = (h?: Pick<Hymn, 'points'>) => ({ memorized: h?.points?.memorized ?? POINTS.memorized, solo: h?.points?.solo ?? POINTS.solo });
@@ -56,11 +69,11 @@ export function sessionAverage(s: Session, memberId: string): number | null {
  * and milestone points recorded on the session when a hymn reached حافظه or بيقوله لوحده.
  */
 export function monthBreakdown(data: AppData, memberId: string, month: string) {
-  const b = { attended: 0, attendance: 0, rating: 0, memorized: 0, solo: 0, memorizedPts: 0, soloPts: 0, partsM: 0, partsS: 0, partsMPts: 0, partsSPts: 0, total: 0 };
+  const b = { attended: 0, attendance: 0, lateOff: 0, rating: 0, memorized: 0, solo: 0, memorizedPts: 0, soloPts: 0, partsM: 0, partsS: 0, partsMPts: 0, partsSPts: 0, total: 0 };
   for (const s of data.sessions) {
     if (!s.date.startsWith(month)) continue;
-    if (s.attendance[memberId] === 'p') { b.attended++; b.attendance += POINTS.attendance; }
-    b.rating += sessionAverage(s, memberId) ?? 0;
+    if (s.attendance[memberId] === 'p') { b.attended++; b.attendance += attendPts(s, memberId); b.lateOff += lateOff(s, memberId); }
+    b.rating += ratingPts(s, memberId);
     const ms = s.milestones?.[memberId];
     if (ms) { b.memorized += ms.memorized; b.solo += ms.solo; b.memorizedPts += ms.mPts ?? ms.memorized * POINTS.memorized; b.soloPts += ms.sPts ?? ms.solo * POINTS.solo;
       if (ms.parts) { b.partsM += ms.parts.m; b.partsS += ms.parts.s; b.partsMPts += ms.parts.mPts; b.partsSPts += ms.parts.sPts; } }
@@ -81,11 +94,11 @@ export function monthBreakdown(data: AppData, memberId: string, month: string) {
 /** One session's points for a member, the same pieces the month adds up (the month rounds the ratings once at the end). */
 export function sessionPoints(s: Session, memberId: string) {
   if (s.attendance[memberId] === undefined) return undefined;
-  const att = s.attendance[memberId] === 'p' ? POINTS.attendance : 0;
-  const rating = Math.round((sessionAverage(s, memberId) ?? 0) * 10) / 10;
+  const att = attendPts(s, memberId), late = lateOff(s, memberId);
+  const rating = Math.round(ratingPts(s, memberId) * 10) / 10;
   const ms = s.milestones?.[memberId];
   const memorized = (ms?.mPts ?? (ms?.memorized ?? 0) * POINTS.memorized) + (ms?.parts?.mPts ?? 0), solo = (ms?.sPts ?? (ms?.solo ?? 0) * POINTS.solo) + (ms?.parts?.sPts ?? 0);
-  return { att, rating, memorized, solo, total: Math.round((att + rating + memorized + solo) * 10) / 10 };
+  return { att, late, rating, memorized, solo, total: Math.round((att + rating + memorized + solo) * 10) / 10 };
 }
 
 export const monthPoints = (data: AppData, memberId: string, month: string) => monthBreakdown(data, memberId, month).total;
@@ -117,9 +130,10 @@ export function ranking(data: AppData, levelId: string, month: string) {
 }
 
 /** Where a month's points came from, written out: «حضور 4 حصص (8) + تقييم الحصص (7) + حافظ لحنين (10) = 25». */
-export function pointsWhy(b: { attended: number; attendance: number; rating: number; memorized: number; solo: number; memorizedPts: number; soloPts: number; partsM?: number; partsS?: number; partsMPts?: number; partsSPts?: number; total: number }, female = false) {
+export function pointsWhy(b: { attended: number; attendance: number; lateOff?: number; rating: number; memorized: number; solo: number; memorizedPts: number; soloPts: number; partsM?: number; partsS?: number; partsMPts?: number; partsSPts?: number; total: number }, female = false) {
   const hafez = female ? 'حافظة' : 'حافظ', bi = female ? 'بتقول' : 'بيقول', alone = female ? 'لوحدها' : 'لوحده';
-  const parts = [`حضور ${sessionsCount(b.attended)} (${b.attendance})`, `تقييم الحصص (${b.rating})`];
+  const parts = [`حضور ${sessionsCount(b.attended)} (${b.attendance}${b.lateOff ? `، اتخصم ${pointsCount(b.lateOff)} تأخير` : ''})`];
+  if (b.rating) parts.push(`تقييم الحصص (${b.rating})`);
   if (b.memorized) parts.push(`${hafez} ${hymnsCount(b.memorized)} (${b.memorizedPts})`);
   if (b.solo) parts.push(`${bi} ${hymnsCount(b.solo)} ${alone} (${b.soloPts})`);
   if (b.partsM) parts.push(`${hafez} ${partsCount(b.partsM)} (${b.partsMPts})`);
@@ -175,8 +189,8 @@ export const formatDay = (iso: string) => dayFmt.format(new Date(`${iso}T12:00:0
 const timeFmt = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
 export const formatTime = (ms: number) => timeFmt.format(new Date(ms));
 
-/** Minutes of grace after the session's start before a scanned arrival counts as late. */
-export const LATE_GRACE_MIN = 10;
+/** Minutes of grace after the session's start before a scanned arrival counts as late: from 10 minutes, the first point off. */
+export const LATE_GRACE_MIN = 9;
 /** Minutes a member arrived after the session started, or null when their card wasn't scanned. */
 export function lateBy(s: Session, memberId: string): number | null {
   const at = s.arrivals?.[memberId];

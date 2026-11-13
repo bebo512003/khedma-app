@@ -25,10 +25,10 @@ export interface MemberView {
   breakdown: ReturnType<typeof monthBreakdown>;
   top: { id: string; name: string; photo?: string; points: number; place: number; why?: string }[];
   hymns: (Hymn & { status: HymnStatus; levels: string[]; book?: { title: string; label: string; pages: string[] }; recordings?: (Recording & { date: string; part?: string })[]; partStatus?: Record<string, HymnStatus> })[];
-  ratings: { id: string; date: string; r: Rating; avg: number; memorized: number; solo: number; note?: string }[];
+  ratings: { id: string; date: string; r?: Rating; avg?: number; memorized: number; solo: number; note?: string }[];
   attendanceRate: number | null;
   /** The level's recent sessions: what was covered, the voice summary, and whether this member came. */
-  sessions?: { id: string; date: string; hymn?: string; summary?: string; summaryAt?: number; recordings?: Recording[]; att?: Attendance; arrived?: number; late?: number; before?: boolean; pts?: { att: number; rating: number; memorized: number; solo: number; total: number } }[];
+  sessions?: { id: string; date: string; hymn?: string; summary?: string; summaryAt?: number; recordings?: Recording[]; att?: Attendance; arrived?: number; late?: number; before?: boolean; pts?: { att: number; late?: number; rating: number; memorized: number; solo: number; total: number } }[];
   /** The level's booklets, newest term first. */
   books?: { id: string; title: string; term?: string; current: boolean; pdfUrl?: string; pages: string[]; entries: { hymnId: string; name: string; label: string }[] }[];
   /** Monthly coupons, when the school uses them: the balance, each ended month's, what was spent, and this month's place value. */
@@ -67,9 +67,10 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
       levels: data.levels.filter(l => (data.curricula[curriculumKey(term?.id, l.id)] ?? []).includes(h.id)).map(l => l.name),
     }));
   const ratings = data.sessions
-    .filter(s => s.ratings[m.id] && (!term || (s.date >= term.start && s.date <= term.end)))
+    // Rated sessions (before the new points rule) and any session with a note for them.
+    .filter(s => (s.ratings[m.id] || s.notes?.[m.id]) && (!term || (s.date >= term.start && s.date <= term.end)))
     .sort((a, b) => b.date.localeCompare(a.date))
-    .map(s => ({ id: s.id, date: s.date, r: s.ratings[m.id], avg: sessionAverage(s, m.id)!, memorized: s.milestones?.[m.id]?.memorized ?? 0, solo: s.milestones?.[m.id]?.solo ?? 0, note: s.notes?.[m.id] }));
+    .map(s => ({ id: s.id, date: s.date, r: s.ratings[m.id], avg: sessionAverage(s, m.id) ?? undefined, memorized: s.milestones?.[m.id]?.memorized ?? 0, solo: s.milestones?.[m.id]?.solo ?? 0, note: s.notes?.[m.id] }));
   const mine = data.sessions.filter(s => s.attendance[m.id] !== undefined);
   // When they joined this level: the stamped day, else their first session in it.
   const since = m.levelSince ?? mine.filter(s => s.levelId === m.levelId).map(s => s.date).sort()[0] ?? '';

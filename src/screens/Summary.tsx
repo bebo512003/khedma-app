@@ -63,7 +63,7 @@ export default function Summary() {
         <div className="card"><div className="stats">
           <div className="stat"><b>{present.length} / {ids.length}</b><span className="muted">حضروا</span></div>
           <div className="stat"><b>{late.length}</b><span className="muted">اتأخروا</span></div>
-          <div className="stat"><b>{avg}</b><span className="muted">متوسط التقييم</span></div>
+          {avgs.length > 0 && <div className="stat"><b>{avg}</b><span className="muted">متوسط التقييم</span></div>}
         </div></div>
 
         {scanned.length > 0 && (

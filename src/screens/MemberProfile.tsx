@@ -41,7 +41,7 @@ export default function MemberProfile() {
   const mine = data.sessions.filter(s => s.attendance[m.id] !== undefined).sort((a, b) => b.date.localeCompare(a.date));
   const rate = mine.length ? Math.round(100 * mine.filter(s => s.attendance[m.id] === 'p').length / mine.length) : null;
   const streak = absenceStreak(data, m);
-  const rated = mine.filter(s => s.ratings[m.id]);
+  const rated = mine.filter(s => s.attendance[m.id] === 'p');
   const c = contact(m);
   // A live recitation: the servant sets the level here, and reaching حافظه / بيقوله لوحده gives the hymn's points.
   const setStatus = (hymnId: string, s: HymnStatus) => update(d => {
@@ -87,7 +87,7 @@ export default function MemberProfile() {
         <div className="muted" style={{ fontSize: 13 }}>نقط الشهر: {pointsWhy(mb, m.gender === 'f')}</div>
         {(st => st.best >= STREAK_MIN && <div className="muted" style={{ fontSize: 13 }}>🔥 {st.now >= STREAK_MIN ? `${fx(m, 'حاضر', 'حاضرة')} ${sessionsCount(st.now)} ورا بعض` : 'السلسلة اتقطعت'} • {fx(m, 'أحسن سلسلة ليه', 'أحسن سلسلة ليها')} {sessionsCount(st.best)}</div>)(attendStreak(data, m))}
         <div className="ptabs" role="tablist">
-          {([['hymns', 'الألحان'], ['ratings', 'التقييمات'], ['info', 'البيانات']] as const).map(([k, l]) =>
+          {([['hymns', 'الألحان'], ['ratings', 'الحصص'], ['info', 'البيانات']] as const).map(([k, l]) =>
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}
         </div>
       </header>
@@ -125,7 +125,7 @@ export default function MemberProfile() {
         </>}
 
         {tab === 'ratings' && (rated.length === 0
-          ? <div className="note">لسه مالوش تقييمات.</div>
+          ? <div className="note">{fx(m, 'لسه ما حضرش', 'لسه ما حضرتش')} ولا حصة.</div>
           : <div className="card" style={{ paddingBlock: 4 }}><div className="list">
             {rated.slice(0, 20).map(s => (
               <Link key={s.id} to={`/summary/${s.id}`} className="li" style={{ alignItems: 'flex-start' }}>
@@ -134,7 +134,7 @@ export default function MemberProfile() {
                   {s.arrivals?.[m.id] && <div className="muted">{fx(m, 'وصل', 'وصلت')} {formatTime(s.arrivals[m.id])}{isLate(s, m.id) ? ` • ${fx(m, 'متأخر', 'متأخرة')} ${lateBy(s, m.id)} دقيقة` : ''}</div>}
                   {s.notes?.[m.id] && <div className="note">«{s.notes[m.id]}»</div>}
                   <PtsRow p={sessionPoints(s, m.id)} /></div>
-                <b className="score">{sessionAverage(s, m.id)?.toFixed(1)}</b>
+                {sessionAverage(s, m.id) !== null && <b className="score">{sessionAverage(s, m.id)?.toFixed(1)}</b>}
               </Link>
             ))}
           </div></div>)}
@@ -161,7 +161,7 @@ export function PtsRow({ p }: { p?: ReturnType<typeof sessionPoints> }) {
   return (
     <div className="pts">
       <b>نقط الحصة: {p.total}</b>
-      <span>حضور {p.att}</span><span>تقييم {p.rating}</span>
+      <span>حضور {p.att}{p.late ? ` (−${p.late} تأخير)` : ''}</span>{p.rating > 0 && <span>تقييم {p.rating}</span>}
       {p.memorized > 0 && <span>حافظه {p.memorized}</span>}
       {p.solo > 0 && <span>بيقوله لوحده {p.solo}</span>}
     </div>

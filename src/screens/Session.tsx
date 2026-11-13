@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { CRITERIA, statusLabels, type Attendance, type HymnStatus, type Rating, type Session } from '../data/types';
-import { fx, POINTS, hymnPointsOn, LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
+import { fx, POINTS, NEW_POINTS_FROM, pointsCount, hymnPointsOn, LATE_GRACE_MIN, atTime, minutesLate, currentTerm, formatDay, formatTime, hhmm, todayISO, uid, titled } from '../data/logic';
 import Scanner from './Scanner';
 import { nextPart, partKey, partOf, partPointsOn, wholeStatus } from '../data/parts';
 import { milestoneKey } from '../data/awards';
@@ -49,6 +49,8 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
   const [notes, setNotes] = useState<Record<string, string>>(() => ({ ...editing?.notes }));
   const [arrivals, setArrivals] = useState<Record<string, number>>(() => ({ ...editing?.arrivals }));
   const [date, setDate] = useState(editing?.date ?? todayISO());
+  /** Sessions before the new points rule keep their 1–5 ratings; newer ones take notes only. */
+  const rated = date < NEW_POINTS_FROM;
   // When the session is due to start; late arrivals are counted from it. Old sessions may have none.
   const [startTime, setStartTime] = useState(() => editing ? (editing.startedAt ? hhmm(editing.startedAt) : '') : hhmm(Date.now()));
   const startedAt = startTime ? atTime(date, startTime) : undefined;
@@ -85,7 +87,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
     const late = startedAt ? minutesLate(now, startedAt) : 0;
     setAtt(a => ({ ...a, [m.id]: 'p' }));
     setArrivals(a => ({ ...a, [m.id]: now }));
-    setToast(late > LATE_GRACE_MIN ? { text: `✓ ${titled(m, data.levels)} ${fx(m, 'حاضر، متأخر', 'حاضرة، متأخرة')} ${late} دقيقة`, bad: true } : { text: `✓ ${titled(m, data.levels)} ${fx(m, 'حاضر', 'حاضرة')}` });
+    setToast(late > LATE_GRACE_MIN ? { text: `✓ ${titled(m, data.levels)} ${fx(m, 'حاضر، متأخر', 'حاضرة، متأخرة')} ${late} دقيقة${rated ? '' : ` (−${pointsCount(Math.min(5, Math.floor(late / 10)))})`}`, bad: true } : { text: `✓ ${titled(m, data.levels)} ${fx(m, 'حاضر', 'حاضرة')}` });
     navigator.vibrate?.(60);
   };
   const cycleAtt = (id: string) => setAtt(a => ({ ...a, [id]: (a[id] ?? 'a') === 'a' ? 'p' : a[id] === 'p' ? 'e' : 'a' }));
@@ -127,7 +129,8 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
       ...editing,
       id: editing?.id ?? uid(), date, levelId, termId: termId!, hymnIds: hymn ? [hymn.id] : [], partId: part?.id,
       attendance: Object.fromEntries(members.map(m => [m.id, att[m.id] ?? 'a'])),
-      ratings: Object.fromEntries(present.map(m => [m.id, rate[m.id] ?? [3, 3, 3]])),
+      // Ratings ended with the new points rule; an older session being edited keeps its own.
+      ratings: date < NEW_POINTS_FROM ? Object.fromEntries(present.map(m => [m.id, rate[m.id] ?? [3, 3, 3]])) : {},
       milestones, durationMs: editing ? editing.durationMs : Date.now() - start, savedAt: editing?.savedAt ?? Date.now(),
       startedAt, arrivals: Object.fromEntries(present.filter(m => arrivals[m.id]).map(m => [m.id, arrivals[m.id]])),
       notes: Object.fromEntries(present.map(m => [m.id, (notes[m.id] ?? '').trim()]).filter(([, n]) => n)),
@@ -160,7 +163,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
           {!editing && <span className="timer" aria-label="وقت الحصة">{fmt(now - start)}</span>}
         </div>
         <div className="seg" role="group" aria-label="وضع الحصة">
-          {([['att', 'الحضور'], ['rate', 'التقييم'], ['hym', 'الألحان']] as const).map(([k, l]) =>
+          {([['att', 'الحضور'], ['rate', rated ? 'التقييم' : 'ملاحظات'], ['hym', 'الألحان']] as const).map(([k, l]) =>
             <button key={k} aria-pressed={mode === k} onClick={() => setMode(k)}>{l}</button>)}
         </div>
       </header>
@@ -194,9 +197,9 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
           </div>
         </>)}
 
-        {mode === 'rate' && (present.length === 0 ? <div className="card">سجّل الحضور الأول، التقييم للحاضرين بس.</div> : <>
+        {mode === 'rate' && (present.length === 0 ? <div className="card">سجّل الحضور الأول، {rated ? 'التقييم' : 'الملاحظات'} للحاضرين بس.</div> : <>
           {picker}
-          <div className="note">التقييم على {hymn ? `«${label}»` : 'الحصة'}. كله بيبدأ من 3، غيّر بس اللي يستاهل أعلى أو أقل.</div>
+          <div className="note">{rated ? <>التقييم على {hymn ? `«${label}»` : 'الحصة'}. كله بيبدأ من 3، غيّر بس اللي يستاهل أعلى أو أقل.</> : 'اكتب ملاحظة لأي حد محتاجها، هتوصله في الأبلكيشن. التقييم اتشال، ونقط الحضور 5 بيتخصم منها نقطة كل 10 دقايق تأخير.'}</div>
           <div className="card" style={{ paddingBlock: 4 }}><div className="list cols">
             {present.map(m => {
               const r = rate[m.id] ?? [3, 3, 3];
@@ -210,7 +213,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
                     <textarea autoFocus style={{ width: '100%', minHeight: 64 }} aria-label={`ملاحظة لـ ${titled(m, data.levels)}`} placeholder="كلمة تشجيع أو حاجة يركز عليها، هتظهرله في تقييماته"
                       value={notes[m.id] ?? ''} maxLength={200} onChange={e => setNotes(n => ({ ...n, [m.id]: e.target.value }))} />
                   )}
-                  <div className="row between" style={{ width: '100%' }}>
+                  {rated && <div className="row between" style={{ width: '100%' }}>
                     {CRITERIA.map((c, j) => (
                       <div key={c} className="crit">
                         <div className="step">
@@ -221,7 +224,7 @@ function SessionScreen({ levelId, editing }: { levelId: string; editing?: Sessio
                         <span>{c}</span>
                       </div>
                     ))}
-                  </div>
+                  </div>}
                 </div>
               );
             })}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
 import { monthName, shiftMonth, thisMonth } from '../data/monthReport';
-import { medal, pointsWhy, monthBreakdown, POINTS, ranking, titled } from '../data/logic';
+import { ATTEND_PTS, LATE_STEP_MIN, medal, pointsWhy, monthBreakdown, POINTS, ranking, titled } from '../data/logic';
 import { download, xlsxBlob } from '../data/xlsx';
 import { BackButton } from '../ui/back';
 
@@ -68,7 +68,7 @@ export default function Ranking() {
           </div></div>}
         {rows.length > 0 && <button className="btn" onClick={exportSheet}>نزّل الترتيب إكسيل</button>}
         <Link className="btn" to="/coupons">{data.coupons ? 'الكوبونات وأرصدة الأوائل' : 'شغّل كوبونات الأوائل كل شهر'}</Link>
-        <div className="note">النقط من الحضور ({POINTS.attendance} للحصة) وتقييم كل حصة، ونقط كل لحن لما حد يوصل "حافظه" أو "بيقوله لوحده" فيه (الأصلي {POINTS.memorized} و{POINTS.solo}، والخادم المسؤول بيغيرها من تعديل اللحن)، في الحصة أو لما يسمّع لايف أو من الأبلكيشن. لو النقط اتساوت، الأعلى اللي حضر أكتر، ولو الحضور اتساوى، اللي ماشي أكتر في ألحان الترم، وبعدها تقييم الحصص، وبعدها اللي اتأخر أقل. اللي متساويين في كل ده بياخدوا نفس المركز.</div>
+        <div className="note">النقط من الحضور ({ATTEND_PTS} للحصة، وبيتخصم منها نقطة كل {LATE_STEP_MIN} دقايق تأخير لما الحضور يتسجل بالكارت)، ونقط كل لحن لما حد يوصل "حافظه" أو "بيقوله لوحده" فيه (الأصلي {POINTS.memorized} و{POINTS.solo}، والخادم المسؤول بيغيرها من تعديل اللحن)، في الحصة أو لما يسمّع لايف أو من الأبلكيشن. لو النقط اتساوت، الأعلى اللي حضر أكتر، ولو الحضور اتساوى، اللي ماشي أكتر في ألحان الترم، وبعدها اللي اتأخر أقل. اللي متساويين في كل ده بياخدوا نفس المركز.</div>
       </main>
     </>
   );

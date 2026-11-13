@@ -43,7 +43,7 @@ export default function MemberMe() {
           <div className="stat"><b>{v.attendanceRate === null ? '–' : `${v.attendanceRate}%`}</b><span className="muted">حضور</span></div>
         </div>
         <div className="ptabs" role="tablist">
-          {([['hymns', 'الألحان'], ['ratings', 'التقييمات'], ['info', 'البيانات']] as const).map(([k, l]) =>
+          {([['hymns', 'الألحان'], ['ratings', 'الملاحظات'], ['info', 'البيانات']] as const).map(([k, l]) =>
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}
         </div>
       </header>

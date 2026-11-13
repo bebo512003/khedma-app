@@ -11,13 +11,13 @@ export default function MemberRank() {
   const shown = [...v.top];
   if (!shown.some(r => r.id === v.memberId)) shown.push({ id: v.memberId, name: v.name, photo: v.photo, points: v.points, place: v.place, why: pointsWhy(v.breakdown, v.gender === 'f') });
   const parts = ([
-    [`حضور ${sessionsCount(b.attended)}`, b.attendance],
+    [`حضور ${sessionsCount(b.attended)}${b.lateOff ? ` (اتخصم ${b.lateOff} تأخير)` : ''}`, b.attendance],
     ['تقييم الحصص (متوسط كل حصة)', b.rating],
     [`${g('وصلت "حافظه"', 'وصلتي "حافظاه"')} في ${hymnsCount(b.memorized)}`, b.memorizedPts],
     [`${g('وصلت "بيقوله لوحده"', 'وصلتي "بتقوله لوحدها"')} في ${hymnsCount(b.solo)}`, b.soloPts],
     [`${g('حفظت', 'حفظتي')} ${partsCount(b.partsM)}`, b.partsMPts],
     [`${g('قلت', 'قولتي')} ${partsCount(b.partsS)} لوحدك`, b.partsSPts],
-  ] as [string, number][]).filter(([, pts], i) => i < 2 || pts > 0);
+  ] as [string, number][]).filter(([, pts], i) => i < 1 || pts > 0);
 
   return (
     <>
@@ -35,7 +35,7 @@ export default function MemberRank() {
         </div></div>
         {v.place > 1 && v.gap > 0 && (
           <div className="card"><b>{g('عشان تطلع الأول ناقصك', 'عشان تطلعي الأولى ناقصك')} {pointsCount(v.gap)}</b>
-            <div className="note">{g('لو حضرت وخدت تقييم كويس، أو قلت لحن لوحدك', 'لو حضرتي وخدتي تقييم كويس، أو قولتي لحن لوحدك')} (من {POINTS.solo} نقط)، {g('توصل', 'توصلي')}.</div></div>
+            <div className="note">{g('لو حضرت في ميعادك، أو قلت لحن لوحدك', 'لو حضرتي في ميعادك، أو قولتي لحن لوحدك')} (من {POINTS.solo} نقط)، {g('توصل', 'توصلي')}.</div></div>
         )}
         {v.coupons && <div className="card">
           <div className="row between"><h2>رصيد الكوبونات</h2><b className="coupon-bal">{v.coupons.balance}</b></div>
