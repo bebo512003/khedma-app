@@ -276,3 +276,41 @@ export const levelForGrade = (g: string, levels: { id: string; name: string }[] 
   if (g === 'خدام') return levels.find(l => /خدا?م|خادم/.test(l.name))?.id ?? 'l3';
   const i = GRADES.indexOf(g); return i < 2 ? 'l1' : i < 6 ? 'l2' : 'l3';
 };
+
+/**
+ * Sessions attended in a row in the member's level, now and at best.
+ * Excused sessions neither count nor break the run; sessions before they joined or with no attendance taken are skipped.
+ */
+export function attendStreak(data: AppData, member: Member): { now: number; best: number } {
+  const sessions = data.sessions
+    .filter(s => s.levelId === member.levelId && s.attendance[member.id] !== undefined)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  let now = 0, best = 0;
+  for (const s of sessions) {
+    const a = s.attendance[member.id];
+    if (a === 'p') best = Math.max(best, ++now);
+    else if (a === 'a') now = 0;
+  }
+  return { now, best };
+}
+/** Streaks worth a word: from 3 sessions in a row. */
+export const STREAK_MIN = 3;
+
+type DueHymn = { id: string; nameAr: string; month?: string; status: number; parts?: { id: string; name: string; month?: string }[]; partStatus?: Record<string, number> };
+/** This month's hymns or parts the member hasn't memorized yet: their points end with the month. */
+export function monthDue(hymns: DueHymn[], month: string): { hymnId: string; name: string; partId?: string; partName?: string }[] {
+  return hymns.flatMap(h => {
+    const parts = (h.parts ?? []).filter(p => p.month === month && (h.partStatus?.[p.id] ?? 0) < 2)
+      .map(p => ({ hymnId: h.id, name: h.nameAr, partId: p.id, partName: p.name }));
+    if (parts.length) return parts;
+    const monthed = (h.parts ?? []).some(p => p.month);
+    return !monthed && h.month === month && h.status < 2 ? [{ hymnId: h.id, name: h.nameAr }] : [];
+  });
+}
+/** Days left in the month, today included (the 30th of a 30-day month = 1). */
+export const daysLeftInMonth = (date = todayISO()) => {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y, m, 0).getDate() - d + 1;
+};
+/** Reminders about the month's parts start a week before it ends. */
+export const DUE_WINDOW = 7;

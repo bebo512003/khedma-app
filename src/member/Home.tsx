@@ -1,7 +1,8 @@
 import ThemeButton from '../ui/ThemeButton';
 import { Link, useNavigate } from 'react-router-dom';
-import { formatDay, isoDate, nextFriday, pointsCount, hymnPoints } from '../data/logic';
-import { Bell, useG, useStatus, useView } from './Layout';
+import { formatDay, isoDate, nextFriday, pointsCount, hymnPoints, monthDue, daysLeftInMonth, DUE_WINDOW, STREAK_MIN, sessionsCount, todayISO } from '../data/logic';
+import { monthName } from '../data/monthReport';
+import { Bell, useG, useNotes, useStatus, useView } from './Layout';
 import { memberLogout } from './session';
 import CopticToday from '../screens/CopticToday';
 import VerseToday from '../screens/VerseToday';
@@ -13,6 +14,11 @@ export default function MemberHome() {
   const nav = useNavigate();
   const memorized = v.hymns.filter(h => h.status >= 2).length;
   const goal = v.hymns.find(h => h.status === 2) ?? v.hymns.find(h => h.status < 2);
+  const { subs } = useNotes();
+  const month = todayISO().slice(0, 7), left = daysLeftInMonth();
+  const due = left <= DUE_WINDOW ? monthDue(v.hymns, month) : [];
+  const sentFor = (d: { hymnId: string; partId?: string }) => subs.some(x => x.pending && x.hymnId === d.hymnId && (x.partId ?? '') === (d.partId ?? '') && isoDate(new Date(x.at)).startsWith(month));
+  const meStar = v.star?.people.some(p => p.id === v.memberId);
   const logout = async () => { await memberLogout(); nav('/me', { replace: true }); };
 
   return (
@@ -33,6 +39,29 @@ export default function MemberHome() {
           {v.place > 1 && v.gap > 0 && <div style={{ color: 'var(--gold)' }}>{pointsCount(v.gap)} {g('وتبقى الأول', 'وتبقي الأولى')}</div>}
           {v.place === 1 && v.points > 0 && <div style={{ color: 'var(--gold)' }}>{g('أنت الأول الشهر ده، حافظ عليها', 'انتي الأولى الشهر ده، حافظي عليها')}</div>}
         </Link>
+
+        {v.star && <div className="card star-month">
+          <div className="row">
+            <span className="av" style={{ width: 52, height: 52, fontSize: 22 }}>{v.star.people[0].photo ? <img src={v.star.people[0].photo} alt="" /> : '⭐'}</span>
+            <div className="grow">
+              <b>{meStar ? `${g('انت نجم', 'انتي نجمة')} ${monthName(v.star.month)} 🎉` : `${v.star.people.length > 1 ? 'نجوم' : 'نجم'} ${monthName(v.star.month)} في ${v.levelName}`}</b>
+              <div className="muted">{meStar ? g('الأول في المستوى الشهر اللي فات. كمّل كده!', 'الأولى في المستوى الشهر اللي فات. كمّلي كده!') : v.star.people.map(p => p.name).join(' و')}</div>
+            </div>
+          </div>
+        </div>}
+
+        {due.length > 0 && <div className="card due-month">
+          <b>⏳ {left === 1 ? 'النهاردة آخر يوم في الشهر' : `فاضل ${left} أيام على آخر الشهر`}</b>
+          <div className="muted">{g('لو ما حفظتش', 'لو ما حفظتيش')} {due.length > 1 ? 'دول' : 'ده'} قبل آخر الشهر، {due.length > 1 ? 'نقطهم' : 'نقطه'} بتروح.</div>
+          <div className="list">
+            {due.map(d => (
+              <Link key={d.hymnId + (d.partId ?? '')} to={`/me/hymn/${d.hymnId}`} className="li">
+                <b className="grow">{d.name}{d.partName ? ` (${d.partName})` : ''}</b>
+                <span className="muted">{sentFor(d) ? g('بعتّ تسميعه، مستني رد', 'بعتّي تسميعه، مستنية رد') : g('سمّعه', 'سمّعيه')}</span>
+              </Link>
+            ))}
+          </div>
+        </div>}
 
         {v.coupons && <Link to="/me/rank" className="card coupon-home" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="row between">
@@ -71,6 +100,9 @@ export default function MemberHome() {
           <div><div className="muted">الحصة الجاية</div><b>{formatDay(isoDate(nextFriday()))}</b></div>
           {v.attendanceRate !== null && <div style={{ textAlign: 'left' }}><div className="muted">حضورك</div><b>{v.attendanceRate}%</b></div>}
         </div>
+        {v.streak && (v.streak.now >= STREAK_MIN
+          ? <div className="card streak"><b>🔥 {g('حاضر', 'حاضرة')} {sessionsCount(v.streak.now)} ورا بعض</b><div className="muted">{v.streak.best > v.streak.now ? `${g('أحسن سلسلة ليك', 'أحسن سلسلة ليكي')} ${sessionsCount(v.streak.best)}، ${g('قرّب تكسرها', 'قرّبتي تكسريها')}` : g('دي أحسن سلسلة ليك لحد دلوقتي، متكسرهاش', 'دي أحسن سلسلة ليكي لحد دلوقتي، متكسريهاش')}</div></div>
+          : v.streak.best >= STREAK_MIN && <div className="card streak"><b>🔥 {g('أحسن سلسلة حضور ليك', 'أحسن سلسلة حضور ليكي')} {sessionsCount(v.streak.best)}</b><div className="muted">{g('احضر الحصص الجاية ورا بعض وابدأ سلسلة جديدة', 'احضري الحصص الجاية ورا بعض وابدأي سلسلة جديدة')}</div></div>)}
       </main>
     </>
   );

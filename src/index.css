@@ -461,3 +461,7 @@ body:has(.mtabs) .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); p
   .coupon .c-val b { font-size: 38px; }
 }
 .coupon .c-foot { font-size: 11px; color: var(--muted); text-align: center; border-top: 1px dashed var(--line); padding: 4px; }
+
+/* Member home: last month's star, this month's parts running out. */
+.card.star-month { border: 1.5px solid var(--gold); }
+.card.due-month { border-inline-start: 4px solid var(--gold); }

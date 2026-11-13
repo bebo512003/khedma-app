@@ -40,6 +40,16 @@ const hymnList = view => {
   return names.length ? names.join('، ') : 'ألحان الترم';
 };
 
+// Keep in sync with monthDue / daysLeftInMonth in src/data/logic.ts.
+const monthDue = (hymns, month) => (hymns ?? []).flatMap(h => {
+  const parts = (h.parts ?? []).filter(p => p.month === month && (h.partStatus?.[p.id] ?? 0) < 2).map(p => ({ hymnId: h.id, name: `${h.nameAr} (${p.name})`, partId: p.id }));
+  if (parts.length) return parts;
+  return !(h.parts ?? []).some(p => p.month) && h.month === month && h.status < 2 ? [{ hymnId: h.id, name: h.nameAr }] : [];
+});
+const daysLeft = date => { const [y, m, d] = date.split('-').map(Number); return new Date(y, m, 0).getDate() - d + 1; };
+/** This month's parts not memorized yet: a reminder 7 days before the month ends, and again 2 days before, from 6pm. */
+const DUE_STAGES = [[7, 1], [2, 2]];
+
 async function runChurch(church, publicKey, now) {
   if (church.get('pushKey') !== publicKey) await church.ref.update({ pushKey: publicKey });
   const c = church.ref;
@@ -77,7 +87,12 @@ async function runChurch(church, publicKey, now) {
   const subAt = Math.max(subAt0, ...sent0.map(x => x.at)), revAt = Math.max(revAt0, ...reviews.map(x => x.reviewAt));
   if (log.subAt === undefined || log.revAt === undefined) await logRef.set({ ...log, summaryAt, subAt, revAt }, { merge: true });
   await cleanSubmissions(c);
-  if (!due.length && !custom.length && !monthly && !test && !summaries.length && !sent0.length && !reviews.length) { console.log(`${c.id}: nothing due at ${now.date} ${now.hour}:00 (day ${now.day}).`); return; }
+  const month = now.date.slice(0, 7), left = daysLeft(now.date);
+  const dueStage = now.hour >= 18 ? (DUE_STAGES.find(([d]) => left <= d) ? Math.max(...DUE_STAGES.filter(([d]) => left <= d).map(([, k]) => k)) : 0) : 0;
+  // Recitations waiting for a reply this month already count as an answer to the reminder.
+  const waiting = dueStage ? (await c.collection('submissions').where('at', '>=', new Date(`${month}-01T00:00:00+02:00`).getTime()).get()).docs.map(d => d.data()).filter(x => x.pending) : [];
+  const dueSent = [];
+  if (!dueStage && !due.length && !custom.length && !monthly && !test && !summaries.length && !sent0.length && !reviews.length) { console.log(`${c.id}: nothing due at ${now.date} ${now.hour}:00 (day ${now.day}).`); return; }
 
   const subs = (await c.collection('pushSubs').get()).docs;
   const who = new Map();
@@ -93,7 +108,7 @@ async function runChurch(church, publicKey, now) {
     return who.get(uid);
   };
 
-  const sent = { custom: 0, month: 0, hymn: 0, session: 0, test: 0, summary: 0, submission: 0, review: 0, peers: 0 };
+  const sent = { custom: 0, month: 0, hymn: 0, session: 0, test: 0, summary: 0, submission: 0, review: 0, peers: 0, due: 0 };
   const peered = [];
   for (const sub of subs) {
     // One bad phone record never stops the rest.
@@ -135,10 +150,22 @@ async function runChurch(church, publicKey, now) {
           peered.push(p.memberId);
         }
       }
+      if (dueStage && p.kind === 'member' && log[`due:${p.memberId}`] !== `${month}:${dueStage}`) {
+        const items = monthDue(p.view?.hymns, month).filter(i => !waiting.some(w => w.memberId === p.memberId && w.hymnId === i.hymnId && (w.partId ?? '') === (i.partId ?? '')));
+        if (items.length) {
+          const f = p.view?.gender === 'f';
+          msgs.push(['due', {
+            title: left === 1 ? '⏳ النهاردة آخر يوم في الشهر' : `⏳ فاضل ${left} أيام على آخر الشهر`,
+            body: `لسه ${items.slice(0, 3).map(i => `«${i.name}»`).join('، ')}. ${f ? 'احفظيه وسمّعيه' : 'احفظه وسمّعه'} قبل آخر الشهر عشان ${items.length > 1 ? 'نقطهم ما تروحش' : 'نقطه ما تروحش'}`,
+            tag: 'due', url: './#/me/recite',
+          }]);
+        }
+        dueSent.push(p.memberId);
+      }
       const listens = p.kind === 'servant' && (['admin', 'lead'].includes(p.role) || !p.perms || p.perms.includes('sessions'));
       const mine = listens ? sent0.filter(x => (p.levelIds ?? []).some(l => l === '*' || l === x.levelId)) : [];
       if (mine.length) msgs.push(['submission', { title: mine.length === 1 ? `${mine[0].memberName} ${mine[0].gender === 'f' ? 'سمّعت' : 'سمّع'} ${mine[0].hymnName}` : `${mine.length} تسميعات جديدة`, body: mine.length > 1 ? 'اسمعهم وابعتلهم رأيك' : mine[0].gender === 'f' ? 'اسمعها وابعتلها رأيك' : 'اسمعه وابعتله رأيك', tag: 'submissions', url: './#/reviews' }]);
-      if (monthly && p.kind === 'servant') msgs.push(['month', { title: 'تقرير الشهر اللي فات جاهز 📊', body: 'الحضور والأوائل ومين مستواه نزل، قبل ما تبدأ الشهر الجديد', tag: `month-${pastMonth}`, url: `./#/month/${pastMonth}` }]);
+      if (monthly && p.kind === 'servant') msgs.push(['month', { title: 'تقرير الشهر اللي فات جاهز 📊', body: 'الحضور والأوائل ومين مستواه نزل، ورسايل أولياء الأمور جاهزة تتبعت', tag: `month-${pastMonth}`, url: `./#/month/${pastMonth}` }]);
       if (test && d.uid === s.testUid) msgs.push(['test', { title: 'تنبيه تجربة', body: 'التنبيهات شغالة على الموبايل ده ✓', tag: 'test', url: './#/notify' }]);
       for (const [k, payload] of msgs) {
         try {
@@ -158,6 +185,7 @@ async function runChurch(church, publicKey, now) {
   if (test) next.testAt = s.testAt;
   if (monthly) next.month = pastMonth;
   next.summaryAt = summaryAt;
+  for (const id of dueSent) next[`due:${id}`] = `${month}:${dueStage}`;
   for (const id of peered) next[`peer:${id}`] = now.date;
   next.subAt = subAt;
   next.revAt = revAt;

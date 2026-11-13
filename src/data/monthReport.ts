@@ -1,5 +1,5 @@
 import type { AppData, Member } from './types';
-import { monthPoints, ranking, sessionAverage } from './logic';
+import { curriculumKey, currentTerm, monthPoints, ranking, sessionAverage, titled, sessionsCount, pointsCount } from './logic';
 
 const monthFmt = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { month: 'long', year: 'numeric' });
 export const monthName = (month: string) => monthFmt.format(new Date(`${month}-15T12:00`));
@@ -48,4 +48,26 @@ export function monthReport(data: AppData, levelId: string, month: string) {
   });
   return { month, sessions: sessions.length, rate: rate('now'), prevRate: rate('before'), top, milestones, slipped,
     points: members.reduce((a, m) => a + monthPoints(data, m.id, month), 0) };
+}
+
+export const PARENTS_TPL = 'أهلاً بحضرتك 🌿\nده تقرير {الاسم} في مدرسة الشمامسة والألحان لشهر {الشهر}:\n• الحضور: {الحضور}\n• النقط: {النقط}\n• الألحان: {الألحان}\nربنا يبارك تعب محبتكم 🙏';
+
+/** The values a parent's monthly message fills in, worded for a boy or a girl. */
+export function parentVars(data: AppData, m: Member, month: string): Record<string, string> {
+  const f = m.gender === 'f';
+  const st = stats(data, m, month);
+  const rows = ranking(data, m.levelId, month);
+  const row = rows.find(r => r.member.id === m.id);
+  const term = currentTerm(data, `${month}-15`);
+  const ids = term ? data.curricula[curriculumKey(term.id, m.levelId)] ?? [] : [];
+  const p = data.progress[m.id] ?? {};
+  const memorized = ids.filter(id => (p[id] ?? 0) >= 2).length, solo = ids.filter(id => (p[id] ?? 0) >= 3).length;
+  const points = monthPoints(data, m.id, month);
+  return {
+    'الاسم': titled(m, data.levels),
+    'الشهر': monthName(month),
+    'الحضور': st.taken ? (st.present ? `${f ? 'حضرت' : 'حضر'} ${sessionsCount(st.present)} من ${st.taken}` : `${f ? 'ما حضرتش' : 'ما حضرش'} ولا حصة من ${st.taken}`) : 'مكانش فيه حصص متسجلة',
+    'النقط': `${pointsCount(points)}${row && points > 0 ? `، ${row.place === 1 ? (f ? 'الأولى' : 'الأول') : `المركز ${row.place}`} في المستوى` : ''}`,
+    'الألحان': ids.length ? `${f ? 'حافظة' : 'حافظ'} ${memorized} من ${ids.length} ألحان في منهج الترم${solo ? `، و${f ? 'بتقول' : 'بيقول'} ${solo} ${f ? 'لوحدها' : 'لوحده'}` : ''}` : 'لسه منهج الترم ما اتحطش',
+  };
 }

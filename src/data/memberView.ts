@@ -1,5 +1,5 @@
 import type { Attendance, AppData, Hymn, HymnStatus, MemberEdit, Rating, Recording } from './types';
-import { currentTerm, curriculumKey, lateBy, pointsWhy, sessionPoints, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO, titled } from './logic';
+import { attendStreak, currentTerm, curriculumKey, lateBy, pointsWhy, sessionPoints, sessionRecordings, monthBreakdown, ranking, sessionAverage, todayISO, titled } from './logic';
 import { partKey, partOf, sessionHymnLabel } from './parts';
 import { couponLedger, type Winner } from './coupons';
 import { bookOf, entryPages, hasPages, pageUrl, pagesLabel } from './books';
@@ -33,6 +33,10 @@ export interface MemberView {
   books?: { id: string; title: string; term?: string; current: boolean; pdfUrl?: string; pages: string[]; entries: { hymnId: string; name: string; label: string }[] }[];
   /** Monthly coupons, when the school uses them: the balance, each ended month's, what was spent, and this month's place value. */
   coupons?: { balance: number; values: number[]; earned: { month: string; place: number; value: number }[]; spent: { date: string; amount: number; note?: string }[] };
+  /** Sessions attended in a row. */
+  streak?: { now: number; best: number };
+  /** Last month's first place in this level, shown in the first week of a month. */
+  star?: { month: string; people: { id: string; name: string; photo?: string }[] };
   code?: string;
   gender?: 'm' | 'f';
   grade?: string;
@@ -88,7 +92,12 @@ export function buildMemberView(data: AppData, memberId: string, month = todayIS
       pages: hasPages(b) ? Array.from({ length: b.pageCount! }, (_, i) => pageUrl(b, i + 1)) : [],
       entries: b.entries.map(e => ({ hymnId: e.hymnId, name: data.hymns.find(h => h.id === e.hymnId)?.nameAr ?? '', label: pagesLabel(e) })).filter(e => e.name),
     }));
+  const prevMonth = (([y, mo]) => mo === 1 ? `${y - 1}-12` : `${y}-${String(mo - 1).padStart(2, '0')}`)(month.split('-').map(Number));
+  const stars = Number(todayISO().slice(8)) <= 7 && month === todayISO().slice(0, 7)
+    ? ranking(data, m.levelId, prevMonth).filter(r => r.place === 1 && r.points > 0) : [];
   return clean({
+    streak: attendStreak(data, m),
+    star: stars.length ? { month: prevMonth, people: stars.map(r => ({ id: r.member.id, name: titled(r.member, data.levels), photo: r.member.photo })) } : undefined,
     memberId: m.id, name: titled(m, data.levels), photo: m.photo, rank: m.rank,
     profile: { name: m.name, photo: m.photo, birthdate: m.birthdate, phone: m.phone, parentPhone: m.parentPhone, gender: m.gender, grade: m.grade, address: m.address }, levelName: level?.name ?? '', termName: term?.name, month,
     points: breakdown.total, place: pos < 0 ? 0 : rows[pos].place, gap: Math.max(0, (rows[0]?.points ?? 0) - breakdown.total), breakdown, top, hymns, ratings,

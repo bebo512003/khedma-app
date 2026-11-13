@@ -1,4 +1,4 @@
-import { fx } from '../data/logic';
+import { fx, attendStreak, STREAK_MIN, sessionsCount } from '../data/logic';
 import { partKey, withPartStatus } from '../data/parts';
 import { withAward } from '../data/awards';
 import { useState } from 'react';
@@ -85,6 +85,7 @@ export default function MemberProfile() {
           <div className="stat"><b>{rate === null ? '–' : `${rate}%`}</b><span className="muted">حضور</span></div>
         </div>
         <div className="muted" style={{ fontSize: 13 }}>نقط الشهر: {pointsWhy(mb, m.gender === 'f')}</div>
+        {(st => st.best >= STREAK_MIN && <div className="muted" style={{ fontSize: 13 }}>🔥 {st.now >= STREAK_MIN ? `${fx(m, 'حاضر', 'حاضرة')} ${sessionsCount(st.now)} ورا بعض` : 'السلسلة اتقطعت'} • {fx(m, 'أحسن سلسلة ليه', 'أحسن سلسلة ليها')} {sessionsCount(st.best)}</div>)(attendStreak(data, m))}
         <div className="ptabs" role="tablist">
           {([['hymns', 'الألحان'], ['ratings', 'التقييمات'], ['info', 'البيانات']] as const).map(([k, l]) =>
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{l}</button>)}

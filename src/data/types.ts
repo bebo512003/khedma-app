@@ -249,6 +249,8 @@ export interface Submission {
 export interface Templates {
   absence: string;
   birthday?: string;
+  /** The monthly report sent to each member's parent. */
+  parents?: string;
 }
 
 export interface AppData {

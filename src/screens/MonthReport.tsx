@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAllowedLevel, useData } from '../data/store';
-import { monthName, monthReport, shiftMonth, thisMonth } from '../data/monthReport';
-import { medal, sessionsCount, titled } from '../data/logic';
+import { monthName, monthReport, parentVars, PARENTS_TPL, shiftMonth, thisMonth } from '../data/monthReport';
+import { fillTemplate, medal, sessionsCount, titled, waLink, waNumber } from '../data/logic';
 import Icon from '../ui/Icon';
 import { BackButton } from '../ui/back';
 
@@ -72,9 +73,58 @@ export default function MonthReport() {
             </div>
           );
         })}
+        {!current && <ParentsReport month={month} levelIds={levels.map(l => l.id)} />}
         <Link to="/ranking" className="btn span">الترتيب الكامل لكل مستوى</Link>
         <Link to="/reports" className="btn span">التقارير التفصيلية وتصدير إكسيل</Link>
       </main>
     </>
+  );
+}
+
+const sentKey = (month: string, id: string) => `parents:${month}:${id}`;
+const wasSent = (month: string, id: string) => { try { return !!localStorage.getItem(sentKey(month, id)); } catch { return false; } };
+
+/** Each member's month on WhatsApp to their parent (or to them when no parent number), sent from the servant's own phone. */
+function ParentsReport({ month, levelIds }: { month: string; levelIds: string[] }) {
+  const [data, update] = useData();
+  const [open, setOpen] = useState(false);
+  const [tpl, setTpl] = useState(data.templates.parents ?? PARENTS_TPL);
+  const [, tick] = useState(0);
+  const save = () => update(d => ({ ...d, templates: { ...d.templates, parents: tpl } }));
+  const members = data.members.filter(m => levelIds.includes(m.levelId) && data.sessions.some(s => s.levelId === m.levelId && s.date.startsWith(month)))
+    .sort((a, b) => levelIds.indexOf(a.levelId) - levelIds.indexOf(b.levelId) || a.name.localeCompare(b.name, 'ar'));
+  const done = members.filter(m => wasSent(month, m.id)).length;
+  if (!members.length) return null;
+  return (
+    <div className="card span">
+      <div className="row between">
+        <div><h2>تقرير الشهر لأولياء الأمور</h2><div className="muted">رسالة واتساب لكل ولي أمر من رقمك • {done} من {members.length} اتبعتوا</div></div>
+        <button className="btn" onClick={() => setOpen(!open)}>{open ? 'اقفل' : 'افتح'}</button>
+      </div>
+      {open && <>
+        <label className="field" htmlFor="ptpl"><span>نص الرسالة</span>
+          <textarea id="ptpl" value={tpl} onChange={e => setTpl(e.target.value)} onBlur={save} style={{ minHeight: 150 }} />
+        </label>
+        <div className="note">الخانات: {'{الاسم} {الشهر} {الحضور} {النقط} {الألحان}'}. بتتملي لكل واحد لوحدها وبصيغة المؤنث للبنات. التعديل بيتحفظ للشهور الجاية.</div>
+        {tpl !== PARENTS_TPL && <button className="btn" onClick={() => { setTpl(PARENTS_TPL); update(d => ({ ...d, templates: { ...d.templates, parents: PARENTS_TPL } })); }}>رجّع النص الأصلي</button>}
+        <div className="list">
+          {members.map(m => {
+            const to = waNumber(m.parentPhone) ? { phone: m.parentPhone, who: 'لولي الأمر' } : waNumber(m.phone) ? { phone: m.phone, who: m.gender === 'f' ? 'على موبايلها' : 'على موبايله' } : null;
+            const sent = wasSent(month, m.id);
+            const text = fillTemplate(tpl, parentVars(data, m, month));
+            return (
+              <div key={m.id} className="li">
+                <span className="av">{m.photo ? <img src={m.photo} alt="" /> : m.name[0]}</span>
+                <div className="grow"><b>{titled(m, data.levels)}</b><div className="muted">{data.levels.find(l => l.id === m.levelId)?.name} • {to ? to.who : 'مفيش رقم'}{sent ? ' • اتبعت ✓' : ''}</div></div>
+                {to && <a className={sent ? 'btn' : 'btnp'} style={{ minHeight: 44 }} target="_blank" rel="noopener"
+                  href={waLink(to.phone, text)}
+                  onClick={() => { try { localStorage.setItem(sentKey(month, m.id), '1'); } catch { /* the mark is only a reminder */ } tick(n => n + 1); }}>واتساب</a>}
+                {!to && <button className="btn" style={{ minHeight: 44 }} data-text={text} onClick={() => navigator.clipboard?.writeText(text).then(() => { try { localStorage.setItem(sentKey(month, m.id), '1'); } catch { /* reminder only */ } tick(n => n + 1); })}>انسخ</button>}
+              </div>
+            );
+          })}
+        </div>
+      </>}
+    </div>
   );
 }
