@@ -30,6 +30,12 @@ export function watchPending(cb: (s: Submission[]) => void) {
     q => cb(q.docs.map(d => d.data() as Submission).sort((a, b) => a.at - b.at)), () => cb([]));
 }
 
+/** Servant: everything sent since a time (pending or answered), for the recitations kept through their hymn's month. */
+export function watchSince(since: number, cb: (s: Submission[]) => void) {
+  return onSnapshot(query(col(servantFb().db, 'submissions'), where('at', '>=', since)),
+    q => cb(q.docs.map(d => d.data() as Submission).sort((a, b) => b.at - a.at)), () => cb([]));
+}
+
 /** Servant: their verdict and note, which the member sees on the hymn page. */
 export function reviewSubmission(id: string, review: { status: HymnStatus; note?: string; by: string; byName: string }) {
   return updateDoc(doc(col(servantFb().db, 'submissions'), id), { pending: false, review: JSON.parse(JSON.stringify(review)), reviewAt: Date.now() });

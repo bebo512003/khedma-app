@@ -132,7 +132,7 @@ export function ranking(data: AppData, levelId: string, month: string) {
 /** Where a month's points came from, written out: «حضور 4 حصص (8) + تقييم الحصص (7) + حافظ لحنين (10) = 25». */
 export function pointsWhy(b: { attended: number; attendance: number; lateOff?: number; rating: number; memorized: number; solo: number; memorizedPts: number; soloPts: number; partsM?: number; partsS?: number; partsMPts?: number; partsSPts?: number; total: number }, female = false) {
   const hafez = female ? 'حافظة' : 'حافظ', bi = female ? 'بتقول' : 'بيقول', alone = female ? 'لوحدها' : 'لوحده';
-  const parts = [`حضور ${sessionsCount(b.attended)} (${b.attendance}${b.lateOff ? `، اتخصم ${pointsCount(b.lateOff)} تأخير` : ''})`];
+  const parts = [`${b.attended ? `حضور ${sessionsCount(b.attended)}` : 'لسه مفيش حضور'} (${b.attendance}${b.lateOff ? `، اتخصم ${pointsCount(b.lateOff)} تأخير` : ''})`];
   if (b.rating) parts.push(`تقييم الحصص (${b.rating})`);
   if (b.memorized) parts.push(`${hafez} ${hymnsCount(b.memorized)} (${b.memorizedPts})`);
   if (b.solo) parts.push(`${bi} ${hymnsCount(b.solo)} ${alone} (${b.soloPts})`);

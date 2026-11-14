@@ -1,3 +1,4 @@
+import { couponLedger } from '../data/coupons';
 import { fx, attendStreak, STREAK_MIN, sessionsCount } from '../data/logic';
 import { partKey, withPartStatus } from '../data/parts';
 import { withAward } from '../data/awards';
@@ -79,10 +80,11 @@ export default function MemberProfile() {
             </div>
           </div>
         </div>
-        <div className="stats">
+        <div className={data.coupons ? 'stats stats4' : 'stats'}>
           <div className="stat dark"><b>{place ? `#${place}` : '–'}</b><span>{fx(m, 'ترتيبه', 'ترتيبها')} في المستوى</span></div>
           <div className="stat"><b>{points}</b><span className="muted">نقطة الشهر ده</span></div>
           <div className="stat"><b>{rate === null ? '–' : `${rate}%`}</b><span className="muted">حضور</span></div>
+          {data.coupons && <Link to="/coupons" className="stat" style={{ textDecoration: 'none', color: 'inherit' }}><b>🎟️ {couponLedger(data, m.id).balance}</b><span className="muted">رصيد الكوبونات</span></Link>}
         </div>
         <div className="muted" style={{ fontSize: 13 }}>نقط الشهر: {pointsWhy(mb, m.gender === 'f')}</div>
         {(st => st.best >= STREAK_MIN && <div className="muted" style={{ fontSize: 13 }}>🔥 {st.now >= STREAK_MIN ? `${fx(m, 'حاضر', 'حاضرة')} ${sessionsCount(st.now)} ورا بعض` : 'السلسلة اتقطعت'} • {fx(m, 'أحسن سلسلة ليه', 'أحسن سلسلة ليها')} {sessionsCount(st.best)}</div>)(attendStreak(data, m))}

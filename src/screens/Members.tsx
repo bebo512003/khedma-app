@@ -1,3 +1,4 @@
+import { couponLedger } from '../data/coupons';
 import { fx } from '../data/logic';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -21,6 +22,8 @@ export default function Members() {
   const [level, setLevel] = useState<string>('all');
   const [q, setQ] = useState('');
   const levels = [...data.levels].sort((a, b) => a.order - b.order);
+  // Coupon balances, when the school uses coupons; the cache keeps each ended month's winners computed once.
+  const balance = (() => { if (!data.coupons) return null; const cache = new Map(); return (id: string) => couponLedger(data, id, cache).balance; })();
   const list = data.members
     .filter(m => level === 'all' || m.levelId === level)
     .filter(m => !q || fold(m.name).includes(fold(q)) || m.code.includes(q.trim()))
@@ -75,6 +78,7 @@ export default function Members() {
                 <div className="grow"><b>{titled(m, data.levels)}</b><div className="muted">{m.code} • {data.levels.find(l => l.id === m.levelId)?.name}{m.rank ? ` • ${m.rank}` : ''}</div></div>
                 {needsFollowUp(streak) && <span className="tag tag-alert">{fx(m, 'غاب', 'غابت')} {streak} مرات</span>}
                 {birthdays.has(m.id) && <span className="tag tag-ex">عيد {m.gender === 'f' ? 'ميلادها' : 'ميلاده'} {birthdayWhen(birthdays.get(m.id)!)}</span>}
+                {balance && balance(m.id) > 0 && <span className="tag tag-soft" title="رصيد الكوبونات">🎟️ {balance(m.id)}</span>}
                 {m.example && <span className="tag tag-ex">مثال</span>}
             </>;
             if (!picking) return <Link key={m.id} to={`/members/${m.id}`} className="li">{inner}</Link>;

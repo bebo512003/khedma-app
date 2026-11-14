@@ -86,8 +86,8 @@ async function runChurch(church, publicKey, now) {
     .filter(x => typeof x.reviewAt === 'number' && x.reviewAt <= Date.now());
   const subAt = Math.max(subAt0, ...sent0.map(x => x.at)), revAt = Math.max(revAt0, ...reviews.map(x => x.reviewAt));
   if (log.subAt === undefined || log.revAt === undefined) await logRef.set({ ...log, summaryAt, subAt, revAt }, { merge: true });
-  await cleanSubmissions(c);
   const month = now.date.slice(0, 7), left = daysLeft(now.date);
+  await cleanSubmissions(c, month);
   const dueStage = now.hour >= 18 ? (DUE_STAGES.find(([d]) => left <= d) ? Math.max(...DUE_STAGES.filter(([d]) => left <= d).map(([, k]) => k)) : 0) : 0;
   // Recitations waiting for a reply this month already count as an answer to the reminder.
   const waiting = dueStage ? (await c.collection('submissions').where('at', '>=', new Date(`${month}-01T00:00:00+02:00`).getTime()).get()).docs.map(d => d.data()).filter(x => x.pending) : [];
@@ -194,11 +194,17 @@ async function runChurch(church, publicKey, now) {
 }
 
 // Home recordings are big; a month after the servant replied, the audio goes and the reply stays.
-async function cleanSubmissions(c) {
+async function cleanSubmissions(c, month) {
   const old = await c.collection('submissions').where('reviewAt', '<', Date.now() - 30 * 86400_000).get();
+  const hymns = new Map();
   for (const d of old.docs) {
     const x = d.data();
     if (x.audioGone || x.pending) continue;
+    // Servants keep listening through the hymn's (or part's) month, so its audio stays until that month ends.
+    if (!hymns.has(x.hymnId)) hymns.set(x.hymnId, (await c.collection('hymns').doc(String(x.hymnId)).get()).data());
+    const h = hymns.get(x.hymnId);
+    const own = (x.partId && h?.parts?.find(p => p.id === x.partId)?.month) || h?.month;
+    if (own && own >= month) continue;
     for (let i = 0; i < (x.recording?.parts ?? 0); i++) await c.collection('recordings').doc(`${x.recording.id}-${i}`).delete();
     await d.ref.update({ audioGone: true });
   }
